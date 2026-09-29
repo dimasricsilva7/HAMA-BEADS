@@ -5,7 +5,7 @@
 import { PrismaClient } from "@prisma/client";
 import { decodeEnvHash } from "@/lib/auth/hash";
 
-type AnyDelegate = { findMany: (a: object) => Promise<Record<string, unknown>[]>; createMany: (a: object) => Promise<{ count: number }>; count: () => Promise<number> };
+type AnyDelegate = { createMany: (a: object) => Promise<{ count: number }>; count: () => Promise<number> };
 
 /** Ordem respeita as chaves estrangeiras. Sessões admin e tentativas de login não são copiadas. */
 const MODELS = [
@@ -52,9 +52,10 @@ export async function migrateFromLegacy(target: PrismaClient, legacyUrl: string 
   const copied: Record<string, number> = {};
   try {
     for (const model of MODELS) {
-      const src = (legacy as unknown as Record<string, AnyDelegate>)[model];
       const dst = (target as unknown as Record<string, AnyDelegate>)[model];
-      let rows = await src.findMany({});
+      // SQL puro no banco antigo: tolera colunas que ainda não existiam lá (schema mais antigo)
+      const table = model.charAt(0).toUpperCase() + model.slice(1);
+      let rows = await legacy.$queryRawUnsafe<Record<string, unknown>[]>(`SELECT * FROM "${table}"`);
       // Pedidos principais antes dos complementares (autorrelação parentOrderId)
       if (model === "order") rows = [...rows.filter((r) => !r.parentOrderId), ...rows.filter((r) => r.parentOrderId)];
       let count = 0;

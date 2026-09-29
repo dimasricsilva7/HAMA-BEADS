@@ -126,6 +126,23 @@ export async function applyCatalogV2(db: PrismaClient) {
       offerNote: "Oferta exclusiva no checkout: 60% de desconto ao comprar junto com o seu kit.",
     },
   });
+  // Posição garantida (idempotente): atalho logo após o hero, LED após "Como funciona"
+  {
+    const all = await db.landingSection.findMany({ orderBy: [{ sortOrder: "asc" }, { key: "asc" }], select: { key: true, sortOrder: true } });
+    const moving = new Set(["quick_kits", "led_board"]);
+    const ordered = all.filter((s) => !moving.has(s.key)).map((s) => s.key);
+    const place = (key: string, after: string) => {
+      if (!all.some((s) => s.key === key)) return;
+      const i = ordered.indexOf(after);
+      ordered.splice(i >= 0 ? i + 1 : ordered.length, 0, key);
+    };
+    place("quick_kits", "hero");
+    place("led_board", "how_it_works");
+    for (const [i, key] of ordered.entries()) {
+      if (all.find((s) => s.key === key)?.sortOrder !== i + 1) await db.landingSection.update({ where: { key }, data: { sortOrder: i + 1 } });
+    }
+  }
+
   // Mais pontos de compra ao longo da página
   for (const key of ["benefits", "how_it_works", "gallery", "audience_adults", "models_included"]) {
     await db.landingSection.updateMany({ where: { key, ctaLabel: null }, data: { ctaLabel: "Ver kits e preços", ctaTarget: "#kits" } });
