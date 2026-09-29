@@ -13,6 +13,7 @@ import { canTransition } from "@/lib/order-status";
 import { classifyChannel, parseUserAgent } from "@/utils/channel";
 import { linkSessionToCustomer, trackServerEvent } from "@/lib/analytics";
 import { sendCapiEvent, fbcFromClickId } from "@/lib/meta/capi";
+import { cancelScheduled, onOrderPaidEmail, onPixGeneratedEmail } from "@/lib/email";
 import { quoteCart } from "@/server/cart";
 import { isSellable } from "@/server/catalog";
 import { getSettingsFresh, isOn, settingInt } from "@/server/settings";
@@ -282,6 +283,7 @@ export async function ensurePix(orderId: string): Promise<Order> {
       await logOrderEvent(order.id, "payment_response", "PIX gerado", { transaction_id: charge.transactionId, status: charge.status, expires_at: charge.expiresAt }, "PIX_GENERATED");
       await trackServerEvent(order, "pix_generated", { valueCents: order.totalCents, productId: main?.productId });
       await trackServerEvent(order, "payment_pending", { valueCents: order.totalCents });
+      await onPixGeneratedEmail(order.id, order.customer.email).catch((e) => log.error("email", "falha ao agendar lembrete", { error: e instanceof Error ? e.message : String(e) }));
     }
     return db.order.findUniqueOrThrow({ where: { id: order.id } });
   } catch (err) {
@@ -377,6 +379,7 @@ export async function applyPaymentSnapshot(
   log.info("payment", "status alterado", { order: order.orderNumber, from: order.status, to: mapped.order, source });
 
   if (mapped.order === "PAID") await onPaid(order.id);
+  if (mapped.order === "EXPIRED" || mapped.order === "FAILED") await cancelScheduled(order.id, "PIX_RECOVERY", `Pedido ${mapped.order}`);
   if (mapped.order === "EXPIRED") await trackServerEvent(order, "checkout_abandoned", { valueCents: order.totalCents, props: { reason: "pix_expired" } });
 
   const updated = await db.order.findUnique({ where: { id: order.id } });
@@ -386,6 +389,9 @@ export async function applyPaymentSnapshot(
 /** Efeitos colaterais do pagamento confirmado — protegidos contra execução dupla. */
 async function onPaid(orderId: string) {
   const order = await db.order.findUniqueOrThrow({ where: { id: orderId }, include: { customer: true, items: { include: { product: true } } } });
+
+  // E-mail de confirmação (e cancela o lembrete de PIX)
+  await onOrderPaidEmail(order.id, order.customer.email).catch((e) => log.error("email", "falha na confirmação", { error: e instanceof Error ? e.message : String(e) }));
 
   // Acesso digital (modelos, biblioteca)
   for (const item of order.items.filter((i) => i.fulfillment !== "PHYSICAL")) {

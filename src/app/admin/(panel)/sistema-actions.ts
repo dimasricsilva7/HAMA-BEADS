@@ -18,11 +18,12 @@ const VALIDATORS: Record<string, (v: string) => string | null> = {
   theme_background: (v) => (HEX.test(v) ? null : "Cor de fundo inválida"),
   meta_pixel_id: (v) => (!v || v.split(/[\s,;]+/).filter(Boolean).every((x) => /^\d{5,20}$/.test(x)) ? null : "IDs do Meta Pixel: só números, separados por vírgula"),
   ga_id: (v) => (!v || /^G-[A-Z0-9]{4,15}$/.test(v) ? null : "ID do GA4 no formato G-XXXXXXX"),
+  email_recovery_delay_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 1440 ? null : "Tempo do lembrete entre 1 e 1440 minutos"),
   shipping_flat_cents: (v) => (/^\d{1,7}$/.test(v) ? null : "Frete inválido"),
   pix_expiration_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 5 && Number(v) <= 1440 ? null : "Validade do PIX entre 5 e 1440 minutos"),
 };
 const URL_KEYS = ["logo_url", "favicon_url", "og_image_url", "instagram_url", "tiktok_url", "facebook_url", "youtube_url"];
-const BOOL_KEYS = ["sticky_cta_enabled", "require_cpf", "meta_pixel_enabled", "meta_capi_enabled", "ga_enabled", "cookie_banner_enabled"];
+const BOOL_KEYS = ["email_confirmation_enabled", "email_recovery_enabled", "email_shipping_enabled", "sticky_cta_enabled", "require_cpf", "meta_pixel_enabled", "meta_capi_enabled", "ga_enabled", "cookie_banner_enabled"];
 
 /** Salva somente as chaves presentes no formulário (cada aba envia as suas). */
 export async function saveSettings(_: ActionResult, fd: FormData): Promise<ActionResult> {
@@ -107,5 +108,24 @@ export async function changeOwnPassword(_: ActionResult, fd: FormData): Promise<
     await db.adminUser.update({ where: { id: admin.id }, data: { passwordHash: await hashPassword(next) } });
     await audit(admin.id, "password_changed", "adminUser", admin.id, { summary: "Senha alterada" });
     return { ok: true, message: "Senha alterada." };
+  });
+}
+
+/** Envia um e-mail de teste (confirmação de compra com dados de exemplo) para o admin logado. */
+export async function sendTestEmail(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  return withAdmin("ADMIN", async (admin) => {
+    const { deliver, emailProvider } = await import("@/lib/email/provider");
+    const { brandFromSettings } = await import("@/lib/email");
+    const { purchaseConfirmationEmail, pixRecoveryEmail } = await import("@/emails/templates");
+    const { getSettingsFresh } = await import("@/server/settings");
+    const { siteUrl } = await import("@/lib/env");
+    const { SAMPLE_ORDER } = await import("@/emails/sample");
+    if (emailProvider() === "none") return { error: "Configure RESEND_API_KEY e EMAIL_FROM na Vercel para enviar e-mails." };
+    const b = brandFromSettings(await getSettingsFresh());
+    const url = `${siteUrl()}/pedido/${SAMPLE_ORDER.orderNumber}?t=exemplo`;
+    const tpl = String(fd.get("type")) === "PIX_RECOVERY" ? pixRecoveryEmail(b, SAMPLE_ORDER, url) : purchaseConfirmationEmail(b, SAMPLE_ORDER, url);
+    const r = await deliver({ to: admin.email, subject: `[TESTE] ${tpl.subject}`, html: tpl.html, text: tpl.text });
+    await audit(admin.id, "email_test", "settings", null, { summary: `E-mail de teste para ${admin.email}: ${r.ok ? "enviado" : r.error}` });
+    return r.ok ? { ok: true, message: `E-mail de teste enviado para ${admin.email}.` } : { error: r.error };
   });
 }

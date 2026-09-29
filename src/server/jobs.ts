@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { log } from "@/lib/log";
 import { reconcilePendingOrders } from "@/server/orders";
+import { processDueEmails } from "@/lib/email";
 import { retryFailedWebhooks } from "@/server/webhooks";
 
 /** Trava distribuída simples via banco — evita dois processadores simultâneos. */
@@ -39,11 +40,17 @@ export async function runCleanupJobs() {
   });
 }
 
+/** Envia e-mails agendados vencidos (lembrete de PIX etc.). */
+export async function runEmailJobs() {
+  return withLock("emails", 5 * 60_000, () => processDueEmails(30));
+}
+
 export async function runAllJobs() {
   const started = Date.now();
   const reconcile = await runReconcileJobs();
+  const emails = await runEmailJobs();
   const cleanup = await runCleanupJobs();
-  const result = { ms: Date.now() - started, reconcile, cleanup };
+  const result = { ms: Date.now() - started, reconcile, emails, cleanup };
   log.info("cron", "jobs executados", result);
   return result;
 }
@@ -54,6 +61,7 @@ export async function maybeReconcileOpportunistically() {
   if (Date.now() - lastOpportunistic < 60_000) return;
   lastOpportunistic = Date.now();
   try {
+    await runEmailJobs();
     await runReconcileJobs();
   } catch (err) {
     log.error("cron", "reconciliação oportunista falhou", { error: err instanceof Error ? err.message : String(err) });

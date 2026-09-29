@@ -10,6 +10,8 @@ import { withAdmin, type ActionResult } from "@/server/admin/guard";
 import { optStr, str } from "@/server/admin/forms";
 import { logOrderEvent, syncOrder } from "@/server/orders";
 import { handleBravopayWebhook } from "@/server/webhooks";
+import { EMAIL_TYPE_LABEL, onOrderShippedEmail, resendEmail } from "@/lib/email";
+import type { EmailType } from "@prisma/client";
 
 const FULFILLMENT = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
 
@@ -41,7 +43,12 @@ export async function updateFulfillment(_: ActionResult, fd: FormData): Promise<
     after: { status: updated.status, trackingCode: updated.trackingCode, notes: updated.notes },
   });
   revalidatePath(`/admin/pedidos/${id}`);
-  return { ok: true, message: "Pedido atualizado." };
+  let emailNote = "";
+  if (next === "SHIPPED" && order.status !== "SHIPPED") {
+    await onOrderShippedEmail(id).catch(() => null);
+    emailNote = " Aviso de envio disparado ao cliente (se ativo em Configurações → E-mails).";
+  }
+  return { ok: true, message: `Pedido atualizado.${emailNote}` };
   });
 }
 
@@ -93,5 +100,19 @@ export async function simulatePayment(_: ActionResult, fd: FormData): Promise<Ac
   await audit(admin.id, "payment_simulated", "order", order.id, { summary: `Pagamento simulado (modo teste) ${order.orderNumber}` });
   revalidatePath(`/admin/pedidos/${order.id}`);
   return result.status === 200 ? { ok: true, message: "Webhook simulado processado." } : { error: `Falha: ${JSON.stringify(result.body)}` };
+  });
+}
+
+/** Reenvio manual de e-mail pelo admin (confirmação, lembrete de PIX ou aviso de envio). */
+export async function resendEmailAction(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  return withAdmin("EDITOR", async (admin) => {
+    const id = str(fd, "id", 40);
+    const type = str(fd, "type", 30) as EmailType;
+    if (!(type in EMAIL_TYPE_LABEL)) return { error: "Tipo de e-mail inválido." };
+    const order = await db.order.findUniqueOrThrow({ where: { id }, include: { customer: { select: { email: true } } } });
+    const r = await resendEmail(id, type, admin.id);
+    await audit(admin.id, "email_resent", "order", id, { summary: `${EMAIL_TYPE_LABEL[type]} — pedido ${order.orderNumber} para ${order.customer.email}: ${r.ok ? "enviado" : r.error}` });
+    revalidatePath(`/admin/pedidos/${id}`);
+    return r.ok ? { ok: true, message: `${EMAIL_TYPE_LABEL[type]} enviado para ${order.customer.email}.` } : { error: r.error };
   });
 }

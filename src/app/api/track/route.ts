@@ -8,6 +8,7 @@ import { clientContextSchema } from "@/lib/validation";
 import { TRACKED_EVENTS } from "@/lib/domain";
 import { log } from "@/lib/log";
 import { parseUserAgent } from "@/utils/channel";
+import { maybeReconcileOpportunistically } from "@/server/jobs";
 
 export const dynamic = "force-dynamic";
 
@@ -88,5 +89,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     log.error("track", "erro ao registrar eventos", { error: err instanceof Error ? err.message : String(err) });
   }
+  // Tráfego da loja também dispara (no máx. 1x/min por instância) e-mails agendados e reconciliação
+  after(() => maybeReconcileOpportunistically());
   return new NextResponse(null, { status: 204 });
 }

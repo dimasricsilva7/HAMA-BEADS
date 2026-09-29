@@ -3,7 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { safeEqual } from "@/lib/crypto";
 import { db } from "@/lib/db";
 import { log } from "@/lib/log";
-import { runAllJobs, runCleanupJobs, runReconcileJobs } from "@/server/jobs";
+import { runAllJobs, runCleanupJobs, runEmailJobs, runReconcileJobs } from "@/server/jobs";
 import { migrateFromLegacy, resetAdminFromEnv } from "@/server/maintenance";
 import { applyCatalogV2 } from "@/server/data/catalog-v2";
 
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ job:
     all: runAllJobs,
     reconcile: runReconcileJobs,
     cleanup: runCleanupJobs,
+    emails: runEmailJobs,
     "migrate-legacy": async () => {
       const r = await migrateFromLegacy(db, process.env.LEGACY_DATABASE_URL, force);
       refreshAll();

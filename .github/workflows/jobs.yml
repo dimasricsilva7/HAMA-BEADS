@@ -1,11 +1,11 @@
-# Reconciliação de PIX pendentes, expiração e reprocessamento de webhooks a cada 10 min.
+# E-mails agendados (lembrete de PIX), reconciliação de PIX pendentes, expiração e webhooks a cada 5 min.
 # Complementa o Vercel Cron (diário no plano Hobby). Secrets do repositório:
 #   SITE_URL    → ex.: https://hama-beads-sepia.vercel.app
 #   CRON_SECRET → mesmo valor da variável CRON_SECRET na Vercel
 name: jobs
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 permissions: {}
 jobs:

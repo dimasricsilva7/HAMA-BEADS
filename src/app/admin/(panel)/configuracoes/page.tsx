@@ -5,12 +5,13 @@ import { MediaInput } from "@/components/admin/inputs";
 import { bravopayMode, envHealth, siteUrl } from "@/lib/env";
 import { db } from "@/lib/db";
 import { getSettingsFresh } from "@/server/settings";
-import { saveSettings, saveTemplate } from "../sistema-actions";
+import { saveSettings, saveTemplate, sendTestEmail } from "../sistema-actions";
+import { emailProvider } from "@/lib/email/provider";
 
 export const metadata = { title: "Configurações" };
 type SP = Promise<{ aba?: string }>;
 
-const TABS = { loja: "Loja", aparencia: "Aparência e layout", checkout: "Checkout", rastreamento: "Pixels e analytics", seo: "SEO", politicas: "Políticas", mensagens: "Mensagens", sistema: "Sistema" } as const;
+const TABS = { loja: "Loja", aparencia: "Aparência e layout", checkout: "Checkout", rastreamento: "Pixels e analytics", seo: "SEO", politicas: "Políticas", emails: "E-mails", mensagens: "Mensagens (WhatsApp)", sistema: "Sistema" } as const;
 
 export default async function SettingsPage({ searchParams }: { searchParams: SP }) {
   const tab = ((await searchParams).aba ?? "loja") as keyof typeof TABS;
@@ -155,6 +156,39 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
         </Card>
       )}
 
+      {tab === "emails" && (
+        <div className="space-y-6">
+          <Card title="E-mails automáticos (Resend)">
+            <p className="mb-4 text-sm">
+              Status:{" "}
+              {emailProvider() === "resend" ? <Badge tone="green">ativo — enviando por {process.env.EMAIL_FROM}</Badge> : <Badge tone="red">desativado — defina RESEND_API_KEY e EMAIL_FROM na Vercel</Badge>}
+            </p>
+            {form(
+              ["email_confirmation_enabled", "email_recovery_enabled", "email_recovery_delay_minutes", "email_shipping_enabled"],
+              <div className="space-y-3">
+                {check("email_confirmation_enabled", "Confirmação de compra — enviada assim que o pagamento é aprovado")}
+                {check("email_recovery_enabled", "Lembrete de PIX pendente (carrinho abandonado) — cancelado automaticamente se o cliente pagar antes")}
+                <Field label="Enviar o lembrete após (minutos)" hint="Padrão 10. O PIX expira conforme Configurações → Checkout; o lembrete não é enviado se o PIX já tiver expirado.">
+                  <input name="email_recovery_delay_minutes" inputMode="numeric" defaultValue={s.email_recovery_delay_minutes} className={`${inputCls} max-w-[140px]`} />
+                </Field>
+                {check("email_shipping_enabled", "Aviso de envio com código de rastreio — ao marcar o pedido como Enviado")}
+              </div>
+            )}
+          </Card>
+          <Card title="Prévia e teste">
+            <p className="text-sm text-slate-600">Os templates usam o logo, as cores e os contatos das outras abas.</p>
+            <p className="mt-2 flex flex-wrap gap-3 text-sm">
+              <a className="font-semibold underline" target="_blank" href="/api/admin/email-preview?type=PURCHASE_CONFIRMATION">Confirmação de compra</a>
+              <a className="font-semibold underline" target="_blank" href="/api/admin/email-preview?type=PIX_RECOVERY">Lembrete de PIX</a>
+              <a className="font-semibold underline" target="_blank" href="/api/admin/email-preview?type=ORDER_SHIPPED">Pedido enviado</a>
+            </p>
+            <ActionForm action={sendTestEmail} className="mt-4 flex flex-wrap items-center gap-2">
+              <select name="type" className={`${inputCls} w-auto`} aria-label="Template"><option value="PURCHASE_CONFIRMATION">Confirmação de compra</option><option value="PIX_RECOVERY">Lembrete de PIX</option></select>
+              <SubmitButton pendingText="Enviando…">Enviar teste para o meu e-mail</SubmitButton>
+            </ActionForm>
+          </Card>
+        </div>
+      )}
       {tab === "mensagens" && <TemplatesTab />}
       {tab === "sistema" && <SystemTab />}
     </div>

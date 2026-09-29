@@ -6,7 +6,9 @@ import { ORDER_STATUS_LABEL, isAwaitingStatus, isPaidStatus } from "@/lib/domain
 import { bravopayMode, isProductionDeploy, siteUrl } from "@/lib/env";
 import { db } from "@/lib/db";
 import { formatBRL, formatCep, formatCpf, formatDate, formatPhone } from "@/utils/format";
-import { cancelOrder, recheckPayment, simulatePayment, updateFulfillment } from "../actions";
+import { cancelOrder, recheckPayment, resendEmailAction, simulatePayment, updateFulfillment } from "../actions";
+import { EMAIL_TYPE_LABEL } from "@/lib/email";
+import { emailProvider } from "@/lib/email/provider";
 
 export const metadata = { title: "Pedido" };
 
@@ -22,6 +24,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       upsellOrders: { select: { id: true, orderNumber: true, status: true, totalCents: true } },
       parentOrder: { select: { id: true, orderNumber: true } },
       upsellEvents: { include: { upsell: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
+      emailEvents: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!order) notFound();
@@ -148,6 +151,37 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               )}
             </div>
             <p className="mt-3 text-xs text-slate-500">Reembolso: a API da BravoPay não documenta reembolso — faça pelo painel BravoPay; o webhook transaction.refunded atualiza o pedido.</p>
+          </Card>
+
+          <Card title="E-mails">
+            {emailProvider() === "none" && <p className="mb-3 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">Envio desativado: configure RESEND_API_KEY e EMAIL_FROM na Vercel. Os e-mails ficam agendados e saem quando a chave for configurada.</p>}
+            {order.emailEvents.length ? (
+              <ul className="space-y-1.5 text-sm">
+                {order.emailEvents.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <b className="font-medium">{EMAIL_TYPE_LABEL[e.type]}</b>
+                    <Badge tone={e.status === "SENT" ? "green" : e.status === "FAILED" ? "red" : e.status === "SCHEDULED" ? "amber" : "slate"}>{e.status === "SENT" ? "enviado" : e.status === "SCHEDULED" ? "agendado" : e.status === "FAILED" ? "falhou" : e.status === "CANCELLED" ? "cancelado" : e.status === "SKIPPED" ? "não enviado" : "enviando"}</Badge>
+                    <span className="text-xs text-slate-500">{e.sentAt ? formatDate(e.sentAt, true) : e.status === "SCHEDULED" ? `para ${formatDate(e.scheduledFor, true)}` : formatDate(e.updatedAt, true)}{e.triggeredBy.startsWith("admin") ? " · manual" : ""}</span>
+                    {e.error && e.status !== "SENT" && <span className="w-full text-xs text-slate-500">{e.error}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-500">Nenhum e-mail ainda.</p>
+            )}
+            <ActionForm action={resendEmailAction} className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+              <input type="hidden" name="id" value={order.id} />
+              <select name="type" defaultValue={isPaidStatus(order.status) ? "PURCHASE_CONFIRMATION" : "PIX_RECOVERY"} className={`${inputCls} w-auto flex-1`} aria-label="Tipo de e-mail">
+                {Object.entries(EMAIL_TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <SubmitButton pendingText="Enviando…">Reenviar e-mail</SubmitButton>
+            </ActionForm>
+            <p className="mt-2 text-xs text-slate-500">
+              Para: {order.customer.email} · Prévia:{" "}
+              {Object.entries(EMAIL_TYPE_LABEL).map(([k, v], i) => (
+                <span key={k}>{i > 0 && " · "}<a href={`/api/admin/email-preview?order=${order.id}&type=${k}`} target="_blank" className="underline">{v.split(" ")[0]}{k === "PIX_RECOVERY" ? " PIX" : ""}</a></span>
+              ))}
+            </p>
           </Card>
 
           {isPaidStatus(order.status) && (

@@ -35,6 +35,8 @@ export function envHealth(): EnvCheck[] {
     { key: "BRAVOPAY_WEBHOOK_SECRET", ok: has("BRAVOPAY_WEBHOOK_SECRET"), required: true, hint: "Segredo do webhook BravoPay" },
     { key: "BRAVOPAY_PRODUCT_ID", ok: has("BRAVOPAY_PRODUCT_ID"), required: false, hint: "ID do produto BravoPay (atribuição UTMify)" },
     { key: "CRON_SECRET", ok: has("CRON_SECRET"), required: true, hint: "Protege os endpoints de jobs" },
+    { key: "RESEND_API_KEY", ok: has("RESEND_API_KEY"), required: true, hint: "Resend — e-mails de confirmação e lembrete de PIX" },
+    { key: "EMAIL_FROM", ok: has("EMAIL_FROM"), required: true, hint: "Remetente, ex.: Hama Beads <pedidos@hamabeads.site>" },
     { key: "BLOB_READ_WRITE_TOKEN", ok: has("BLOB_READ_WRITE_TOKEN"), required: true, hint: "Vercel Blob (upload de imagens e vídeos)" },
     { key: "ADMIN_EMAIL", ok: has("ADMIN_EMAIL"), required: false, hint: "Bootstrap do primeiro admin" },
     { key: "META_CAPI_TOKENS", ok: has("META_CAPI_TOKENS") || has("META_ACCESS_TOKEN"), required: false, hint: "Meta Conversions API — pixelId:token por pixel (ou META_ACCESS_TOKEN)" },

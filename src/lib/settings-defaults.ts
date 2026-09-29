@@ -38,6 +38,11 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   pix_expiration_minutes: "30",
   checkout_note: "",
   marketing_consent_label: "Aceito receber novidades e lembretes sobre meu pedido por WhatsApp e e-mail.",
+  // E-mails transacionais (Resend)
+  email_confirmation_enabled: "true",
+  email_recovery_enabled: "true",
+  email_recovery_delay_minutes: "10",
+  email_shipping_enabled: "true",
   // Rastreamento
   meta_pixel_enabled: "true",
   meta_pixel_id: "",

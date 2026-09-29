@@ -15,6 +15,10 @@ Nada abaixo foi inventado; tudo é configurável no admin.
 - Pegboard LED com app (R$ 98,59; oferta no checkout por R$ 39,43 com modal) e tecido térmico como bônus em todos os kits
 - Número do pedido aleatório no formato HB12345-2026
 
+## E-mails (30/09/2026)
+- Pronto: confirmação de compra (na aprovação do pagamento), lembrete de PIX pendente (10 min, cancelado se pagar), aviso de envio com rastreio, reenvio no pedido (admin), prévia e teste em Configurações → E-mails
+- [ ] **Criar a API key na Resend e cadastrar RESEND_API_KEY na Vercel** (EMAIL_FROM já configurado: pedidos@hamabeads.site)
+
 ## Confirmar
 - [ ] Foto real do Pegboard LED (hoje é ilustração) — Produtos → Pegboard LED
 - [ ] Preço de R$ 98,59 do Pegboard LED como preço real de venda avulsa (base do "60% de desconto")
