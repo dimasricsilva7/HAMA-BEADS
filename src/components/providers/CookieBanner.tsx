@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getConsent, setConsent, track } from "@/lib/client/tracking";
 
 /** Consentimento de cookies de medição/marketing (LGPD). Cookies essenciais não dependem dele. */
 export function CookieBanner() {
   const [show, setShow] = useState(false);
+  const pathname = usePathname();
   useEffect(() => setShow(getConsent() === null), []);
-  if (!show) return null;
+  // No checkout e na página do PIX o banner não cobre o botão de pagamento (sem resposta = marketing desligado)
+  if (!show || pathname.startsWith("/checkout") || pathname.startsWith("/pedido")) return null;
   const choose = (v: "granted" | "denied") => {
     setConsent(v);
     track("cookie_consent", { props: { choice: v } });

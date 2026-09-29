@@ -1,0 +1,213 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Badge, Card, Field, PageHeader, ORDER_TONE, inputCls, textareaCls, btnSecondary } from "@/components/admin/ui";
+import { ActionForm, ConfirmAction, SubmitButton } from "@/components/admin/client";
+import { ORDER_STATUS_LABEL, isAwaitingStatus, isPaidStatus } from "@/lib/domain";
+import { bravopayMode, isProductionDeploy, siteUrl } from "@/lib/env";
+import { db } from "@/lib/db";
+import { formatBRL, formatCep, formatCpf, formatDate, formatPhone } from "@/utils/format";
+import { cancelOrder, recheckPayment, simulatePayment, updateFulfillment } from "../actions";
+
+export const metadata = { title: "Pedido" };
+
+export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const order = await db.order.findUnique({
+    where: { id },
+    include: {
+      customer: true,
+      items: { include: { digitalAccess: true } },
+      payments: true,
+      paymentEvents: { orderBy: { createdAt: "asc" } },
+      upsellOrders: { select: { id: true, orderNumber: true, status: true, totalCents: true } },
+      parentOrder: { select: { id: true, orderNumber: true } },
+      upsellEvents: { include: { upsell: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
+    },
+  });
+  if (!order) notFound();
+  const [webhooks, events] = await Promise.all([
+    db.webhookEvent.findMany({ where: { OR: [{ orderId: order.id }, ...(order.transactionId ? [{ transactionId: order.transactionId }] : [])] }, orderBy: { receivedAt: "asc" } }),
+    order.sessionId ? db.analyticsEvent.findMany({ where: { sessionId: order.sessionId }, orderBy: { createdAt: "asc" }, take: 150, select: { id: true, name: true, element: true, path: true, createdAt: true, valueCents: true } }) : Promise.resolve([]),
+  ]);
+  const addr = order.shippingAddress as { cep?: string; street?: string; number?: string; complement?: string | null; district?: string; city?: string; state?: string } | null;
+  const snap = order.customerSnapshot as { name?: string; cpf?: string | null };
+  const mock = bravopayMode() === "mock" && !isProductionDeploy();
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={`Pedido ${order.orderNumber}`}
+        description={`Criado em ${formatDate(order.createdAt, true)}${order.source === "UPSELL" ? " · pedido complementar (upsell)" : ""}`}
+        actions={<Badge tone={ORDER_TONE[order.status] ?? "slate"}>{ORDER_STATUS_LABEL[order.status]}</Badge>}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-6">
+          <Card title="Itens (snapshot da compra)">
+            <ul className="divide-y divide-slate-100 text-sm">
+              {order.items.map((i) => (
+                <li key={i.id} className="flex justify-between gap-4 py-2.5">
+                  <div>
+                    <p className="font-medium">{i.quantity}× {i.productName} {i.kind !== "PRODUCT" && <Badge tone="blue">{i.kind === "ORDER_BUMP" ? "order bump" : i.kind === "UPSELL" ? "upsell" : "cross-sell"}</Badge>}</p>
+                    <p className="text-xs text-slate-500">SKU {i.sku} · {i.fulfillment}{i.listPriceCents !== i.unitPriceCents ? ` · preço de tabela ${formatBRL(i.listPriceCents)}` : ""}</p>
+                    {i.digitalAccess.map((a) => (
+                      <p key={a.id} className="text-xs text-slate-500">Acesso digital: {a.downloads}{a.maxDownloads != null ? `/${a.maxDownloads}` : ""} downloads{a.expiresAt ? ` · expira ${formatDate(a.expiresAt)}` : ""}</p>
+                    ))}
+                  </div>
+                  <p className="shrink-0 tabular-nums">{formatBRL(i.unitPriceCents)} · <b>{formatBRL(i.totalPriceCents)}</b></p>
+                </li>
+              ))}
+            </ul>
+            <dl className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-sm">
+              <div className="flex justify-between"><dt className="text-slate-500">Subtotal</dt><dd>{formatBRL(order.subtotalCents)}</dd></div>
+              {order.discountCents > 0 && <div className="flex justify-between"><dt className="text-slate-500">Desconto {order.couponCode && `(${order.couponCode})`}</dt><dd>− {formatBRL(order.discountCents)}</dd></div>}
+              {order.shippingCents > 0 && <div className="flex justify-between"><dt className="text-slate-500">Frete</dt><dd>{formatBRL(order.shippingCents)}</dd></div>}
+              <div className="flex justify-between font-bold"><dt>Total</dt><dd>{formatBRL(order.totalCents)}</dd></div>
+              {order.paidAmountCents != null && <div className="flex justify-between text-emerald-700"><dt>Pago</dt><dd>{formatBRL(order.paidAmountCents)}{order.feeCents != null && ` · taxa ${formatBRL(order.feeCents)} · líquido ${formatBRL(order.netCents ?? 0)}`}</dd></div>}
+            </dl>
+          </Card>
+
+          <Card title="Linha do tempo">
+            <ol className="space-y-2 text-sm">
+              {order.paymentEvents.map((e) => (
+                <li key={e.id} className="flex gap-3">
+                  <span className="w-32 shrink-0 text-xs text-slate-400">{formatDate(e.createdAt, true)}</span>
+                  <span><b className="font-medium">{e.message}</b> <span className="text-xs text-slate-400">{e.type}</span></span>
+                </li>
+              ))}
+            </ol>
+          </Card>
+
+          <Card title={`Webhooks (${webhooks.length})`}>
+            {webhooks.length ? (
+              <ul className="space-y-1 text-sm">
+                {webhooks.map((w) => (
+                  <li key={w.id} className="flex flex-wrap gap-2">
+                    <span className="text-xs text-slate-400">{formatDate(w.receivedAt, true)}</span>
+                    <b className="font-medium">{w.eventType}</b>
+                    <Badge tone={w.status === "PROCESSED" ? "green" : w.status === "FAILED" ? "red" : "slate"}>{w.status}</Badge>
+                    <span className="text-xs text-slate-500">{w.previousStatus} → {w.newStatus} · {w.result} · {w.attempts} tentativa(s)</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-500">Nenhum webhook recebido.</p>
+            )}
+          </Card>
+
+          {events.length > 0 && (
+            <Card title="Jornada da sessão (eventos)">
+              <ol className="max-h-80 space-y-1 overflow-y-auto text-xs">
+                {events.map((e) => (
+                  <li key={e.id} className="flex gap-3">
+                    <span className="w-28 shrink-0 text-slate-400">{formatDate(e.createdAt, true)}</span>
+                    <span className="font-medium">{e.name}</span>
+                    <span className="truncate text-slate-500">{e.element ?? e.path}</span>
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <Card title="Cliente">
+            <dl className="space-y-1.5 text-sm">
+              <div><dt className="inline text-slate-500">Nome: </dt><dd className="inline"><Link href={`/admin/clientes/${order.customerId}`} className="font-medium underline">{snap.name ?? order.customer.name}</Link></dd></div>
+              <div><dt className="inline text-slate-500">E-mail: </dt><dd className="inline">{order.customer.email}</dd></div>
+              <div><dt className="inline text-slate-500">WhatsApp: </dt><dd className="inline">{formatPhone(order.customer.phone)}</dd></div>
+              {snap.cpf && <div><dt className="inline text-slate-500">CPF: </dt><dd className="inline">{formatCpf(snap.cpf)}</dd></div>}
+              <div><dt className="inline text-slate-500">Opt-in marketing: </dt><dd className="inline">{order.customer.marketingConsent ? "sim" : "não"}</dd></div>
+            </dl>
+            {addr && (
+              <p className="mt-3 border-t border-slate-100 pt-3 text-sm">
+                {addr.street}, {addr.number}{addr.complement ? ` — ${addr.complement}` : ""}<br />
+                {addr.district} · {addr.city}/{addr.state} · {addr.cep && formatCep(addr.cep)}
+              </p>
+            )}
+          </Card>
+
+          <Card title="Pagamento">
+            <dl className="space-y-1.5 text-sm">
+              <div><dt className="inline text-slate-500">Método: </dt><dd className="inline">{order.paymentMethod} · {order.paymentProvider}</dd></div>
+              <div><dt className="inline text-slate-500">Transação: </dt><dd className="inline break-all font-mono text-xs">{order.transactionId ?? "—"}</dd></div>
+              <div><dt className="inline text-slate-500">PIX expira: </dt><dd className="inline">{order.pixExpiresAt ? formatDate(order.pixExpiresAt, true) : "—"}</dd></div>
+              <div><dt className="inline text-slate-500">Pago em: </dt><dd className="inline">{order.paidAt ? formatDate(order.paidAt, true) : "—"}</dd></div>
+              {order.paymentError && <div className="text-red-600">Último erro: {order.paymentError}</div>}
+            </dl>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {order.transactionId && isAwaitingStatus(order.status) && (
+                <ActionForm action={recheckPayment} className="contents">
+                  <input type="hidden" name="id" value={order.id} />
+                  <SubmitButton className={btnSecondary} pendingText="Consultando…">Consultar BravoPay</SubmitButton>
+                </ActionForm>
+              )}
+              {isAwaitingStatus(order.status) && <ConfirmAction action={cancelOrder} label="Cancelar pedido" danger description="O PIX gerado deixará de ser considerado. Esta ação fica registrada na auditoria." hidden={{ id: order.id }} />}
+              {mock && order.transactionId && isAwaitingStatus(order.status) && (
+                <ConfirmAction action={simulatePayment} label="Simular pagamento (teste)" description="Envia um webhook assinado transaction.paid (somente modo de teste)." hidden={{ id: order.id }} />
+              )}
+            </div>
+            <p className="mt-3 text-xs text-slate-500">Reembolso: a API da BravoPay não documenta reembolso — faça pelo painel BravoPay; o webhook transaction.refunded atualiza o pedido.</p>
+          </Card>
+
+          {isPaidStatus(order.status) && (
+            <Card title="Entrega">
+              <ActionForm action={updateFulfillment}>
+                <input type="hidden" name="id" value={order.id} />
+                <Field label="Status">
+                  <select name="status" defaultValue={order.status} className={inputCls}>
+                    {(["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] as const).map((s) => <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>)}
+                  </select>
+                </Field>
+                <Field label="Código de rastreio"><input name="trackingCode" defaultValue={order.trackingCode ?? ""} className={inputCls} /></Field>
+                <Field label="Observações internas"><textarea name="notes" defaultValue={order.notes ?? ""} rows={3} className={textareaCls} /></Field>
+                <SubmitButton>Salvar</SubmitButton>
+              </ActionForm>
+            </Card>
+          )}
+
+          <Card title="Origem">
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+              {[
+                ["Canal", order.channel],
+                ["Dispositivo", order.device],
+                ["utm_source", order.utmSource],
+                ["utm_medium", order.utmMedium],
+                ["utm_campaign", order.utmCampaign],
+                ["utm_content", order.utmContent],
+                ["utm_term", order.utmTerm],
+                ["1º toque", [order.firstTouchSource, order.firstTouchCampaign].filter(Boolean).join(" / ")],
+                ["fbclid", order.fbclid ? "sim" : null],
+                ["gclid", order.gclid ? "sim" : null],
+                ["ttclid", order.ttclid ? "sim" : null],
+                ["Landing", order.landingPage],
+                ["Referrer", order.referrer],
+                ["Testes A/B", order.experiments ? JSON.stringify(order.experiments) : null],
+              ].map(([k, v]) => (
+                <div key={k as string} className="contents">
+                  <dt className="text-slate-500">{k}</dt>
+                  <dd className="truncate" title={String(v ?? "")}>{v || "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+
+          {(order.parentOrder || order.upsellOrders.length > 0 || order.upsellEvents.length > 0) && (
+            <Card title="Upsells">
+              {order.parentOrder && <p className="text-sm">Pedido principal: <Link href={`/admin/pedidos/${order.parentOrder.id}`} className="underline">{order.parentOrder.orderNumber}</Link></p>}
+              <ul className="space-y-1 text-sm">
+                {order.upsellEvents.map((e) => (
+                  <li key={e.id}>{formatDate(e.createdAt, true)} · {e.upsell.name}: <b>{e.action === "VIEW" ? "exibido" : e.action === "ACCEPT" ? "aceito" : "recusado"}</b></li>
+                ))}
+                {order.upsellOrders.map((u) => (
+                  <li key={u.id}>Pedido complementar <Link href={`/admin/pedidos/${u.id}`} className="underline">{u.orderNumber}</Link> · {formatBRL(u.totalCents)} · {ORDER_STATUS_LABEL[u.status]}</li>
+                ))}
+              </ul>
+            </Card>
+          )}
+          <p className="text-xs text-slate-500">Link do cliente: <span className="break-all font-mono">{siteUrl()}/pedido/{order.orderNumber}?t=…</span></p>
+        </div>
+      </div>
+    </div>
+  );
+}

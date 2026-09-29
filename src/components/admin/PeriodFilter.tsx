@@ -6,8 +6,9 @@ import { useState } from "react";
 const OPTIONS = [
   { key: "today", label: "Hoje" },
   { key: "yesterday", label: "Ontem" },
-  { key: "7d", label: "Últimos 7 dias" },
-  { key: "30d", label: "Últimos 30 dias" },
+  { key: "7d", label: "7 dias" },
+  { key: "30d", label: "30 dias" },
+  { key: "month", label: "Este mês" },
   { key: "custom", label: "Personalizado" },
 ];
 

@@ -29,3 +29,26 @@ export function jsonArray<T>(fd: FormData, k: string): T[] {
 }
 
 export const centsToInput = (c: number | null | undefined) => (c == null ? "" : (c / 100).toFixed(2).replace(".", ","));
+
+/** Lista de textos vinda do StringListEditor (campo `${k}__obj`). */
+export function stringList(fd: FormData, k: string): string[] {
+  return jsonArray<{ v?: string }>(fd, `${k}__obj`)
+    .map((x) => String(x.v ?? "").trim())
+    .filter(Boolean);
+}
+
+export const pct = (v: number, digits = 1) => `${(v * 100).toFixed(digits).replace(".", ",")}%`;
+
+/** "2026-09-28T14:30" (input datetime-local, horário de Brasília) → Date */
+export function parseLocalDateTime(v: FormDataEntryValue | null): Date | null {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const d = new Date(`${s.length === 16 ? `${s}:00` : s}-03:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Date → valor para input datetime-local em horário de Brasília */
+export function toLocalInput(d: Date | null | undefined): string {
+  if (!d) return "";
+  return new Date(new Date(d).getTime() - 3 * 3600_000).toISOString().slice(0, 16);
+}

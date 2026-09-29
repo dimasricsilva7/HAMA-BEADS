@@ -8,6 +8,7 @@ import { paymentService, PaymentError, type PaymentSnapshot, type PaymentStatus 
 import { assignmentMap } from "@/lib/experiments";
 import { effectivePrice, formatOrderNumber, MIN_PIX_CENTS } from "@/lib/pricing";
 import { isPaidStatus } from "@/lib/domain";
+import { canTransition } from "@/lib/order-status";
 import { classifyChannel, parseUserAgent } from "@/utils/channel";
 import { linkSessionToCustomer, trackServerEvent } from "@/lib/analytics";
 import { sendCapiEvent, fbcFromClickId } from "@/lib/meta/capi";
@@ -294,17 +295,6 @@ const STATUS_MAP: Record<PaymentStatus, { order: OrderStatus | null; payment: Db
   FAILED: { order: "FAILED", payment: "FAILED" },
 };
 
-/** Transições permitidas por eventos de pagamento — um pedido pago nunca volta a pendente/expirado. */
-export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
-  if (from === to) return false;
-  const awaiting = from === "PENDING" || from === "PIX_GENERATED";
-  if (to === "PAID") return awaiting || from === "EXPIRED" || from === "FAILED" || from === "CANCELLED"; // pagamento tardio
-  if (to === "EXPIRED" || to === "FAILED") return awaiting;
-  if (to === "REFUNDED") return isPaidStatus(from);
-  if (to === "CHARGEBACK") return isPaidStatus(from) || from === "REFUNDED";
-  return false;
-}
-
 export type ApplyResult = { order: Order | null; previousStatus: OrderStatus | null; newStatus: OrderStatus | null; changed: boolean; note?: string };
 
 /**
@@ -551,7 +541,7 @@ export function toPublicOrder(o: AccessOrder): PublicOrder {
           i.digitalAccess
             .filter((a) => !a.revokedAt)
             .map((a) => ({
-              name: i.productName,
+              name: i.fulfillment === "HYBRID" ? `${i.productName} · modelos digitais` : i.productName,
               token: a.token,
               available: Boolean(i.product?.digitalFileUrl) && (!a.expiresAt || a.expiresAt > new Date()) && (a.maxDownloads == null || a.downloads < a.maxDownloads),
               note: i.product?.digitalDeliveryNote ?? null,

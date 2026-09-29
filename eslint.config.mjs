@@ -7,7 +7,12 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 
 const config = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
-  { ignores: [".next/**", "node_modules/**", "next-env.d.ts"] },
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_", ignoreRestSiblings: true }],
+    },
+  },
+  { ignores: [".next/**", "node_modules/**", "next-env.d.ts", "public/**"] },
 ];
 
 export default config;

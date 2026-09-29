@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 /** Nunca deixar o usuário em tela branca. */
@@ -14,7 +15,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <p className="mt-3 text-muted">Tente novamente em instantes. Se o problema continuar, fale com o nosso atendimento.</p>
       <div className="mt-6 flex gap-2">
         <button onClick={reset} className="btn-primary">Tentar novamente</button>
-        <a href="/" className="btn-light">Início</a>
+        <Link href="/" className="btn-light">Início</Link>
       </div>
     </div>
   );

@@ -59,12 +59,16 @@ export function Badge({ tone = "slate", children }: { tone?: keyof typeof TONES;
 }
 
 export const ORDER_TONE: Record<string, keyof typeof TONES> = {
+  PENDING: "amber",
+  PIX_GENERATED: "amber",
   PAID: "green",
-  PENDING_PAYMENT: "amber",
+  PROCESSING: "blue",
+  SHIPPED: "blue",
+  DELIVERED: "green",
   EXPIRED: "slate",
   CANCELLED: "slate",
   FAILED: "red",
-  REFUNDED: "blue",
+  REFUNDED: "slate",
   CHARGEBACK: "red",
 };
 
