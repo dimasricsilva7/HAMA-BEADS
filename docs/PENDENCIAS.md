@@ -9,15 +9,23 @@ Nada abaixo foi inventado; tudo é configurável no admin.
 - BravoPay: chave de API em produção
 - Meta: pixels 1110092494887723 e 1644516877230478 com Conversions API (`META_CAPI_TOKENS`)
 
+## Resolvido em 30/09/2026
+- Banco de produção migrado para o Neon da integração Vercel (dados copiados do banco temporário via `/api/cron/migrate-legacy`)
+- Webhook BravoPay com segredo configurado e validado
+- Pegboard LED com app (R$ 98,59; oferta no checkout por R$ 39,43 com modal) e tecido térmico como bônus em todos os kits
+- Número do pedido aleatório no formato HB12345-2026
+
 ## Confirmar
+- [ ] Foto real do Pegboard LED (hoje é ilustração) — Produtos → Pegboard LED
+- [ ] Preço de R$ 98,59 do Pegboard LED como preço real de venda avulsa (base do "60% de desconto")
+- [ ] Remover a variável LEGACY_DATABASE_URL na Vercel (a migração já foi feita)
+- [ ] Previews da Vercel agora usam o mesmo banco de produção (a integração Neon aplicou DATABASE_URL a preview): evite testar compras em preview
 - [ ] **Dimensões dos pegboards** — as medidas informadas (50x50 cm, 90x90 cm, 1,20x70 cm) não combinam com peças de 2,6 mm; provavelmente são número de pinos. Preencher em Produtos → Especificações.
 - [ ] Tamanho das peças: 2,6 mm (tirado do título do anúncio de referência) — confirmar
 - [ ] Biblioteca 500+ modelos (R$ 19,90): confirmar que o conteúdo existe e cadastrar o arquivo/link (Produtos → Produto digital); senão, desativar o produto e o bump/upsell
 - [ ] Arquivo/link dos 100 modelos inclusos nos kits
 
 ## Pendente
-- [ ] **Webhook BravoPay**: a URL cadastrada está incompleta. Use `https://hama-beads-sepia.vercel.app/api/webhooks/bravopay` e envie o segredo `whsec_...` para `BRAVOPAY_WEBHOOK_SECRET` (enquanto isso, a confirmação acontece por consulta à API na página do PIX e pelos jobs)
-- [ ] **Banco de produção (Neon)**: reivindicar/migrar antes de 02/10/2026 01:05 GMT
 - [ ] Fotos e vídeo reais dos kits (as imagens atuais são ilustrações marcadas como "Ilustração")
 - [ ] Avaliações reais de clientes (a seção só aparece com pelo menos uma aprovada)
 - [ ] Razão social, CNPJ, endereço, e-mail, WhatsApp, horário (Configurações → Loja)
