@@ -8,7 +8,7 @@ import { mkdirSync } from "fs";
 
 const base = process.argv[2] ?? "http://localhost:3000";
 const out = process.argv[3] ?? "screenshots";
-const paths = process.argv.slice(4).length ? process.argv.slice(4) : ["/", "/loja", "/produto/kit-profissional", "/checkout", "/acompanhar"];
+const paths = process.argv.slice(4).length ? process.argv.slice(4) : ["/", "/loja", "/produto/kit-96-cores", "/checkout", "/acompanhar"];
 const widths = (process.env.WIDTHS ?? "390,1440").split(",").map(Number);
 const full = process.env.FULL !== "0";
 

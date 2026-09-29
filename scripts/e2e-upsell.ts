@@ -31,7 +31,7 @@ async function pay(orderNumber: string) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" });
   const page = await ctx.newPage();
-  const kit = await db.product.findUniqueOrThrow({ where: { slug: "kit-inicial" } });
+  const kit = await db.product.findUniqueOrThrow({ where: { slug: "kit-24-cores" } });
   await page.goto(`${base}/?utm_source=tiktok&utm_campaign=upsell-test&ttclid=tt123`, { waitUntil: "networkidle" });
   await page.waitForTimeout(500);
   await page.evaluate((id) => localStorage.setItem("hb_cart", JSON.stringify({ items: [{ productId: id, quantity: 1 }], bumpIds: [], couponCode: null })), kit.id);
@@ -79,7 +79,8 @@ async function pay(orderNumber: string) {
     check(title !== u.title, "não repete o upsell já aceito (mostra o próximo da sequência)", title);
   } else check(true, "não repete o upsell já aceito");
   const digital = await db.digitalAccess.count({ where: { orderItem: { orderId: child.id } } });
-  check(digital > 0, "conteúdo digital do upsell liberado");
+  const physical = child.items.every((i) => i.fulfillment === "PHYSICAL");
+  check(physical ? digital === 0 : digital > 0, physical ? "upsell físico: sem acesso digital (correto)" : "conteúdo digital do upsell liberado");
 
   await browser.close();
   await db.$disconnect();

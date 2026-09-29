@@ -30,14 +30,36 @@ export const isOn = (v: string | undefined) => v === "true";
 const PIXEL_RE = /^\d{5,20}$/;
 const GA_RE = /^G-[A-Z0-9]{4,15}$/;
 
+/** Lista de pixels (até 3), separados por vírgula ou espaço. */
+export function parsePixelIds(raw: string | undefined): string[] {
+  return [...new Set((raw ?? "").split(/[\s,;]+/).map((v) => v.trim()).filter((v) => PIXEL_RE.test(v)))].slice(0, 3);
+}
+
+/**
+ * Tokens da Conversions API por pixel (somente servidor):
+ *   META_CAPI_TOKENS="pixelId:token,pixelId:token"  (um token por pixel)
+ *   META_ACCESS_TOKEN=token                          (fallback para qualquer pixel sem token próprio)
+ */
+export function capiTokens(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const pair of (process.env.META_CAPI_TOKENS ?? "").split(",")) {
+    const i = pair.indexOf(":");
+    if (i > 0) out[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
+  }
+  return out;
+}
+
 /** IDs de rastreamento: configuração do admin tem prioridade; env é o fallback. Sempre validados. */
 export function trackingIds(s: Settings) {
-  const pixel = (s.meta_pixel_id || process.env.NEXT_PUBLIC_META_PIXEL_ID || "").trim();
+  const pixels = parsePixelIds(s.meta_pixel_id || process.env.NEXT_PUBLIC_META_PIXEL_ID);
   const ga = (s.ga_id || process.env.NEXT_PUBLIC_GA_ID || "").trim();
+  const tokens = capiTokens();
+  const fallback = process.env.META_ACCESS_TOKEN;
+  const capiTargets = pixels.map((id) => ({ pixelId: id, token: tokens[id] || fallback || "" })).filter((t) => t.token);
   return {
-    metaPixelId: isOn(s.meta_pixel_enabled) && PIXEL_RE.test(pixel) ? pixel : null,
+    metaPixelIds: isOn(s.meta_pixel_enabled) ? pixels : [],
     gaId: isOn(s.ga_enabled) && GA_RE.test(ga) ? ga : null,
-    capiEnabled: isOn(s.meta_capi_enabled) && PIXEL_RE.test(pixel) && Boolean(process.env.META_ACCESS_TOKEN),
-    pixelIdForCapi: PIXEL_RE.test(pixel) ? pixel : null,
+    capiEnabled: isOn(s.meta_capi_enabled) && capiTargets.length > 0,
+    capiTargets,
   };
 }

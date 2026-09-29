@@ -13,6 +13,8 @@ import { formatBRL } from "@/utils/format";
 
 const nf = new Intl.NumberFormat("pt-BR");
 export const COMPONENT_ICON: Record<ComponentType, string> = { beads: "palette", pegboard: "grid", tweezers: "hand", tool: "iron", accessory: "puzzle", digital: "download", bonus: "gift" };
+/** Itens da composição exibidos no card (o restante fica na página do produto). */
+const KIT_CARD_ITEMS = 5;
 const ref = (p: PublicProduct) => ({ id: p.id, name: p.name, sku: p.sku, priceCents: p.priceCents, category: p.category });
 
 export function KitCard({ p, index, highlighted }: { p: PublicProduct; index: number; highlighted: boolean }) {
@@ -34,7 +36,7 @@ export function KitCard({ p, index, highlighted }: { p: PublicProduct; index: nu
           {p.shortDescription && <p className="mt-2 text-sm leading-relaxed text-muted">{p.shortDescription}</p>}
           {p.components.length > 0 && (
             <ul className="mt-4 space-y-2 text-sm">
-              {p.components.map((c) => (
+              {p.components.slice(0, KIT_CARD_ITEMS).map((c) => (
                 <li key={c.id} className="flex items-start gap-2">
                   <span className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-md ${c.isBonus || c.type === "bonus" ? "bg-accent text-white" : "bg-success/15 text-success"}`}>
                     <PixelIcon name={c.isBonus || c.type === "bonus" ? "gift" : "check"} className="h-3 w-3" />
@@ -46,6 +48,13 @@ export function KitCard({ p, index, highlighted }: { p: PublicProduct; index: nu
                   </span>
                 </li>
               ))}
+              {p.components.length > KIT_CARD_ITEMS && (
+                <li>
+                  <Link href={`/produto/${p.slug}`} className="font-bold text-primary underline-offset-2 hover:underline">
+                    + {p.components.length - KIT_CARD_ITEMS} itens inclusos — ver tudo
+                  </Link>
+                </li>
+              )}
             </ul>
           )}
           <div className="mt-auto pt-5">
@@ -83,7 +92,7 @@ export function KitSelector({ section, kits, highlightId }: { section: SectionDa
     <section id="kits" className="section bg-gradient-to-b from-bg to-primary/[0.06]">
       <div className="container-page">
         <SectionHeading eyebrow="Kits" title={section.title} subtitle={section.subtitle} />
-        <div className={`mt-10 grid gap-5 ${kits.length >= 3 ? "lg:grid-cols-3" : kits.length === 2 ? "md:grid-cols-2" : "mx-auto max-w-md"} lg:items-stretch`}>
+        <div className={`mt-10 grid gap-5 ${kits.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : kits.length === 3 ? "lg:grid-cols-3" : kits.length === 2 ? "md:grid-cols-2" : "mx-auto max-w-md"} lg:items-stretch`}>
           {kits.map((k, i) => (
             <Reveal key={k.id} delay={i * 80} className="h-full">
               <KitCard p={k} index={i} highlighted={k.id === highlightId} />

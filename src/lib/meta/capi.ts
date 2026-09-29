@@ -60,17 +60,15 @@ export function buildUserData(u: CapiUser) {
 
 /** Envio best-effort: nunca lança erro nem bloqueia o fluxo de compra. */
 export async function sendCapiEvent(event: CapiEvent): Promise<void> {
-  const token = process.env.META_ACCESS_TOKEN;
-  if (!token) return;
-  let pixelId: string | null = null;
+  let targets: { pixelId: string; token: string }[] = [];
   try {
     const ids = trackingIds(await getSettingsFresh());
     if (!ids.capiEnabled) return;
-    pixelId = ids.pixelIdForCapi;
+    targets = ids.capiTargets;
   } catch {
     return;
   }
-  if (!pixelId) return;
+  if (!targets.length) return;
 
   const testCode = process.env.META_TEST_EVENT_CODE;
   const body = JSON.stringify({
@@ -88,20 +86,25 @@ export async function sendCapiEvent(event: CapiEvent): Promise<void> {
     ...(testCode ? { test_event_code: testCode } : {}),
   });
 
-  try {
-    const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(token)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      const text = (await res.text().catch(() => "")).slice(0, 300);
-      console.error(JSON.stringify({ scope: "meta-capi", event: event.eventName, status: res.status, error: text }));
-    }
-  } catch (err) {
-    console.error(JSON.stringify({ scope: "meta-capi", event: event.eventName, error: err instanceof Error ? err.message : "network" }));
-  }
+  // Mesmo evento (mesmo event_id) para cada pixel, cada um com o seu token
+  await Promise.all(
+    targets.map(async ({ pixelId, token }) => {
+      try {
+        const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(token)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          const text = (await res.text().catch(() => "")).slice(0, 300);
+          console.error(JSON.stringify({ scope: "meta-capi", event: event.eventName, pixel: pixelId, status: res.status, error: text }));
+        }
+      } catch (err) {
+        console.error(JSON.stringify({ scope: "meta-capi", event: event.eventName, pixel: pixelId, error: err instanceof Error ? err.message : "network" }));
+      }
+    })
+  );
 }
 
 /** Reconstrói o fbc a partir do fbclid salvo quando o cookie _fbc não está disponível. */

@@ -58,12 +58,12 @@ const PAGES = [
   }
 
   // Alteração de preço
-  const kit = await db.product.findUniqueOrThrow({ where: { slug: "kit-inicial" } });
+  const kit = await db.product.findUniqueOrThrow({ where: { slug: "kit-24-cores" } });
   const original = kit.priceCents;
   await page.goto(`${base}/admin/produtos/${kit.id}`);
   await page.fill('input[name="price"]', "54,90");
   await page.getByRole("button", { name: "Salvar alterações" }).click();
-  await page.getByText(/Preço do Kit Inicial alterado de R\$\s49,90 para R\$\s54,90/).waitFor({ timeout: 15000 });
+  await page.getByText(/Preço do Kit Inicial 24 Cores alterado de R\$\s39,99 para R\$\s54,90/).waitFor({ timeout: 15000 });
   const audit = await db.auditLog.findFirst({ where: { entityId: kit.id, action: "product_updated" }, orderBy: { createdAt: "desc" } });
   check(Boolean(audit?.summary?.includes("54,90")) && (audit?.before as { priceCents?: number })?.priceCents === original, "auditoria com valor anterior e novo", audit?.summary);
   const hist = await db.priceHistory.findFirst({ where: { productId: kit.id }, orderBy: { createdAt: "desc" } });
@@ -81,7 +81,7 @@ const PAGES = [
   check(true, "preço revertido");
 
   // Produto sem preço não pode ser ativado
-  const peg = await db.product.findUniqueOrThrow({ where: { slug: "pegboard-grande" } });
+  const peg = await db.product.findUniqueOrThrow({ where: { slug: "pinca" } });
   await page.goto(`${base}/admin/produtos/${peg.id}`);
   await page.check('input[name="active"]');
   await page.getByRole("button", { name: "Salvar alterações" }).click();

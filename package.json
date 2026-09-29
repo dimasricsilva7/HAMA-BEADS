@@ -17,13 +17,13 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "tsx prisma/seed.ts && tsx prisma/catalog-2026-09.ts",
     "db:studio": "prisma studio",
     "admin:hash": "tsx scripts/hash-password.ts",
     "placeholders": "tsx scripts/generate-placeholders.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts && tsx prisma/catalog-2026-09.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

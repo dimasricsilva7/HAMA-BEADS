@@ -15,7 +15,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     <CartProvider>
       {children}
       <CartDrawer />
-      <Analytics metaPixelId={ids.metaPixelId} gaId={ids.gaId} bannerEnabled={bannerEnabled} experiments={assignmentMap(assignments)} />
+      <Analytics metaPixelIds={ids.metaPixelIds} gaId={ids.gaId} bannerEnabled={bannerEnabled} experiments={assignmentMap(assignments)} />
       {bannerEnabled && <CookieBanner />}
     </CartProvider>
   );

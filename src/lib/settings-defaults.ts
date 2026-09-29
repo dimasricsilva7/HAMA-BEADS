@@ -48,7 +48,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   // SEO
   seo_title: "Hama Beads — Kit completo para criar Pixel Art",
   seo_description:
-    "Kits de Hama Beads com milhares de peças, pegboards, ferramentas e modelos digitais para começar a criar Pixel Art em casa. Pagamento via PIX.",
+    "Kits de Hama Beads de 24 a 96 cores, com até 59.600 peças, mini ferro, pegboard, pinças, acessórios para chaveiro e 100 modelos digitais. Pagamento via PIX.",
   og_image_url: "",
   // Políticas (texto editável — revise com seu jurídico)
   policy_privacy: `[PREENCHER] Política de Privacidade

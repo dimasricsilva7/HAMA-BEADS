@@ -3,6 +3,7 @@ import { PixelArt } from "./PixelArt";
 
 const SPRITE_BY_CATEGORY: Record<string, string> = {
   KIT: "heart",
+  BEADS: "cherry",
   PEGBOARD: "gem",
   TWEEZERS: "star",
   DIGITAL_MODELS: "rocket",

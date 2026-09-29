@@ -79,6 +79,7 @@ model AuditLog {
 // ───────────────────────── Catálogo ─────────────────────────
 
 enum ProductCategory {
+  BEADS
   KIT
   PEGBOARD
   TWEEZERS

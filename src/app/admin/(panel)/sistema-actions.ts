@@ -16,7 +16,7 @@ const VALIDATORS: Record<string, (v: string) => string | null> = {
   theme_accent: (v) => (HEX.test(v) ? null : "Cor de destaque inválida"),
   theme_ink: (v) => (HEX.test(v) ? null : "Cor do texto inválida"),
   theme_background: (v) => (HEX.test(v) ? null : "Cor de fundo inválida"),
-  meta_pixel_id: (v) => (!v || /^\d{5,20}$/.test(v) ? null : "ID do Meta Pixel deve conter só números"),
+  meta_pixel_id: (v) => (!v || v.split(/[\s,;]+/).filter(Boolean).every((x) => /^\d{5,20}$/.test(x)) ? null : "IDs do Meta Pixel: só números, separados por vírgula"),
   ga_id: (v) => (!v || /^G-[A-Z0-9]{4,15}$/.test(v) ? null : "ID do GA4 no formato G-XXXXXXX"),
   shipping_flat_cents: (v) => (/^\d{1,7}$/.test(v) ? null : "Frete inválido"),
   pix_expiration_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 5 && Number(v) <= 1440 ? null : "Validade do PIX entre 5 e 1440 minutos"),

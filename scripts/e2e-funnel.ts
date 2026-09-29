@@ -65,17 +65,18 @@ async function sendWebhook(eventId: string, type: string, order: { externalRefer
   check(Boolean(vid), "visitor_id definido pelo middleware", vid);
 
   // 2. Rolagem (scroll_25..90) e visualização dos kits
-  for (let y = 0; y <= 16000; y += 700) {
+  const height = await page.evaluate(() => document.body.scrollHeight);
+  for (let y = 0; y <= height; y += 700) {
     await page.evaluate((yy) => window.scrollTo(0, yy), y);
     await page.waitForTimeout(80);
   }
   await page.locator("#kits").scrollIntoViewIfNeeded();
   await page.waitForTimeout(600);
 
-  // 3. Seleciona o Kit Profissional
-  await page.locator('[data-cta="kit_kit-profissional"]').click();
+  // 3. Seleciona o Kit Mestre 96 Cores
+  await page.locator('[data-cta="kit_kit-96-cores"]').click();
   await page.getByRole("dialog", { name: "Seu carrinho" }).waitFor();
-  check(await page.getByText("Kit Profissional").first().isVisible(), "drawer mostra o resumo imediatamente");
+  check(await page.getByText("Kit Mestre 96 Cores").first().isVisible(), "drawer mostra o resumo imediatamente");
   await page.locator('[data-cta="drawer_checkout"]').click();
   await page.waitForURL(/\/checkout/);
 

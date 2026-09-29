@@ -37,6 +37,6 @@ export function envHealth(): EnvCheck[] {
     { key: "CRON_SECRET", ok: has("CRON_SECRET"), required: true, hint: "Protege os endpoints de jobs" },
     { key: "BLOB_READ_WRITE_TOKEN", ok: has("BLOB_READ_WRITE_TOKEN"), required: true, hint: "Vercel Blob (upload de imagens e vídeos)" },
     { key: "ADMIN_EMAIL", ok: has("ADMIN_EMAIL"), required: false, hint: "Bootstrap do primeiro admin" },
-    { key: "META_ACCESS_TOKEN", ok: has("META_ACCESS_TOKEN"), required: false, hint: "Meta Conversions API (servidor)" },
+    { key: "META_CAPI_TOKENS", ok: has("META_CAPI_TOKENS") || has("META_ACCESS_TOKEN"), required: false, hint: "Meta Conversions API — pixelId:token por pixel (ou META_ACCESS_TOKEN)" },
   ];
 }

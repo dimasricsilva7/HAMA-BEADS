@@ -7,6 +7,7 @@
 
 export const CATEGORY_LABEL = {
   KIT: "Kit",
+  BEADS: "Peças (refil)",
   PEGBOARD: "Pegboard",
   TWEEZERS: "Pinças",
   DIGITAL_MODELS: "Modelos digitais",

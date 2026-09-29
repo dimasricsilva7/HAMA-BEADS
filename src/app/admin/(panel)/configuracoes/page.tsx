@@ -114,11 +114,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
             ["meta_pixel_enabled", "meta_pixel_id", "meta_capi_enabled", "ga_enabled", "ga_id", "cookie_banner_enabled"],
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                {text("meta_pixel_id", "Meta Pixel ID", "Vazio = usa NEXT_PUBLIC_META_PIXEL_ID")}
+                {text("meta_pixel_id", "Meta Pixel ID(s)", "Um ou mais IDs separados por vírgula (até 3). Vazio = NEXT_PUBLIC_META_PIXEL_ID")}
                 {text("ga_id", "Google Analytics 4 (G-XXXX)", "Vazio = usa NEXT_PUBLIC_GA_ID")}
               </div>
               {check("meta_pixel_enabled", "Meta Pixel ativo (PageView, ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, Purchase)")}
-              {check("meta_capi_enabled", `Conversions API ativa (requer META_ACCESS_TOKEN no servidor — ${process.env.META_ACCESS_TOKEN ? "configurado" : "NÃO configurado"})`)}
+              {check("meta_capi_enabled", `Conversions API ativa (tokens no servidor: META_CAPI_TOKENS por pixel ou META_ACCESS_TOKEN — ${process.env.META_CAPI_TOKENS || process.env.META_ACCESS_TOKEN ? "configurado" : "NÃO configurado"})`)}
               {check("ga_enabled", "GA4 ativo (page_view, view_item, add_to_cart, begin_checkout, add_payment_info, purchase)")}
               {check("cookie_banner_enabled", "Banner de consentimento de cookies (Pixel/GA só carregam após aceite)")}
               <p className="text-xs text-slate-500">Scripts arbitrários não são aceitos por segurança (XSS). Purchase só é enviado após o pagamento confirmado pelo gateway, com o mesmo event_id no Pixel e na CAPI (deduplicação).</p>

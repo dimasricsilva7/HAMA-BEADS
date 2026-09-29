@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { adsAllowed, captureAttribution, configureConsent, getIds, metaEvent, setExperiments, track } from "@/lib/client/tracking";
 
-type Props = { metaPixelId: string | null; gaId: string | null; bannerEnabled: boolean; experiments: Record<string, string> };
+type Props = { metaPixelIds: string[]; gaId: string | null; bannerEnabled: boolean; experiments: Record<string, string> };
 
 function PageTracker() {
   const pathname = usePathname();
@@ -40,7 +40,7 @@ function PageTracker() {
  * banner de cookies estiver ativo, somente após o consentimento do visitante.
  * O analytics próprio (primeira parte, sem compartilhamento) roda sempre.
  */
-export function Analytics({ metaPixelId, gaId, bannerEnabled, experiments }: Props) {
+export function Analytics({ metaPixelIds, gaId, bannerEnabled, experiments }: Props) {
   // Configurado no render (idempotente) para valer já no primeiro PageView do filho
   if (typeof window !== "undefined") {
     configureConsent(bannerEnabled);
@@ -54,13 +54,13 @@ export function Analytics({ metaPixelId, gaId, bannerEnabled, experiments }: Pro
     return () => window.removeEventListener("hb:consent", on);
   }, [bannerEnabled, experiments]);
 
-  const loadMeta = allowed && Boolean(metaPixelId);
+  const loadMeta = allowed && metaPixelIds.length > 0;
   const loadGa = allowed && Boolean(gaId);
   return (
     <>
       {loadMeta && (
         <Script id="meta-pixel" strategy="afterInteractive">
-          {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${metaPixelId}');`}
+          {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');${metaPixelIds.map((id) => `fbq('init','${id}');`).join("")}`}
         </Script>
       )}
       {loadGa && (

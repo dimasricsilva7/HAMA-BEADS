@@ -20,7 +20,7 @@ const [base, out] = process.argv.slice(2);
   }
   const m = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
   await m.context().addCookies([{ name: "hb_consent", value: "denied", url: base }]);
-  const kit = await db.product.findUniqueOrThrow({ where: { slug: "kit-criador" } });
+  const kit = await db.product.findUniqueOrThrow({ where: { slug: "kit-48-cores" } });
   await m.goto(base + "/");
   await m.evaluate((id) => localStorage.setItem("hb_cart", JSON.stringify({ items: [{ productId: id, quantity: 1 }], bumpIds: [], couponCode: null })), kit.id);
   await m.goto(base + "/checkout", { waitUntil: "networkidle" });
