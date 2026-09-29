@@ -2,14 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { track, trackOnce } from "@/lib/client/tracking";
+import { videoEmbedUrl as embedUrl } from "@/components/ui/VideoEmbed";
 
-function embedUrl(url: string): string | null {
-  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,20})/);
-  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&playsinline=1`;
-  const vimeo = url.match(/vimeo\.com\/(\d{5,12})/);
-  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
-  return null;
-}
 
 /**
  * Vídeo vertical (mobile-first). Arquivo de vídeo: autoplay mudo quando visível,

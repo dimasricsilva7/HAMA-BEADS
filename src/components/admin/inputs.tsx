@@ -9,6 +9,7 @@ import { COMPONENT_TYPES, PIXEL_ICONS } from "@/lib/domain";
 export function MediaInput({ name, defaultValue, accept = "image/*", label, folder = "media" }: { name: string; defaultValue?: string | null; accept?: string; label?: string; folder?: string }) {
   const [url, setUrl] = useState(defaultValue ?? "");
   const [status, setStatus] = useState<string | null>(null);
+  const embed = /youtu\.?be/i.test(url) ? "YouTube" : /vimeo\.com/i.test(url) ? "Vimeo" : null;
   const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url) || accept.startsWith("video");
 
   async function onFile(file: File) {
@@ -36,18 +37,27 @@ export function MediaInput({ name, defaultValue, accept = "image/*", label, fold
     <div>
       {label && <p className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>}
       <div className="flex gap-2">
-        <input name={name} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… ou envie um arquivo" className={inputCls} />
+        <input name={name} value={url} onChange={(e) => setUrl(e.target.value.trim())} placeholder={accept.startsWith("video") ? "Cole o link (MP4, YouTube ou Vimeo) ou envie" : "Cole o link da imagem (https://…) ou envie"} className={inputCls} />
         <label className={`${btnSecondary} cursor-pointer whitespace-nowrap`}>
-          Enviar
+          Enviar arquivo
           <input type="file" accept={accept} className="sr-only" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
         </label>
+        {url && (
+          <button type="button" onClick={() => setUrl("")} className={`${btnSecondary} px-3`} aria-label="Limpar">
+            ✕
+          </button>
+        )}
       </div>
-      {status && <p className="mt-1 text-xs text-slate-500">{status}</p>}
-      {url && !isVideo && /^(https:|\/)/.test(url) && (
+      <p className="mt-1 text-xs text-slate-500">
+        {status ?? (accept.startsWith("video") ? "Aceita link direto de vídeo (.mp4), YouTube, Vimeo ou upload." : "Aceita link público de imagem (https://…) ou upload.")}
+      </p>
+      {url && url.startsWith("http:") && <p className="mt-1 text-xs font-semibold text-red-600">Use um link https:// — links http:// não são salvos.</p>}
+      {url && embed && <p className="mt-2 text-xs font-semibold text-emerald-700">✓ Link de {embed} reconhecido — o vídeo será incorporado.</p>}
+      {url && !isVideo && !embed && /^(https:|\/)/.test(url) && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" className="mt-2 h-20 w-20 rounded-lg border border-slate-200 object-cover" />
+        <img src={url} alt="" className="mt-2 h-20 w-20 rounded-lg border border-slate-200 object-cover" onError={(e) => ((e.currentTarget.style.display = "none"), setStatus("Não foi possível carregar a imagem desse link. Confira se o link é público e aponta para a imagem."))} />
       )}
-      {url && isVideo && <video src={url} className="mt-2 h-32 rounded-lg border border-slate-200" controls preload="metadata" />}
+      {url && isVideo && !embed && /^(https:|\/)/.test(url) && <video src={url} className="mt-2 h-32 rounded-lg border border-slate-200" controls preload="metadata" />}
     </div>
   );
 }

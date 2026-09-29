@@ -6,6 +6,7 @@ import { ProductVisual } from "@/components/ui/ProductVisual";
 import { Price } from "@/components/ui/Price";
 import { PixelIcon } from "@/components/ui/PixelArt";
 import { RichText } from "@/components/ui/RichText";
+import { VideoEmbed } from "@/components/ui/VideoEmbed";
 import { AddToCartButton, ViewTracker } from "@/components/landing/client";
 import { COMPONENT_ICON } from "@/components/landing/Commerce";
 import { CATEGORY_LABEL, FULFILLMENT_LABEL } from "@/lib/domain";
@@ -85,7 +86,7 @@ export default async function ProductPage({ params }: Props) {
             ) : (
               <ProductVisual name={p.name} category={p.category} index={p.sortOrder} className="aspect-square rounded-card" priority />
             )}
-            {p.videoUrl && <video src={p.videoUrl} controls playsInline preload="none" className="mt-3 w-full rounded-card" aria-label={`Vídeo: ${p.name}`} />}
+            {p.videoUrl && <VideoEmbed url={p.videoUrl} title={`Vídeo: ${p.name}`} className="mt-3 rounded-card" />}
           </div>
 
           <div>

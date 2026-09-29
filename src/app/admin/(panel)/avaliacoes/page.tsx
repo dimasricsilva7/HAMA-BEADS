@@ -41,7 +41,7 @@ export default async function ReviewsAdminPage() {
   const [reviews, products] = await Promise.all([db.review.findMany({ orderBy: [{ approved: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }] }), db.product.findMany({ select: { id: true, name: true }, orderBy: { sortOrder: "asc" } })]);
   return (
     <div className="space-y-6">
-      <PageHeader title="Avaliações" description="Somente avaliações reais. A seção de avaliações só aparece na loja quando houver pelo menos uma aprovada." />
+      <PageHeader title="Avaliações" description="Somente avaliações reais dos seus clientes (inclusive da sua própria loja na Shopee ou no Instagram, com autorização). Fotos e vídeos aceitam upload ou link. A seção aparece na loja quando houver pelo menos uma aprovada." />
       <Card title="Nova avaliação"><ReviewForm r={null} products={products} /></Card>
       {reviews.map((r) => (
         <Card key={r.id} title={`${r.name} · ${"★".repeat(r.rating)}`} actions={r.approved ? <Badge tone="green">publicada</Badge> : <Badge>pendente</Badge>}>

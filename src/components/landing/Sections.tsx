@@ -2,6 +2,7 @@ import Image from "next/image";
 import { PixelArt, PixelIcon } from "@/components/ui/PixelArt";
 import { Reveal } from "@/components/ui/Reveal";
 import { RichText } from "@/components/ui/RichText";
+import { VideoEmbed } from "@/components/ui/VideoEmbed";
 import { SectionHeading } from "./SectionHeading";
 import { cfgArr, cfgStr, type SectionData } from "@/server/landing";
 import type { IconItem } from "@/lib/domain";
@@ -185,28 +186,57 @@ export function ModelsIncluded({ section }: { section: SectionData }) {
 
 type ReviewRow = { id: string; name: string; text: string; rating: number; photoUrl: string | null; videoUrl: string | null; reviewedAt: Date | string | null; product: { name: string } | null };
 
-export function Reviews({ section, reviews }: { section: SectionData; reviews: ReviewRow[] }) {
-  if (!reviews.length) return null; // Somente avaliações reais aprovadas; sem avaliações → seção oculta
+function Stars({ rating, className = "" }: { rating: number; className?: string }) {
+  const r = Math.max(0, Math.min(5, Math.round(rating)));
   return (
-    <section className="section">
+    <span className={`tracking-tight ${className}`} aria-label={`${rating.toFixed(1).replace(".", ",")} de 5 estrelas`} role="img">
+      <span className="text-secondary">{"★".repeat(r)}</span>
+      <span className="text-line">{"★".repeat(5 - r)}</span>
+    </span>
+  );
+}
+
+/** Depoimentos — somente avaliações reais aprovadas no admin. Sem avaliações, a seção não aparece. */
+export function Reviews({ section, reviews }: { section: SectionData; reviews: ReviewRow[] }) {
+  if (!reviews.length) return null;
+  const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+  const withMedia = reviews.filter((r) => r.photoUrl).length;
+  const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
+  return (
+    <section id="depoimentos" className="section">
       <div className="container-page">
         <SectionHeading eyebrow="Avaliações" title={section.title} subtitle={section.subtitle} />
-        <ul className="no-scrollbar -mx-4 mt-10 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
+        <div className="mx-auto mt-6 flex w-fit flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-full bg-surface px-5 py-2.5 shadow-soft">
+          <span className="font-display text-2xl font-extrabold">{avg.toFixed(1).replace(".", ",")}</span>
+          <Stars rating={avg} className="text-xl" />
+          <span className="text-sm text-muted">
+            {reviews.length} {reviews.length === 1 ? "avaliação" : "avaliações"}
+            {withMedia ? ` · ${withMedia} com foto` : ""}
+          </span>
+        </div>
+        <ul className="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
           {reviews.map((r) => (
-            <li key={r.id} className="card w-[85%] shrink-0 snap-center p-5 sm:w-auto">
-              <p className="text-secondary" aria-label={`${r.rating} de 5 estrelas`}>
-                {"★".repeat(Math.max(0, Math.min(5, r.rating)))}
-                <span className="text-line">{"★".repeat(5 - Math.max(0, Math.min(5, r.rating)))}</span>
-              </p>
-              <p className="mt-3 leading-relaxed">“{r.text}”</p>
+            <li key={r.id} className="card flex w-[85%] shrink-0 snap-center flex-col overflow-hidden sm:w-auto">
               {r.photoUrl && (
-                <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-xl">
+                <div className="relative aspect-square bg-bg">
                   <Image src={r.photoUrl} alt={`Foto enviada por ${r.name}`} fill sizes="(min-width: 1024px) 30vw, 85vw" className="object-cover" />
                 </div>
               )}
-              {r.videoUrl && <video src={r.videoUrl} controls preload="none" playsInline className="mt-4 w-full rounded-xl" />}
-              <p className="mt-4 text-sm font-bold">{r.name}</p>
-              {r.product && <p className="text-xs text-muted">Comprou: {r.product.name}</p>}
+              {!r.photoUrl && r.videoUrl && <VideoEmbed url={r.videoUrl} title={`Vídeo de ${r.name}`} vertical />}
+              <div className="flex flex-1 flex-col p-5">
+                <Stars rating={r.rating} className="text-lg" />
+                <p className="mt-2 leading-relaxed">“{r.text}”</p>
+                {r.photoUrl && r.videoUrl && <VideoEmbed url={r.videoUrl} title={`Vídeo de ${r.name}`} className="mt-4 rounded-xl" />}
+                <div className="mt-auto flex items-center gap-3 pt-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-extrabold text-primary" aria-hidden="true">
+                    {initials(r.name)}
+                  </span>
+                  <span>
+                    <span className="block text-sm font-bold">{r.name}</span>
+                    {r.product && <span className="block text-xs text-muted">Comprou: {r.product.name}</span>}
+                  </span>
+                </div>
+              </div>
             </li>
           ))}
         </ul>
