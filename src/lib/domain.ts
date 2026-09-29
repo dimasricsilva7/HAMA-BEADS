@@ -108,6 +108,7 @@ export const TRACKED_EVENTS = [
   "upsell_reject",
   "pix_generated",
   "pix_copy",
+  "pix_renewed",
   "pix_error",
   "payment_pending",
   "payment_paid",

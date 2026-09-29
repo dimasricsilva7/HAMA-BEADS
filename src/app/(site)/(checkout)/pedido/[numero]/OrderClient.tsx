@@ -188,6 +188,27 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
     }
   };
 
+  const [renewing, setRenewing] = useState(false);
+  const [renewError, setRenewError] = useState<string | null>(null);
+  const renewPix = async () => {
+    setRenewing(true);
+    setRenewError(null);
+    try {
+      const res = await fetch("/api/orders/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pedido: order.orderNumber, t: token }) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível gerar um novo PIX.");
+      setOrder(json as PublicOrder);
+      track("pix_renewed", { valueCents: order.totalCents, props: { order: order.orderNumber } });
+      router.refresh();
+    } catch (e) {
+      setRenewError(e instanceof Error ? e.message : "Não foi possível gerar um novo PIX.");
+    } finally {
+      setRenewing(false);
+    }
+  };
+  const canRenew = order.status === "EXPIRED" || order.status === "FAILED";
+  const expiredNow = awaiting && left === 0;
+
   const mm = left != null ? Math.floor(left / 60000) : null;
   const ss = left != null ? Math.floor((left % 60000) / 1000) : null;
 
@@ -197,11 +218,30 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
         <p className="text-sm font-semibold text-muted">Pedido {order.orderNumber}</p>
         {awaiting && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Falta pouco, {order.customerFirstName}!</h1>}
         {paid && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Pagamento confirmado! 🎉</h1>}
-        {!awaiting && !paid && <h1 className="mt-1 font-display text-3xl font-extrabold">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</h1>}
+        {canRenew && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Seu kit ainda está te esperando, {order.customerFirstName}!</h1>}
+        {!awaiting && !paid && !canRenew && <h1 className="mt-1 font-display text-3xl font-extrabold">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</h1>}
       </div>
 
+      {/* PIX vencido → novo código no mesmo pedido */}
+      {(canRenew || expiredNow) && (
+        <section className="card overflow-hidden text-center" aria-labelledby="renew-title">
+          <div className="bg-secondary/25 px-5 py-4">
+            <p id="renew-title" className="font-extrabold">O código PIX anterior expirou</p>
+            <p className="font-display text-3xl font-extrabold tabular-nums">{formatBRL(order.totalCents)}</p>
+            <p className="mt-1 text-sm text-muted">Gere um novo código em 1 clique — mesmo pedido, mesmos itens e mesmo valor.</p>
+          </div>
+          <div className="p-5">
+            <button onClick={renewPix} disabled={renewing} data-cta="pix_renew" className="btn-primary w-full">
+              {renewing ? "Gerando novo PIX…" : "GERAR NOVO PIX"}
+            </button>
+            {renewError && <p className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{renewError}</p>}
+            <p className="mt-3 text-xs text-muted">Se você já pagou o código anterior, não pague de novo: fale com a gente pelo WhatsApp.</p>
+          </div>
+        </section>
+      )}
+
       {/* PIX */}
-      {awaiting && order.pixCopyPaste && (
+      {awaiting && order.pixCopyPaste && !expiredNow && (
         <section className="card overflow-hidden" aria-labelledby="pix-title">
           <div className="bg-success/10 px-5 py-3 text-center">
             <p id="pix-title" className="font-extrabold">Pague com PIX para concluir</p>

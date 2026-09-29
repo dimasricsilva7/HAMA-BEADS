@@ -115,16 +115,27 @@ export async function changeOwnPassword(_: ActionResult, fd: FormData): Promise<
 export async function sendTestEmail(_: ActionResult, fd: FormData): Promise<ActionResult> {
   return withAdmin("ADMIN", async (admin) => {
     const { deliver, emailProvider } = await import("@/lib/email/provider");
-    const { brandFromSettings } = await import("@/lib/email");
+    const { brandFromSettings, renderEmail } = await import("@/lib/email");
     const { purchaseConfirmationEmail, pixRecoveryEmail } = await import("@/emails/templates");
     const { getSettingsFresh } = await import("@/server/settings");
     const { siteUrl } = await import("@/lib/env");
     const { SAMPLE_ORDER } = await import("@/emails/sample");
     if (emailProvider() === "none") return { error: "Configure RESEND_API_KEY e EMAIL_FROM na Vercel para enviar e-mails." };
-    const b = brandFromSettings(await getSettingsFresh());
-    const url = `${siteUrl()}/pedido/${SAMPLE_ORDER.orderNumber}?t=exemplo`;
-    const tpl = String(fd.get("type")) === "PIX_RECOVERY" ? pixRecoveryEmail(b, SAMPLE_ORDER, url) : purchaseConfirmationEmail(b, SAMPLE_ORDER, url);
-    const r = await deliver({ to: admin.email, subject: `[TESTE] ${tpl.subject}`, html: tpl.html, text: tpl.text });
+    const s = await getSettingsFresh();
+    const recovery = String(fd.get("type")) === "PIX_RECOVERY";
+    // Usa o pedido real mais recente do tipo certo → o botão do e-mail abre uma página de pedido de verdade
+    const real = await db.order.findFirst({
+      where: recovery ? { status: { in: ["PENDING", "PIX_GENERATED", "EXPIRED"] } } : { status: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] } },
+      orderBy: { createdAt: "desc" },
+      include: { customer: true, items: true },
+    });
+    const b = brandFromSettings(s);
+    const tpl = real
+      ? renderEmail(recovery ? "PIX_RECOVERY" : "PURCHASE_CONFIRMATION", real, s)
+      : recovery
+        ? pixRecoveryEmail(b, SAMPLE_ORDER, siteUrl())
+        : purchaseConfirmationEmail(b, SAMPLE_ORDER, siteUrl());
+    const r = await deliver({ to: admin.email, subject: `[TESTE] ${tpl.subject}`, html: tpl.html, text: tpl.text }, s.contact_email || null);
     await audit(admin.id, "email_test", "settings", null, { summary: `E-mail de teste para ${admin.email}: ${r.ok ? "enviado" : r.error}` });
     return r.ok ? { ok: true, message: `E-mail de teste enviado para ${admin.email}.` } : { error: r.error };
   });

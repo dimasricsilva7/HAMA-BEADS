@@ -1,7 +1,7 @@
 import "server-only";
 import { isProductionDeploy } from "@/lib/env";
 
-export type OutgoingEmail = { to: string; subject: string; html: string; text: string; idempotencyKey?: string };
+export type OutgoingEmail = { to: string; subject: string; html: string; text: string; idempotencyKey?: string; headers?: Record<string, string> };
 export type SendResult = { ok: true; id: string | null } | { ok: false; error: string; retryable: boolean };
 
 /**
@@ -38,6 +38,7 @@ export async function deliver(email: OutgoingEmail, replyTo?: string | null): Pr
         subject: email.subject,
         html: email.html,
         text: email.text,
+        ...(email.headers ? { headers: email.headers } : {}),
         ...(replyTo || process.env.EMAIL_REPLY_TO ? { reply_to: replyTo || process.env.EMAIL_REPLY_TO } : {}),
       }),
       cache: "no-store",

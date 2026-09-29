@@ -42,5 +42,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/|_next/|placeholders/|uploads/|favicon|icon|robots.txt|sitemap.xml|og$|og/|email/).*)", "/api/admin/:path*"],
+  matcher: ["/((?!api/|_next/|placeholders/|uploads/|favicon|icon|robots.txt|sitemap.xml|og$|og/|email/|email-logo).*)", "/api/admin/:path*"],
 };

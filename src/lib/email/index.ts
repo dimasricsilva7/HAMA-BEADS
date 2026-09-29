@@ -26,7 +26,8 @@ export function brandFromSettings(s: Settings): EmailBrand {
   const digits = (s.whatsapp ?? "").replace(/\D/g, "");
   return {
     store: s.store_name || "Hama Beads",
-    logoUrl: s.logo_url && /^https:\/\//.test(s.logo_url) ? s.logo_url : `${base}/email/logo`,
+    // Clientes de e-mail não exibem SVG/WebP: só usa o logo do admin se for PNG/JPG/GIF
+    logoUrl: s.logo_url && /^https:\/\/.+\.(png|jpe?g|gif)(\?.*)?$/i.test(s.logo_url) ? s.logo_url : `${base}/email-logo.png`,
     siteUrl: base,
     primary: s.theme_primary || "#2F4BFF",
     secondary: s.theme_secondary || "#FFC53D",
@@ -60,11 +61,18 @@ export function toEmailOrder(o: LoadedOrder): EmailOrder {
 
 export const orderUrl = (o: { orderNumber: string | null; accessToken: string }) => `${siteUrl()}/pedido/${encodeURIComponent(o.orderNumber ?? "")}?t=${encodeURIComponent(o.accessToken)}`;
 
-export function renderEmail(type: EmailType, o: LoadedOrder, s: Settings) {
+/** Descadastro dos lembretes (link no rodapé + List-Unsubscribe one-click, RFC 8058). */
+export const unsubscribeUrl = (o: { orderNumber: string | null; accessToken: string }) =>
+  `${siteUrl()}/api/email/unsubscribe?pedido=${encodeURIComponent(o.orderNumber ?? "")}&t=${encodeURIComponent(o.accessToken)}`;
+
+export function renderEmail(type: EmailType, o: LoadedOrder, s: Settings): { subject: string; html: string; text: string; headers?: Record<string, string> } {
   const b = brandFromSettings(s);
   const data = toEmailOrder(o);
   const url = orderUrl(o);
-  if (type === "PIX_RECOVERY") return pixRecoveryEmail(b, data, url);
+  if (type === "PIX_RECOVERY") {
+    const unsub = unsubscribeUrl(o);
+    return { ...pixRecoveryEmail(b, data, url, unsub), headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } };
+  }
   if (type === "ORDER_SHIPPED") return orderShippedEmail(b, data, url);
   return purchaseConfirmationEmail(b, data, url);
 }
@@ -72,6 +80,7 @@ export function renderEmail(type: EmailType, o: LoadedOrder, s: Settings) {
 /** O e-mail ainda faz sentido no momento do envio? (evita lembrete de PIX já pago, por exemplo) */
 function eligibility(type: EmailType, o: LoadedOrder, manual: boolean): string | null {
   if (type === "PIX_RECOVERY") {
+    if (o.customer.emailOptOutAt) return "Cliente descadastrou dos lembretes";
     if (!isAwaitingStatus(o.status)) return `Pedido não está aguardando pagamento (${o.status})`;
     if (!o.pixCopyPaste) return "PIX não foi gerado";
     if (o.pixExpiresAt && o.pixExpiresAt < new Date()) return "PIX expirado";
@@ -107,8 +116,8 @@ export async function sendEmailEvent(id: string, opts: { manual?: boolean } = {}
     return { ok: false as const, error: reason };
   }
   const s = await getSettingsFresh();
-  const { subject, html, text } = renderEmail(ev.type, order, s);
-  const result = await deliver({ to: ev.toEmail, subject, html, text, idempotencyKey: `hb-email-${ev.id}` }, s.contact_email || null);
+  const { subject, html, text, headers } = renderEmail(ev.type, order, s);
+  const result = await deliver({ to: ev.toEmail, subject, html, text, headers, idempotencyKey: `hb-email-${ev.id}` }, s.contact_email || null);
   if (result.ok) {
     await db.emailEvent.update({ where: { id }, data: { status: "SENT", sentAt: new Date(), subject, providerMessageId: result.id, error: null } });
     await trackServerEvent(order, ev.type === "PIX_RECOVERY" ? "email_recovery_sent" : ev.type === "PURCHASE_CONFIRMATION" ? "email_confirmation_sent" : "email_shipping_sent");

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   if (order) email = renderEmail(type, order, s);
   else {
     const b = brandFromSettings(s);
-    const url = `${siteUrl()}/pedido/${SAMPLE_ORDER.orderNumber}?t=exemplo`;
+    const url = siteUrl(); // exemplo: sem pedido real, o botão leva à loja
     email = type === "PIX_RECOVERY" ? pixRecoveryEmail(b, SAMPLE_ORDER, url) : type === "ORDER_SHIPPED" ? orderShippedEmail(b, SAMPLE_ORDER, url) : purchaseConfirmationEmail(b, SAMPLE_ORDER, url);
   }
   const banner = `<div style="font-family:system-ui;background:#17142E;color:#fff;padding:8px 12px;font-size:13px">Prévia · Assunto: <b>${email.subject.replace(/</g, "&lt;")}</b></div>`;

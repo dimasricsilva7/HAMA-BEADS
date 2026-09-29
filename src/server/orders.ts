@@ -245,7 +245,7 @@ export async function ensurePix(orderId: string): Promise<Order> {
   try {
     const charge = await paymentService.createPixPayment({
       amountCents: order.totalCents,
-      idempotencyKey: `hama-${order.id}`,
+      idempotencyKey: order.externalReference === order.orderNumber ? `hama-${order.id}` : `hama-${order.id}-${order.externalReference}`,
       externalReference: order.externalReference!,
       description,
       customer: { name: order.customer.name, email: order.customer.email, cpf: snap.cpf ?? order.customer.cpf ?? "", phone: order.customer.phone },
@@ -460,6 +460,32 @@ async function onPaid(orderId: string) {
       num_items: order.items.reduce((s, i) => s + i.quantity, 0),
     },
   });
+}
+
+/**
+ * PIX vencido → novo código no MESMO pedido (mesmo número, link e valores congelados).
+ * Usa uma nova external_reference (HB12345-2026-R2-xxx) para o gateway criar outra cobrança;
+ * webhooks da cobrança antiga deixam de casar com o pedido. Só é chamado por POST (nunca por GET,
+ * para que scanners de link dos provedores de e-mail não gerem cobranças).
+ */
+export async function renewPix(orderId: string): Promise<Order> {
+  let order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+  const isAwaiting = (o: Order) => o.status === "PENDING" || o.status === "PIX_GENERATED";
+  if (isAwaiting(order) && order.pixCopyPaste) {
+    if (!order.pixExpiresAt || order.pixExpiresAt.getTime() > Date.now()) return order; // ainda válido
+    order = await syncOrder(order, { minIntervalMs: 0, source: "poll" }); // pago no último segundo?
+  }
+  const expiredAwaiting = isAwaiting(order) && !!order.pixExpiresAt && order.pixExpiresAt.getTime() <= Date.now();
+  if (order.status !== "EXPIRED" && order.status !== "FAILED" && !expiredAwaiting) return order;
+  const attempt = (await db.payment.count({ where: { orderId } })) + 1;
+  const ref = `${order.orderNumber}-R${attempt}-${randomInt(100, 1000)}`;
+  const moved = await db.order.updateMany({
+    where: { id: order.id, status: order.status, externalReference: order.externalReference },
+    data: { status: "PENDING", externalReference: ref, transactionId: null, pixCopyPaste: null, pixExpiresAt: null, paymentError: null, lastCheckedAt: null },
+  });
+  if (!moved.count) return db.order.findUniqueOrThrow({ where: { id: order.id } });
+  await logOrderEvent(order.id, "pix_renewed", `Novo PIX solicitado pelo cliente (anterior: ${order.status})`, { previous_reference: order.externalReference, new_reference: ref }, "PENDING");
+  return ensurePix(order.id);
 }
 
 const FINAL: OrderStatus[] = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED", "REFUNDED", "CHARGEBACK", "CANCELLED"];

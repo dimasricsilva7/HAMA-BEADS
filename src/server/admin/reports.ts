@@ -141,6 +141,25 @@ export async function funnel(p: Period, f: FunnelFilters = {}) {
   };
 }
 
+/** Mesmo funil, quebrado por dia (fuso de São Paulo) — para comparar o tráfego de cada dia. */
+export async function funnelByDay(p: Period, f: FunnelFilters = {}) {
+  const cols = FUNNEL_STEPS.map((s, i) => Prisma.sql`COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name IN (${Prisma.join(s.events)})) AS ${Prisma.raw(`s${i}`)}`);
+  const rows = await db.$queryRaw<Record<string, bigint | string>[]>`
+    SELECT to_char(e."createdAt" - interval '3 hours', 'YYYY-MM-DD') AS day, ${Prisma.join(cols)},
+           COALESCE(SUM(e."valueCents") FILTER (WHERE e.name = 'purchase'), 0) AS revenue
+    FROM "AnalyticsEvent" e JOIN "AnalyticsSession" s ON s.id = e."sessionId"
+    WHERE e."createdAt" >= ${p.from} AND e."createdAt" < ${p.to} ${sessionFilter(f, p)}
+    GROUP BY 1`;
+  const byDay = new Map(rows.map((r) => [String(r.day), r]));
+  return dayKeys(p)
+    .reverse()
+    .map((day) => {
+      const r = byDay.get(day) ?? {};
+      const values = FUNNEL_STEPS.map((_, i) => n(r[`s${i}`] as bigint | undefined));
+      return { day, values, revenue: n(r.revenue as bigint | undefined), conversion: ratio(values.at(-1) ?? 0, values[0] ?? 0) };
+    });
+}
+
 export async function funnelFilterOptions() {
   const [sources, campaigns, devices, products] = await Promise.all([
     db.analyticsSession.findMany({ where: { utmSource: { not: null } }, distinct: ["utmSource"], select: { utmSource: true }, take: 50 }),
@@ -234,6 +253,7 @@ const ELEMENT_LABEL: Record<string, string> = {
   drawer_checkout: "Carrinho — Finalizar compra",
   checkout_submit: "Checkout — Gerar PIX",
   pix_copy: "PIX — Copiar",
+  pix_renew: "PIX — Gerar novo",
   gallery_lightbox_cta: "Galeria — Quero criar assim",
   inspiration_cta: "O que você criaria — CTA",
   upsell_accept: "Upsell — Aceitar",

@@ -181,6 +181,8 @@ model Customer {
   phone            String
   cpf              String?
   marketingConsent Boolean  @default(false)
+  /// Descadastrou dos lembretes por e-mail (List-Unsubscribe). Confirmações de compra continuam.
+  emailOptOutAt    DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   orders           Order[]

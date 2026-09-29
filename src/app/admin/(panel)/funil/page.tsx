@@ -3,7 +3,8 @@ import { PeriodFilter } from "@/components/admin/PeriodFilter";
 import { int, pct } from "@/components/admin/format";
 import { formatBRL } from "@/utils/format";
 import { resolvePeriod } from "@/server/admin/period";
-import { funnel, funnelFilterOptions } from "@/server/admin/reports";
+import { funnel, funnelByDay, funnelFilterOptions } from "@/server/admin/reports";
+import { FUNNEL_STEPS } from "@/lib/domain";
 
 export const metadata = { title: "Funil" };
 type SP = Promise<Record<string, string | string[] | undefined>>;
@@ -13,7 +14,7 @@ export default async function FunnelPage({ searchParams }: { searchParams: SP })
   const p = resolvePeriod(sp);
   const str = (k: string) => (typeof sp[k] === "string" && sp[k] ? (sp[k] as string) : undefined);
   const filters = { productId: str("produto"), source: str("origem"), campaign: str("campanha"), device: str("dispositivo") };
-  const [f, opts] = await Promise.all([funnel(p, filters), funnelFilterOptions()]);
+  const [f, daily, opts] = await Promise.all([funnel(p, filters), funnelByDay(p, filters), funnelFilterOptions()]);
   const max = Math.max(1, f.steps[0]?.value ?? 1);
 
   return (
@@ -66,6 +67,43 @@ export default async function FunnelPage({ searchParams }: { searchParams: SP })
         </ol>
         <p className="mt-4 text-xs text-slate-500">Cada etapa conta sessões com pelo menos um dos eventos da etapa no período. Compras e pagamentos são eventos de servidor, confirmados pelo gateway.</p>
       </Card>
+
+      <div className="mt-6">
+        <Card title={`Funil por dia · ${p.label}`}>
+          <div className="-mx-5 overflow-x-auto px-5">
+            <table className="w-full min-w-[880px] text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="sticky left-0 bg-white py-2 pr-3">Dia</th>
+                  {FUNNEL_STEPS.map((s) => <th key={s.key} className="px-2 py-2 text-right font-semibold">{s.label}</th>)}
+                  <th className="px-2 py-2 text-right font-semibold">Conversão</th>
+                  <th className="py-2 pl-2 text-right font-semibold">Receita</th>
+                </tr>
+              </thead>
+              <tbody>
+                {daily.map((d) => {
+                  const date = new Date(`${d.day}T12:00:00-03:00`);
+                  const label = date.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+                  return (
+                    <tr key={d.day} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                      <td className="sticky left-0 whitespace-nowrap bg-white py-2 pr-3 font-semibold capitalize text-slate-800">{label}</td>
+                      {d.values.map((v, i) => (
+                        <td key={i} className={`px-2 py-2 text-right tabular-nums ${v ? "text-slate-900" : "text-slate-300"}`}>
+                          {int(v)}
+                          {i > 0 && d.values[0] > 0 && v > 0 && <span className="block text-[11px] text-slate-400">{pct(v / d.values[0], 1)}</span>}
+                        </td>
+                      ))}
+                      <td className="px-2 py-2 text-right font-semibold tabular-nums">{pct(d.conversion, 2)}</td>
+                      <td className="py-2 pl-2 text-right tabular-nums">{formatBRL(d.revenue)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-slate-500">Dias mais recentes primeiro. O percentual abaixo de cada número é em relação aos visitantes do dia. Os filtros de produto, origem, campanha e dispositivo também valem aqui.</p>
+        </Card>
+      </div>
     </div>
   );
 }
