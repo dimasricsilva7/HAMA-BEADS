@@ -13,15 +13,16 @@ export async function generateMetadata(): Promise<Metadata> {
   const s = await getSettings();
   const title = s.seo_title || s.store_name;
   const description = s.seo_description;
+  const images = [s.og_image_url || "/og"];
   return {
     metadataBase: new URL(siteUrl()),
     title: { default: title, template: `%s | ${s.store_name}` },
     description,
     applicationName: s.store_name,
     alternates: { canonical: "/" },
-    openGraph: { type: "website", locale: "pt_BR", siteName: s.store_name, title, description, ...(s.og_image_url ? { images: [s.og_image_url] } : {}) },
-    twitter: { card: "summary_large_image", title, description, ...(s.og_image_url ? { images: [s.og_image_url] } : {}) },
-    icons: s.favicon_url ? { icon: s.favicon_url } : undefined,
+    openGraph: { type: "website", locale: "pt_BR", siteName: s.store_name, title, description, images },
+    twitter: { card: "summary_large_image", title, description, images },
+    icons: { icon: s.favicon_url || "/favicon.svg" },
     formatDetection: { telephone: false },
   };
 }
