@@ -3,6 +3,7 @@ import { Prisma, type Order, type OrderStatus, type PaymentStatus as DbPaymentSt
 import { db } from "@/lib/db";
 import { siteUrl } from "@/lib/env";
 import { log } from "@/lib/log";
+import { randomInt } from "crypto";
 import { hashIp, randomToken, safeEqual } from "@/lib/crypto";
 import { paymentService, PaymentError, type PaymentSnapshot, type PaymentStatus } from "@/lib/payments";
 import { assignmentMap } from "@/lib/experiments";
@@ -52,6 +53,16 @@ export async function logOrderEvent(orderId: string | null, type: string, messag
 }
 
 // ───────────────────────── Checkout ─────────────────────────
+
+/** Código aleatório de 5 dígitos (HB27684-2026), sem repetir números já usados. */
+async function uniqueOrderNumber(tx: Prisma.TransactionClient, seq: number) {
+  const year = new Date().getFullYear();
+  for (let i = 0; i < 10; i++) {
+    const candidate = formatOrderNumber(year, randomInt(10000, 100000));
+    if (!(await tx.order.findUnique({ where: { orderNumber: candidate }, select: { id: true } }))) return candidate;
+  }
+  return formatOrderNumber(year, 100000 + seq);
+}
 
 export type RequestMeta = { ip: string; userAgent: string | null; host: string | null };
 
@@ -161,7 +172,7 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
           },
         },
       });
-      const orderNumber = formatOrderNumber(new Date().getFullYear(), created.seq);
+      const orderNumber = await uniqueOrderNumber(tx, created.seq);
       return tx.order.update({ where: { id: created.id }, data: { orderNumber, externalReference: orderNumber, metaEventId: `purchase_${created.id}` } });
     });
   } catch (err) {
@@ -710,7 +721,7 @@ export async function acceptUpsell(parentId: string, upsellId: string, meta: Req
         },
       },
     });
-    const orderNumber = formatOrderNumber(new Date().getFullYear(), created.seq);
+    const orderNumber = await uniqueOrderNumber(tx, created.seq);
     return tx.order.update({ where: { id: created.id }, data: { orderNumber, externalReference: orderNumber, metaEventId: `purchase_${created.id}` } });
   });
   await recordUpsellEvent(parent, upsell.id, "ACCEPT", { childOrderId: order.id, priceCents: next.priceCents });

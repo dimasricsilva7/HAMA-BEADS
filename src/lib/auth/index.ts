@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { hashIp, randomToken, sha256 } from "@/lib/crypto";
 import { getClientIp } from "@/lib/request";
+import { decodeEnvHash } from "./hash";
 
 export const ADMIN_COOKIE = "hb_admin";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12h
@@ -40,16 +41,7 @@ export async function recordLoginAttempt(email: string, ipHash: string | null, s
   await db.loginAttempt.createMany({ data });
 }
 
-/**
- * ADMIN_PASSWORD_HASH aceita o hash bcrypt puro ou codificado como `b64:<base64>`
- * (recomendado: evita que o `$` do bcrypt seja interpretado por ferramentas de .env).
- */
-export function decodeEnvHash(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
-  const v = raw.trim().replace(/^['"]|['"]$/g, "");
-  if (v.startsWith("b64:")) return Buffer.from(v.slice(4), "base64").toString("utf8");
-  return v;
-}
+export { decodeEnvHash };
 
 /**
  * Valida credenciais. Se ainda não houver admin no banco, o primeiro acesso é

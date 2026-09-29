@@ -34,6 +34,8 @@ export async function saveBump(_: ActionResult, fd: FormData): Promise<ActionRes
       sortOrder: int(fd, "sortOrder", 0),
       active: bool(fd, "active"),
       triggerProductIds: ids(fd, "triggerProductIds"),
+      showModal: bool(fd, "showModal"),
+      modalTitle: optStr(fd, "modalTitle", 140),
     };
     if (!data.title) return { error: "Informe o título do bump." };
     if (id) {
@@ -48,6 +50,7 @@ export async function saveBump(_: ActionResult, fd: FormData): Promise<ActionRes
       const created = await db.orderBump.create({ data });
       await audit(admin.id, "order_bump_created", "orderBump", created.id, { summary: `Bump criado: ${created.name}` });
     }
+    refreshStore("catalog");
     revalidatePath("/admin/order-bumps");
     return { ok: true, message: "Order bump salvo." };
   });
@@ -57,6 +60,7 @@ export async function deleteBump(_: ActionResult, fd: FormData): Promise<ActionR
   return withAdmin("ADMIN", async (admin) => {
     const b = await db.orderBump.delete({ where: { id: str(fd, "id", 40) } });
     await audit(admin.id, "order_bump_deleted", "orderBump", b.id, { summary: `Bump excluído: ${b.name}` });
+    refreshStore("catalog");
     revalidatePath("/admin/order-bumps");
     return { ok: true, message: "Excluído." };
   });
@@ -92,6 +96,7 @@ export async function saveUpsell(_: ActionResult, fd: FormData): Promise<ActionR
       const created = await db.upsell.create({ data });
       await audit(admin.id, "upsell_created", "upsell", created.id, { summary: `Upsell criado: ${created.name}` });
     }
+    refreshStore("catalog");
     revalidatePath("/admin/upsells");
     return { ok: true, message: "Upsell salvo." };
   });
@@ -101,6 +106,7 @@ export async function deleteUpsell(_: ActionResult, fd: FormData): Promise<Actio
   return withAdmin("ADMIN", async (admin) => {
     const u = await db.upsell.delete({ where: { id: str(fd, "id", 40) } });
     await audit(admin.id, "upsell_deleted", "upsell", u.id, { summary: `Upsell excluído: ${u.name}` });
+    refreshStore("catalog");
     revalidatePath("/admin/upsells");
     return { ok: true, message: "Excluído." };
   });

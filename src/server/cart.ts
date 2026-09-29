@@ -107,6 +107,10 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
       priceCents,
       listPriceCents: reference > priceCents ? reference : null,
       selected: Boolean(input.bumpIds?.includes(b.id)),
+      showModal: b.showModal,
+      modalTitle: b.modalTitle,
+      productName: b.product.name,
+      discountPct: reference > priceCents ? Math.round((1 - priceCents / reference) * 100) : null,
     });
     bumpRows.push({ id: b.id, productId: b.productId, priceCents });
     productsById.set(b.product.id, b.product);

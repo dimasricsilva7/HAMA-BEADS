@@ -432,6 +432,9 @@ model OrderBump {
   active            Boolean  @default(true)
   /// Mostrar somente quando o carrinho contiver algum destes produtos (vazio = sempre)
   triggerProductIds Json     @default("[]")
+  /// Oferta em destaque: abre um modal com imagem antes de gerar o PIX (uma vez por checkout)
+  showModal         Boolean  @default(false)
+  modalTitle        String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

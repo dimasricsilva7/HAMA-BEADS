@@ -73,8 +73,9 @@ export function computeTotals(lines: PricedLine[], shippingCents: number, discou
   return { subtotalCents, discountCents: discount, shippingCents, totalCents };
 }
 
-export function formatOrderNumber(year: number, seq: number) {
-  return `HB-${year}-${String(seq).padStart(5, "0")}`;
+/** Número do pedido exibido ao cliente: HB27684-2026 (código aleatório de 5 dígitos + ano). */
+export function formatOrderNumber(year: number, code: number) {
+  return `HB${code}-${year}`;
 }
 
 /** BravoPay: valor mínimo de uma cobrança PIX. */

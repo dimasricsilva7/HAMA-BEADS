@@ -3,6 +3,7 @@ import { PixelArt, PixelIcon } from "@/components/ui/PixelArt";
 import { Reveal } from "@/components/ui/Reveal";
 import { RichText } from "@/components/ui/RichText";
 import { VideoEmbed } from "@/components/ui/VideoEmbed";
+import { SectionCta } from "./Offers";
 import { SectionHeading } from "./SectionHeading";
 import { cfgArr, cfgStr, type SectionData } from "@/server/landing";
 import type { IconItem } from "@/lib/domain";
@@ -66,6 +67,7 @@ export function Benefits({ section }: { section: SectionData }) {
             </Reveal>
           ))}
         </ul>
+        <SectionCta section={section} />
       </div>
     </section>
   );
@@ -99,6 +101,7 @@ export function HowItWorks({ section }: { section: SectionData }) {
             <span>{warning}</span>
           </p>
         )}
+        <SectionCta section={section} dark />
       </div>
     </section>
   );
@@ -140,6 +143,7 @@ export function Audience({ sections }: { sections: SectionData[] }) {
             );
           })}
         </div>
+        {sections.some((x) => x.ctaLabel) && <SectionCta section={sections.find((x) => x.ctaLabel)!} />}
       </div>
     </section>
   );
@@ -179,6 +183,7 @@ export function ModelsIncluded({ section }: { section: SectionData }) {
             </div>
           )}
         </Reveal>
+        <div className="lg:col-span-2"><SectionCta section={section} /></div>
       </div>
     </section>
   );

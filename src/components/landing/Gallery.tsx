@@ -46,7 +46,7 @@ export function Lightbox({ item, onClose, cta }: { item: GalleryCard; onClose: (
   );
 }
 
-export function Gallery({ title, subtitle, items }: { title: string | null; subtitle: string | null; items: GalleryCard[] }) {
+export function Gallery({ title, subtitle, items, ctaLabel, ctaTarget }: { title: string | null; subtitle: string | null; items: GalleryCard[]; ctaLabel?: string | null; ctaTarget?: string | null }) {
   const categories = useMemo(() => [...new Set(items.map((i) => i.category))], [items]);
   const [filter, setFilter] = useState<string | null>(null);
   const [open, setOpen] = useState<GalleryCard | null>(null);
@@ -102,6 +102,13 @@ export function Gallery({ title, subtitle, items }: { title: string | null; subt
             <button onClick={() => setShowAll(true)} className="btn-light">
               Ver mais criações
             </button>
+          </div>
+        )}
+        {ctaLabel && (
+          <div className="mt-8 text-center">
+            <a href={ctaTarget || "#kits"} data-cta="gallery_cta" className="btn-primary">
+              {ctaLabel}
+            </a>
           </div>
         )}
       </div>

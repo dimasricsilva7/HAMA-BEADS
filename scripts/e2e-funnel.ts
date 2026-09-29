@@ -99,6 +99,12 @@ async function sendWebhook(eventId: string, type: string, order: { externalRefer
   if (!(await page.inputValue("#city"))) await page.fill("#city", "São Paulo");
   if (!(await page.inputValue("#state"))) await page.selectOption("#state", "SP");
   await page.locator('button[data-cta="checkout_submit"]:visible').click();
+  // Oferta em destaque (modal) antes do PIX: aceita
+  const offer = page.locator('[data-cta="bump_modal_accept"]');
+  if (await offer.waitFor({ timeout: 4000 }).then(() => true).catch(() => false)) {
+    check(true, "modal da oferta exibido antes do PIX");
+    await offer.click();
+  }
 
   // 6. PIX gerado
   await page.waitForURL(/\/pedido\//, { timeout: 30000 });
@@ -112,6 +118,8 @@ async function sendWebhook(eventId: string, type: string, order: { externalRefer
 
   let order = await db.order.findUniqueOrThrow({ where: { orderNumber }, include: { items: true } });
   check(order.status === "PIX_GENERATED", "status PIX_GENERATED", order.status);
+  check(/^HB\d{5}-\d{4}$/.test(orderNumber), "número do pedido no formato HB12345-2026", orderNumber);
+  check(order.items.some((i) => /LED/.test(i.productName) && i.unitPriceCents === 3943), "oferta do modal (LED R$ 39,43) no pedido", order.items.map((i) => i.productName));
   check(order.utmSource === "facebook" && order.utmMedium === "paid" && order.utmCampaign === "test" && order.utmContent === "creative01" && order.fbclid === "test", "atribuição (UTMs + fbclid) no pedido", { s: order.utmSource, m: order.utmMedium, c: order.utmCampaign, ct: order.utmContent, f: order.fbclid });
   check(order.channel === "facebook", "canal classificado", order.channel);
   check(order.items.some((i) => i.kind === "ORDER_BUMP"), "order bump no pedido (snapshot)", order.items.map((i) => `${i.kind}:${i.productName}:${i.unitPriceCents}`));

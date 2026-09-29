@@ -46,6 +46,9 @@ async function pay(orderNumber: string) {
   await page.fill("#number", "10");
   if (!(await page.inputValue("#state"))) await page.selectOption("#state", "RJ");
   await page.locator('button[data-cta="checkout_submit"]:visible').click();
+  // Oferta em destaque (modal): recusa — o pedido segue sem o item
+  const decline = page.locator('[data-cta="bump_modal_reject"]');
+  if (await decline.waitFor({ timeout: 4000 }).then(() => true).catch(() => false)) await decline.click();
   await page.waitForURL(/\/pedido\//, { timeout: 30000 });
   const parentNumber = decodeURIComponent(new URL(page.url()).pathname.split("/").pop()!);
   check((await pay(parentNumber)) === 200, "pedido principal pago via webhook");

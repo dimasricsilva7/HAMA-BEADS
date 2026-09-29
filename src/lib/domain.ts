@@ -136,6 +136,8 @@ export const FUNNEL_STEPS: { key: string; label: string; events: TrackedEvent[] 
 
 export const SECTION_TYPES = {
   hero: "Hero",
+  quick_kits: "Atalho de compra (kits)",
+  led_board: "Pegboard LED",
   product_in_use: "Produto em uso",
   video: "Vídeo",
   benefits: "Benefícios",

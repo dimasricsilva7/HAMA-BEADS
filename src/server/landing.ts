@@ -50,5 +50,12 @@ export const getApprovedReviews = unstable_cache(
   { tags: ["reviews"], revalidate: 300 }
 );
 
+/** Oferta ativa (order bump) de um produto — usada para anunciar o preço especial na landing. */
+export const getActiveBumpForProduct = unstable_cache(
+  async (productId: string) => db.orderBump.findFirst({ where: { productId, active: true }, select: { priceCents: true, showModal: true } }).catch(() => null),
+  ["bump-for-product"],
+  { tags: ["catalog"], revalidate: 300 }
+);
+
 export const cfgStr = (c: Record<string, unknown>, k: string) => (typeof c[k] === "string" ? (c[k] as string) : "");
 export const cfgArr = <T,>(c: Record<string, unknown>, k: string): T[] => (Array.isArray(c[k]) ? (c[k] as T[]) : []);

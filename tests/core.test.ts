@@ -58,7 +58,7 @@ test("cupom percentual e fixo, restrito a produtos e com mínimo", () => {
 test("totais: desconto nunca deixa o total negativo", () => {
   assert.deepEqual(computeTotals([{ productId: "a", unitPriceCents: 4990, quantity: 2 }], 1500, 500), { subtotalCents: 9980, discountCents: 500, shippingCents: 1500, totalCents: 10980 });
   assert.equal(computeTotals([{ productId: "a", unitPriceCents: 1000, quantity: 1 }], 0, 5000).totalCents, 0);
-  assert.equal(formatOrderNumber(2026, 42), "HB-2026-00042");
+  assert.equal(formatOrderNumber(2026, 27684), "HB27684-2026");
 });
 
 test("A/B: atribuição determinística e respeita os pesos", () => {

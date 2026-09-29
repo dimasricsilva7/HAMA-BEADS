@@ -28,7 +28,7 @@ export function LookupForm() {
     >
       <div>
         <label htmlFor="orderNumber" className="label">Número do pedido</label>
-        <input id="orderNumber" name="orderNumber" required placeholder="HB-2026-00001" className="input uppercase" autoComplete="off" />
+        <input id="orderNumber" name="orderNumber" required placeholder="HB27684-2026" className="input uppercase" autoComplete="off" />
       </div>
       <div>
         <label htmlFor="email" className="label">E-mail</label>

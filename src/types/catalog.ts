@@ -58,6 +58,11 @@ export type QuoteBump = {
   priceCents: number;
   listPriceCents: number | null;
   selected: boolean;
+  /** Oferta em destaque: modal com imagem antes de gerar o PIX */
+  showModal: boolean;
+  modalTitle: string | null;
+  productName: string;
+  discountPct: number | null;
 };
 
 export type CartQuote = {

@@ -1,16 +1,19 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { QtyStepper } from "@/components/cart/CartDrawer";
 import { ProductVisual } from "@/components/ui/ProductVisual";
+import { LedBoard } from "@/components/ui/LedBoard";
 import { PixelIcon } from "@/components/ui/PixelArt";
 import { gaEvent, getClientContext, metaEvent, newEventId, randomId, track, trackOnce } from "@/lib/client/tracking";
 import { formatBRL } from "@/utils/format";
 import { maskCep, maskCpf, maskPhone, onlyDigits, UF_LIST } from "@/utils/validators";
-import type { CartQuote } from "@/types/catalog";
+import type { CartQuote, QuoteBump } from "@/types/catalog";
+import { OfferModal } from "./OfferModal";
 
 type Form = {
   name: string;
@@ -96,6 +99,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const started = useRef(false);
+  const modalShown = useRef(false);
+  const [modalBump, setModalBump] = useState<QuoteBump | null>(null);
 
   // Dados do formulário guardados apenas nesta aba (sessionStorage)
   useEffect(() => {
@@ -177,8 +182,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
     return e;
   }
 
-  async function submit(ev: React.FormEvent) {
-    ev.preventDefault();
+  async function submit(ev: React.FormEvent | null, opts: { extraBumpIds?: string[]; skipModal?: boolean } = {}) {
+    ev?.preventDefault();
     if (!q || submitting) return;
     const e = validate();
     setErrors(e);
@@ -187,11 +192,20 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
       document.getElementById(Object.keys(e)[0])?.focus();
       return;
     }
+    // Oferta em destaque: abre o modal uma única vez, antes de gerar o PIX
+    const offer = q.bumps.find((b) => b.showModal && !cart.bumpIds.includes(b.id));
+    if (offer && !opts.skipModal && !modalShown.current) {
+      modalShown.current = true;
+      setModalBump(offer);
+      track("order_bump_view", { productId: offer.productId, element: "bump_modal", valueCents: offer.priceCents, props: { bumpId: offer.id } });
+      return;
+    }
+    const bumpIds = [...new Set([...cart.bumpIds, ...(opts.extraBumpIds ?? [])])];
     setFormError(null);
     setSubmitting(true);
     // Token de idempotência ligado ao conteúdo do carrinho: repetir o envio do mesmo
     // carrinho reaproveita o pedido; carrinho alterado gera um pedido novo.
-    const sig = JSON.stringify([cart.items, cart.bumpIds, cart.couponCode, form.email]);
+    const sig = JSON.stringify([cart.items, bumpIds, cart.couponCode, form.email]);
     let token = "";
     try {
       const saved = JSON.parse(sessionStorage.getItem(TOKEN_KEY) ?? "null") as { token: string; sig: string } | null;
@@ -217,7 +231,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           customer: { name: form.name, email: form.email, phone: form.phone, cpf: form.cpf || null },
           address: q.requiresShipping ? { cep: form.cep, street: form.street, number: form.number, complement: form.complement || null, district: form.district, city: form.city, state: form.state } : null,
           items: cart.items,
-          bumpIds: cart.bumpIds,
+          bumpIds,
           couponCode: cart.couponCode,
           marketingConsent: consent,
           paymentEventId,
@@ -281,6 +295,25 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
   const inv = (k: string) => (errors[k] ? { "aria-invalid": true as const, "aria-describedby": `${k}-error` } : {});
 
   return (
+    <>
+    {modalBump && (
+      <OfferModal
+        bump={modalBump}
+        busy={submitting}
+        onAccept={() => {
+          cart.toggleBump(modalBump.id, true);
+          track("order_bump_accept", { productId: modalBump.productId, element: "bump_modal", valueCents: modalBump.priceCents, props: { bumpId: modalBump.id } });
+          const id = modalBump.id;
+          setModalBump(null);
+          submit(null, { extraBumpIds: [id], skipModal: true });
+        }}
+        onDecline={() => {
+          track("order_bump_reject", { productId: modalBump.productId, element: "bump_modal", valueCents: modalBump.priceCents, props: { bumpId: modalBump.id } });
+          setModalBump(null);
+          submit(null, { skipModal: true });
+        }}
+      />
+    )}
     <form onSubmit={submit} noValidate className="container-page grid gap-6 py-6 sm:py-10 lg:grid-cols-[1fr_380px] lg:items-start lg:gap-10">
       <div className="space-y-5">
         <h1 className="font-display text-3xl font-extrabold sm:text-4xl">Finalizar compra</h1>
@@ -337,7 +370,13 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
                   className="mt-1 h-6 w-6 shrink-0 accent-[rgb(var(--c-success))]"
                   data-cta={`order_bump_${b.id}`}
                 />
+                {(b.imageUrl || /led/i.test(b.productName)) && (
+                  <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-xl">
+                    {b.imageUrl ? <Image src={b.imageUrl} alt={b.productName} fill sizes="64px" className="object-cover" /> : <LedBoard className="h-full w-full" sprite="star" label={false} sizes="64px" />}
+                  </span>
+                )}
                 <span className="min-w-0 flex-1">
+                  {b.discountPct ? <span className="mb-1 inline-block rounded-md bg-accent px-1.5 py-0.5 text-[11px] font-extrabold text-white">-{b.discountPct}% só neste pedido</span> : null}
                   <span className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <span className="font-extrabold">{b.title}</span>
                     <span className="font-extrabold tabular-nums text-accent">
@@ -484,5 +523,6 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
         </div>
       </aside>
     </form>
+    </>
   );
 }

@@ -21,21 +21,25 @@ export function KitCard({ p, index, highlighted }: { p: PublicProduct; index: nu
   const soldOut = p.stockStatus === "OUT_OF_STOCK";
   return (
     <ViewTracker event="product_view" productId={p.id} valueCents={p.priceCents} meta={{ sku: p.sku, name: p.name, priceCents: p.priceCents, category: p.category }} className="h-full">
-      <article className={`relative flex h-full flex-col overflow-hidden rounded-card bg-surface ${highlighted ? "border-[3px] border-primary shadow-lift lg:-translate-y-3" : "border border-line shadow-soft"}`}>
+      {/* Mobile: card horizontal compacto · Tablet/desktop: card vertical com a composição */}
+      <article className={`relative flex h-full flex-row overflow-hidden rounded-card bg-surface md:flex-col ${highlighted ? "border-[3px] border-primary shadow-lift lg:-translate-y-3" : "border border-line shadow-soft"}`}>
         {p.badge && (
-          <span className={`absolute left-4 top-4 z-10 rounded-full px-3 py-1 font-pixel text-[11px] uppercase ${highlighted ? "bg-primary text-white" : "bg-ink text-white"}`}>{p.badge}</span>
+          <span className={`absolute left-4 top-4 z-10 hidden rounded-full px-3 py-1 font-pixel text-[11px] uppercase md:block ${highlighted ? "bg-primary text-white" : "bg-ink text-white"}`}>{p.badge}</span>
         )}
-        <ProductVisual imageUrl={p.imageUrl} name={p.name} category={p.category} index={index} className="aspect-[4/3]" sizes="(min-width: 1024px) 33vw, 100vw" />
-        <div className="flex flex-1 flex-col p-5">
-          <h3 className="font-display text-2xl font-extrabold">{p.name}</h3>
+        <div className="w-[34%] shrink-0 md:w-auto">
+          <ProductVisual imageUrl={p.imageUrl} name={p.name} category={p.category} index={index} className="h-full min-h-[168px] md:h-auto md:min-h-0 md:aspect-[4/3]" sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 34vw" />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col p-3.5 md:p-5">
+          {p.badge && <span className={`mb-1 w-fit rounded-full px-2 py-0.5 font-pixel text-[9px] uppercase md:hidden ${highlighted ? "bg-primary text-white" : "bg-ink text-white"}`}>{p.badge}</span>}
+          <h3 className="font-display text-lg font-extrabold leading-tight md:text-2xl">{p.name}</h3>
           {p.beadCount != null && (
-            <p className="mt-1 font-display text-4xl font-extrabold tracking-tight text-primary">
-              {nf.format(p.beadCount)} <span className="text-base font-bold text-ink">peças</span>
+            <p className="mt-0.5 font-display text-xl font-extrabold tracking-tight text-primary md:mt-1 md:text-4xl">
+              {nf.format(p.beadCount)} <span className="text-xs font-bold text-ink md:text-base">peças{p.colorCount ? ` · ${p.colorCount} cores` : ""}</span>
             </p>
           )}
-          {p.shortDescription && <p className="mt-2 text-sm leading-relaxed text-muted">{p.shortDescription}</p>}
+          {p.shortDescription && <p className="mt-2 hidden text-sm leading-relaxed text-muted md:block">{p.shortDescription}</p>}
           {p.components.length > 0 && (
-            <ul className="mt-4 space-y-2 text-sm">
+            <ul className="mt-4 hidden space-y-2 text-sm md:block">
               {p.components.slice(0, KIT_CARD_ITEMS).map((c) => (
                 <li key={c.id} className="flex items-start gap-2">
                   <span className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-md ${c.isBonus || c.type === "bonus" ? "bg-accent text-white" : "bg-success/15 text-success"}`}>
@@ -57,17 +61,27 @@ export function KitCard({ p, index, highlighted }: { p: PublicProduct; index: nu
               )}
             </ul>
           )}
-          <div className="mt-auto pt-5">
+          <p className="mt-1 text-xs text-muted md:hidden">Mini ferro, pegboard, pinças e bônus inclusos</p>
+          <div className="mt-auto pt-2 md:pt-5">
             {p.promoLabel && <p className="mb-1 text-xs font-bold uppercase text-accent">{p.promoLabel}</p>}
-            <Price priceCents={p.priceCents} listPriceCents={p.listPriceCents} />
-            <p className="text-xs text-muted">no PIX</p>
+            <div className="flex items-baseline gap-2 md:block">
+              <Price priceCents={p.priceCents} listPriceCents={p.listPriceCents} className="[&>span:last-child]:text-2xl md:[&>span:last-child]:text-3xl" />
+              <p className="text-xs text-muted">no PIX</p>
+            </div>
             {soldOut ? (
-              <p className="mt-4 rounded-xl bg-ink/5 py-3 text-center text-sm font-bold">Esgotado no momento</p>
+              <p className="mt-3 rounded-xl bg-ink/5 py-3 text-center text-sm font-bold md:mt-4">Esgotado no momento</p>
             ) : (
-              <AddToCartButton product={ref(p)} label={p.stockStatus === "PREORDER" ? "Garantir na pré-venda" : "Escolher este kit"} element={`kit_${p.slug}`} className={`${highlighted ? "btn-primary" : "btn-light"} mt-4 w-full`} kitSelect />
+              <AddToCartButton
+                product={ref(p)}
+                label={p.stockStatus === "PREORDER" ? "Garantir na pré-venda" : "Escolher este kit"}
+                element={`kit_${p.slug}`}
+                className={`${highlighted ? "btn-primary" : "btn-light"} mt-2.5 min-h-[46px] w-full px-3 text-sm md:mt-4 md:min-h-[52px] md:text-[15px]`}
+                kitSelect
+              />
             )}
-            <Link href={`/produto/${p.slug}`} className="btn-ghost mt-1 w-full text-muted">
-              Ver detalhes do kit
+            <Link href={`/produto/${p.slug}`} className="mt-1.5 block text-center text-xs font-bold text-muted underline-offset-2 hover:underline md:btn-ghost md:mt-1 md:w-full">
+              <span className="md:hidden">O que vem no kit →</span>
+              <span className="hidden md:inline">Ver detalhes do kit</span>
             </Link>
           </div>
         </div>
@@ -84,17 +98,20 @@ export function KitSelector({ section, kits, highlightId }: { section: SectionDa
     { label: "Cores", get: (p) => (p.colorCount != null ? String(p.colorCount) : null) },
     { label: "Pegboards", get: (p) => (p.pegboardCount != null ? String(p.pegboardCount) : null) },
     { label: "Modelos digitais", get: (p) => (p.modelCount != null ? String(p.modelCount) : null) },
-    { label: "Bônus", get: (p) => p.components.filter((c) => c.isBonus || c.type === "bonus").map((c) => c.label).join(", ") || "—" },
+    { label: "Bônus", get: (p) => p.components.filter((c) => c.isBonus || c.type === "bonus").map((c) => c.label.split(" ").slice(0, 2).join(" ")).join(", ") || "—" },
   ];
-  const rows = allRows.filter((r) => kits.some((k) => r.get(k) && r.get(k) !== "—"));
+  const same = (r: Row) => new Set(kits.map((k) => r.get(k))).size === 1;
+  const rows = allRows.filter((r) => kits.some((k) => r.get(k) && r.get(k) !== "—") && !(r.label === "Bônus" && same(r)));
+  const sharedBonus = kits[0]?.components.filter((c) => c.isBonus || c.type === "bonus").map((c) => c.label) ?? [];
+  const bonusInAll = allRows.find((r) => r.label === "Bônus" && same(r) && r.get(kits[0]) !== "—") ? sharedBonus : [];
 
   return (
     <section id="kits" className="section bg-gradient-to-b from-bg to-primary/[0.06]">
       <div className="container-page">
         <SectionHeading eyebrow="Kits" title={section.title} subtitle={section.subtitle} />
-        <div className={`mt-10 grid gap-5 ${kits.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : kits.length === 3 ? "lg:grid-cols-3" : kits.length === 2 ? "md:grid-cols-2" : "mx-auto max-w-md"} lg:items-stretch`}>
+        <div className={`mt-8 grid gap-3 md:mt-10 md:gap-5 ${kits.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : kits.length === 3 ? "lg:grid-cols-3" : kits.length === 2 ? "md:grid-cols-2" : "mx-auto max-w-md"} lg:items-stretch`}>
           {kits.map((k, i) => (
-            <Reveal key={k.id} delay={i * 80} className="h-full">
+            <Reveal key={k.id} delay={i * 80} className={`h-full ${k.id === highlightId ? "order-first md:order-none" : ""}`}>
               <KitCard p={k} index={i} highlighted={k.id === highlightId} />
             </Reveal>
           ))}
@@ -104,15 +121,16 @@ export function KitSelector({ section, kits, highlightId }: { section: SectionDa
           <div className="mt-12">
             <h3 className="text-center font-display text-2xl font-extrabold">Compare lado a lado</h3>
             <div className="mt-5 overflow-x-auto rounded-card border border-line bg-surface">
-              <table className="w-full table-fixed text-left text-[13px] sm:text-sm">
+              <table className="w-full table-fixed text-left text-[12px] sm:text-sm">
                 <thead>
                   <tr className="border-b border-line">
-                    <th scope="col" className="w-[27%] p-2.5 font-semibold text-muted sm:w-1/4 sm:p-4">
+                    <th scope="col" className="w-[22%] p-2 font-semibold text-muted sm:w-1/4 sm:p-4">
                       <span className="sr-only">Característica</span>
                     </th>
                     {kits.map((k) => (
-                      <th key={k.id} scope="col" className={`p-2.5 font-extrabold leading-tight sm:p-4 ${k.id === highlightId ? "text-primary" : ""}`}>
-                        {k.name}
+                      <th key={k.id} scope="col" className={`p-2 font-extrabold leading-tight sm:p-4 ${k.id === highlightId ? "text-primary" : ""}`}>
+                        <span className="sm:hidden">{k.colorCount ? `${k.colorCount} cores` : k.name}</span>
+                        <span className="hidden sm:inline">{k.name}</span>
                       </th>
                     ))}
                   </tr>
@@ -120,18 +138,18 @@ export function KitSelector({ section, kits, highlightId }: { section: SectionDa
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.label} className="border-b border-line last:border-0">
-                      <th scope="row" className="p-2.5 font-semibold leading-tight text-muted sm:p-4">{r.label}</th>
+                      <th scope="row" className="p-2 font-semibold leading-tight text-muted sm:p-4">{r.label}</th>
                       {kits.map((k) => (
-                        <td key={k.id} className={`break-words p-2.5 font-bold leading-snug tabular-nums sm:p-4 ${k.id === highlightId ? "bg-primary/[0.05]" : ""}`}>
+                        <td key={k.id} className={`break-words p-2 font-bold leading-snug tabular-nums sm:p-4 ${k.id === highlightId ? "bg-primary/[0.05]" : ""}`}>
                           {r.get(k) ?? "—"}
                         </td>
                       ))}
                     </tr>
                   ))}
                   <tr>
-                    <th scope="row" className="p-2.5 font-semibold leading-tight text-muted sm:p-4">Preço</th>
+                    <th scope="row" className="p-2 font-semibold leading-tight text-muted sm:p-4">Preço</th>
                     {kits.map((k) => (
-                      <td key={k.id} className={`whitespace-nowrap p-2.5 font-extrabold tabular-nums sm:p-4 sm:text-base ${k.id === highlightId ? "bg-primary/[0.05]" : ""}`}>
+                      <td key={k.id} className={`whitespace-nowrap p-2 font-extrabold tabular-nums tracking-tight sm:p-4 sm:text-base ${k.id === highlightId ? "bg-primary/[0.05]" : ""}`}>
                         {formatBRL(k.priceCents)}
                       </td>
                     ))}
@@ -139,6 +157,11 @@ export function KitSelector({ section, kits, highlightId }: { section: SectionDa
                 </tbody>
               </table>
             </div>
+            {bonusInAll.length > 0 && (
+              <p className="mt-3 text-center text-sm text-muted">
+                <b className="text-accent">Bônus em todos os kits:</b> {bonusInAll.join(", ").toLowerCase()}
+              </p>
+            )}
           </div>
         )}
       </div>

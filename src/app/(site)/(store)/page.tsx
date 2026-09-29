@@ -6,10 +6,11 @@ import { Gallery, Inspiration } from "@/components/landing/Gallery";
 import { VideoSection } from "@/components/landing/VideoSection";
 import { Faq } from "@/components/landing/Faq";
 import { LandingTracker, StickyMobileCTA } from "@/components/landing/client";
+import { LedBoardSection, QuickKits } from "@/components/landing/Offers";
 import { valueFor } from "@/lib/experiments";
 import { siteUrl } from "@/lib/env";
 import { currentAssignments, getPublicCatalog } from "@/server/catalog";
-import { cfgArr, cfgStr, getApprovedReviews, getFaqs, getGallery, getLandingSections, type SectionData } from "@/server/landing";
+import { cfgArr, cfgStr, getActiveBumpForProduct, getApprovedReviews, getFaqs, getGallery, getLandingSections, type SectionData } from "@/server/landing";
 import { getSettings, isOn } from "@/server/settings";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,9 @@ export default async function LandingPage() {
   const libraryId = librarySection ? cfgStr(librarySection.config, "productId") : "";
   const galleryCards = gallery.map((g) => ({ id: g.id, title: g.title, category: g.category, imageUrl: g.imageUrl, alt: g.alt }));
   const audiences = sections.filter((s) => s.type === "audience");
+  const ledSection = sections.find((s) => s.type === "led_board");
+  const ledId = ledSection ? cfgStr(ledSection.config, "productId") : "";
+  const ledBump = ledId ? await getActiveBumpForProduct(ledId) : null;
   let audienceRendered = false;
 
   const render = (s: SectionData) => {
@@ -56,6 +60,10 @@ export default async function LandingPage() {
           />
         );
       }
+      case "quick_kits":
+        return <QuickKits section={s} kits={kits} highlightId={highlightId} />;
+      case "led_board":
+        return <LedBoardSection section={s} product={byId(ledId)} offerPriceCents={ledBump?.priceCents ?? null} />;
       case "product_in_use":
         return <ProductInUse section={s} />;
       case "video":
@@ -65,7 +73,7 @@ export default async function LandingPage() {
       case "how_it_works":
         return <HowItWorks section={s} />;
       case "gallery":
-        return <Gallery title={s.title} subtitle={s.subtitle} items={galleryCards} />;
+        return <Gallery title={s.title} subtitle={s.subtitle} items={galleryCards} ctaLabel={s.ctaLabel} ctaTarget={s.ctaTarget} />;
       case "inspiration":
         return <Inspiration title={s.title} subtitle={s.subtitle} ctaLabel={s.ctaLabel || "Quero criar algo assim"} ctaTarget={s.ctaTarget || "#kits"} items={galleryCards.filter((g) => gallery.find((x) => x.id === g.id)?.inspiration)} />;
       case "audience":
@@ -80,7 +88,7 @@ export default async function LandingPage() {
         return <ModelsIncluded section={s} />;
       case "complete_kit": {
         const ids = cfgArr<string>(s.config, "productIds");
-        const list = ids.length ? ids.map(byId).filter((p): p is NonNullable<typeof p> => Boolean(p)) : sellable.filter((p) => p.category !== "KIT" && p.id !== libraryId);
+        const list = ids.length ? ids.map(byId).filter((p): p is NonNullable<typeof p> => Boolean(p)) : sellable.filter((p) => p.category !== "KIT" && p.id !== libraryId && p.id !== ledId);
         return <CompleteKit section={s} products={list.filter((p) => p.stockStatus !== "OUT_OF_STOCK").slice(0, 8)} />;
       }
       case "library":
