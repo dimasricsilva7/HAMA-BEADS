@@ -163,6 +163,14 @@ export async function applyCatalogV2(db: PrismaClient) {
     if (f) await db.faq.update({ where: { id: f.id }, data: { answer, active: true } });
     else await db.faq.create({ data: { question, answer, active: true, sortOrder: (await db.faq.count()) + 1 } });
   };
+  // Remove perguntas duplicadas (mantém a mais recente)
+  const allFaqs = await db.faq.findMany({ orderBy: { updatedAt: "desc" } });
+  const seen = new Set<string>();
+  const dupes = allFaqs.filter((f) => (seen.has(f.question) ? true : (seen.add(f.question), false))).map((f) => f.id);
+  if (dupes.length) {
+    await db.faq.deleteMany({ where: { id: { in: dupes } } });
+    log.push(`${dupes.length} pergunta(s) duplicada(s) removida(s)`);
+  }
   await faq("O papel manteiga acompanha?", "Sim. Todos os kits incluem papel manteiga e, de bônus, um tecido térmico antiaderente reutilizável para a finalização com o mini ferro.");
   await faq("O que é o tecido térmico?", "É um pano antiaderente, reutilizável e resistente ao calor. Você coloca entre o mini ferro e as peças na hora da finalização. Acompanha todos os kits como bônus.");
   await faq("O que é o Pegboard LED?", "É um pegboard com LEDs controlado por aplicativo: você escolhe o desenho no celular e ele aparece iluminado na placa, mostrando onde encaixar as peças. Ele é vendido à parte e aparece como oferta especial no checkout.");
