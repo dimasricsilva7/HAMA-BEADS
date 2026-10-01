@@ -43,12 +43,12 @@ export default async function CustomersPage({ searchParams }: { searchParams: SP
         rowKey={(r) => r.id}
         empty="Nenhum cliente encontrado."
         columns={[
-          { key: "n", label: "Nome", render: (r) => <Link href={`/admin/clientes/${r.id}`} className="font-semibold hover:underline">{r.name}</Link> },
+          { key: "n", label: "Nome", render: (r) => (<div><Link href={`/admin/clientes/${r.id}`} className="font-semibold hover:underline">{r.name}</Link><span className="block whitespace-nowrap text-xs text-slate-500">desde {formatDate(r.createdAt, true)}</span></div>) },
+          { key: "l", label: "Último pedido", render: (r) => <span className="whitespace-nowrap">{r.last ? formatDate(r.last, true) : "—"}</span> },
           { key: "t", label: "Telefone", render: (r) => formatPhone(r.phone) },
           { key: "e", label: "E-mail", render: (r) => r.email },
           { key: "o", label: "Pedidos", align: "right", render: (r) => `${r.paidCount} pago(s) / ${r.orders.length}` },
           { key: "v", label: "Valor total", align: "right", render: (r) => formatBRL(r.total) },
-          { key: "l", label: "Último pedido", render: (r) => (r.last ? formatDate(r.last) : "—") },
           { key: "s", label: "Origem (1º pedido)", render: (r) => r.origin },
         ]}
       />

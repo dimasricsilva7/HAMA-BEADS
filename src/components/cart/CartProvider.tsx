@@ -22,6 +22,7 @@ type CartCtx = CartState & {
   toggleBump: (bumpId: string, on: boolean) => void;
   setCoupon: (code: string | null) => void;
   clear: () => void;
+  restore: (s: { items: CartItem[]; bumpIds?: string[]; couponCode?: string | null }) => void;
   openDrawer: () => void;
   closeDrawer: () => void;
   refresh: () => void;
@@ -134,6 +135,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const setCoupon = useCallback((code: string | null) => setState((s) => ({ ...s, couponCode: code?.trim().toUpperCase() || null })), []);
   const clear = useCallback(() => setState(EMPTY), []);
+  const restore = useCallback<CartCtx["restore"]>((s) => setState({ items: s.items.slice(0, 20), bumpIds: s.bumpIds ?? [], couponCode: s.couponCode ?? null }), []);
 
   const value = useMemo<CartCtx>(
     () => ({
@@ -151,6 +153,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       toggleBump,
       setCoupon,
       clear,
+      restore,
       openDrawer: () => {
         setDrawerOpen(true);
         track("cart_view");
@@ -158,7 +161,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       closeDrawer: () => setDrawerOpen(false),
       refresh: () => setTick((t) => t + 1),
     }),
-    [state, ready, quote, loading, error, drawerOpen, lastAdded, add, setQuantity, remove, toggleBump, setCoupon, clear]
+    [state, ready, quote, loading, error, drawerOpen, lastAdded, add, setQuantity, remove, toggleBump, setCoupon, clear, restore]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

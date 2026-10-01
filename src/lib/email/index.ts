@@ -6,7 +6,8 @@ import { log } from "@/lib/log";
 import { trackServerEvent } from "@/lib/analytics";
 import { deliver, emailProvider } from "@/lib/email/provider";
 import { getSettingsFresh, isOn, settingInt, type Settings } from "@/server/settings";
-import { orderShippedEmail, pixRecoveryEmail, purchaseConfirmationEmail, type EmailBrand, type EmailOrder } from "@/emails/templates";
+import { checkoutRecoveryEmail, orderShippedEmail, pixRecoveryEmail, purchaseConfirmationEmail, type EmailBrand, type EmailOrder } from "@/emails/templates";
+import { leadRecoveryUrl, leadUnsubscribeUrl } from "@/server/checkout-leads";
 import { isAwaitingStatus, isPaidStatus } from "@/lib/domain";
 import { formatCep } from "@/utils/format";
 
@@ -183,5 +184,81 @@ export async function processDueEmails(limit = 25) {
     if (r.ok) sent++;
     else skipped++;
   }
-  return { processed: due.length, sent, skipped };
+  const leads = await processDueLeadEmails(limit);
+  return { processed: due.length, sent, skipped, leads };
+}
+
+// ───────────── Checkout abandonado (lead sem pedido) ─────────────
+
+type Lead = NonNullable<Awaited<ReturnType<typeof db.checkoutLead.findUnique>>>;
+
+export function renderLeadEmail(lead: Lead, s: Settings) {
+  const unsub = leadUnsubscribeUrl(lead.token);
+  const tpl = checkoutRecoveryEmail(
+    brandFromSettings(s),
+    { firstName: lead.name?.split(/\s+/)[0] ?? null, lines: (lead.itemsSummary ?? "").split(", ").filter(Boolean), totalCents: lead.totalCents },
+    leadRecoveryUrl(lead.token),
+    unsub
+  );
+  return { ...tpl, headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } };
+}
+
+async function leadIneligible(lead: Lead, manual: boolean): Promise<string | null> {
+  if (!lead.email) return "Sem e-mail";
+  if (lead.orderId) return "Já virou pedido";
+  const optedOut =
+    lead.emailOptOut ||
+    (await db.checkoutLead.count({ where: { email: lead.email, emailOptOut: true } })) > 0 ||
+    (await db.customer.count({ where: { email: lead.email, emailOptOutAt: { not: null } } })) > 0;
+  if (optedOut) return "Pessoa descadastrou dos lembretes";
+  if (!manual) {
+    if (Date.now() - lead.createdAt.getTime() > 72 * 3600_000) return "Checkout antigo (mais de 72h)";
+    const ordered = await db.order.count({ where: { customer: { email: lead.email }, createdAt: { gte: lead.createdAt } } });
+    if (ordered) return "Cliente gerou um pedido depois";
+  }
+  return null;
+}
+
+/** Envia o e-mail de checkout abandonado (reserva atômica). */
+export async function sendLeadEmail(id: string, opts: { manual?: boolean } = {}) {
+  const claimed = await db.checkoutLead.updateMany({
+    where: { id, ...(opts.manual ? { NOT: { emailStatus: "SENDING" } } : { emailStatus: { in: ["SCHEDULED", "FAILED"] } }) },
+    data: { emailStatus: "SENDING", emailAttempts: { increment: 1 } },
+  });
+  if (!claimed.count) return { ok: false as const, error: "E-mail já processado" };
+  const lead = await db.checkoutLead.findUniqueOrThrow({ where: { id } });
+  const reason = await leadIneligible(lead, Boolean(opts.manual));
+  if (reason) {
+    await db.checkoutLead.update({ where: { id }, data: { emailStatus: "SKIPPED", emailError: reason } });
+    return { ok: false as const, error: reason };
+  }
+  const s = await getSettingsFresh();
+  const { subject, html, text, headers } = renderLeadEmail(lead, s);
+  const result = await deliver({ to: lead.email!, subject, html, text, headers, idempotencyKey: `hb-lead-${lead.id}-${lead.emailCount + 1}` }, s.contact_email || null);
+  if (result.ok) {
+    await db.checkoutLead.update({ where: { id }, data: { emailStatus: "SENT", emailSentAt: new Date(), emailCount: { increment: 1 }, emailError: null } });
+    log.info("email", "checkout abandonado enviado", { lead: lead.id });
+    return { ok: true as const };
+  }
+  const giveUp = opts.manual || !result.retryable || lead.emailAttempts >= 3;
+  await db.checkoutLead.update({ where: { id }, data: { emailStatus: giveUp ? "FAILED" : "SCHEDULED", emailError: result.error, emailScheduledFor: new Date(Date.now() + 5 * 60_000) } });
+  return { ok: false as const, error: result.error };
+}
+
+/** Envio manual pelo admin (anti-spam: 2 min). */
+export async function resendLeadEmail(id: string) {
+  if (emailProvider() === "none") return { ok: false as const, error: "E-mail não configurado: defina RESEND_API_KEY e EMAIL_FROM na Vercel." };
+  const lead = await db.checkoutLead.findUnique({ where: { id } });
+  if (!lead) return { ok: false as const, error: "Checkout não encontrado" };
+  if (lead.emailSentAt && Date.now() - lead.emailSentAt.getTime() < 2 * 60_000) return { ok: false as const, error: "E-mail enviado há menos de 2 minutos. Aguarde para reenviar." };
+  return sendLeadEmail(id, { manual: true });
+}
+
+export async function processDueLeadEmails(limit = 25) {
+  if (emailProvider() === "none") return { processed: 0, sent: 0 };
+  await db.checkoutLead.updateMany({ where: { emailStatus: "SENDING", updatedAt: { lt: new Date(Date.now() - 10 * 60_000) } }, data: { emailStatus: "SCHEDULED" } });
+  const due = await db.checkoutLead.findMany({ where: { emailStatus: "SCHEDULED", emailScheduledFor: { lte: new Date() } }, orderBy: { emailScheduledFor: "asc" }, take: limit, select: { id: true } });
+  let sent = 0;
+  for (const l of due) if ((await sendLeadEmail(l.id)).ok) sent++;
+  return { processed: due.length, sent };
 }

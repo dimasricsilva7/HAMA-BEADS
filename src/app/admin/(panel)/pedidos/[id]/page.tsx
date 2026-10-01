@@ -6,7 +6,7 @@ import { ORDER_STATUS_LABEL, isAwaitingStatus, isPaidStatus } from "@/lib/domain
 import { bravopayMode, isProductionDeploy, siteUrl } from "@/lib/env";
 import { db } from "@/lib/db";
 import { formatBRL, formatCep, formatCpf, formatDate, formatPhone } from "@/utils/format";
-import { cancelOrder, recheckPayment, resendEmailAction, simulatePayment, updateFulfillment } from "../actions";
+import { cancelOrder, deleteOrder, recheckPayment, resendEmailAction, simulatePayment, updateFulfillment } from "../actions";
 import { EMAIL_TYPE_LABEL } from "@/lib/email";
 import { emailProvider } from "@/lib/email/provider";
 
@@ -41,7 +41,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <PageHeader
         title={`Pedido ${order.orderNumber}`}
         description={`Criado em ${formatDate(order.createdAt, true)}${order.source === "UPSELL" ? " · pedido complementar (upsell)" : ""}`}
-        actions={<Badge tone={ORDER_TONE[order.status] ?? "slate"}>{ORDER_STATUS_LABEL[order.status]}</Badge>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={ORDER_TONE[order.status] ?? "slate"}>{ORDER_STATUS_LABEL[order.status]}</Badge>
+            <a href="#emails" className={btnSecondary}>Reenviar e-mail</a>
+            <ConfirmAction action={deleteOrder} label="Excluir pedido" confirmLabel="Excluir definitivamente" danger description={`O pedido ${order.orderNumber} será apagado com itens, pagamentos, eventos e e-mails. Use para pedidos de teste ou duplicados. A exclusão fica registrada na auditoria.`} hidden={{ id: order.id, back: "1" }} />
+          </div>
+        }
       />
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
@@ -153,6 +159,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <p className="mt-3 text-xs text-slate-500">Reembolso: a API da BravoPay não documenta reembolso — faça pelo painel BravoPay; o webhook transaction.refunded atualiza o pedido.</p>
           </Card>
 
+          <div id="emails" className="scroll-mt-20" />
           <Card title="E-mails">
             {emailProvider() === "none" && <p className="mb-3 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">Envio desativado: configure RESEND_API_KEY e EMAIL_FROM na Vercel. Os e-mails ficam agendados e saem quando a chave for configurada.</p>}
             {order.emailEvents.length ? (

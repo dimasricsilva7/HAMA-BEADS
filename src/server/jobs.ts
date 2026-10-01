@@ -67,3 +67,20 @@ export async function maybeReconcileOpportunistically() {
     log.error("cron", "reconciliação oportunista falhou", { error: err instanceof Error ? err.message : String(err) });
   }
 }
+
+/**
+ * "Tique" público para um agendador externo (ex.: cron-job.org a cada 1 min).
+ * Não exige segredo porque só executa trabalho já agendado e idempotente; um
+ * travamento global (45 s, não liberado ao fim) impede abuso por chamadas repetidas.
+ */
+export async function runTick() {
+  const now = new Date();
+  const taken = await db.$executeRaw`
+    INSERT INTO "JobLock" ("name", "lockedAt", "expiresAt") VALUES ('tick', ${now}, ${new Date(now.getTime() + 45_000)})
+    ON CONFLICT ("name") DO UPDATE SET "lockedAt" = EXCLUDED."lockedAt", "expiresAt" = EXCLUDED."expiresAt"
+    WHERE "JobLock"."expiresAt" < ${now}`;
+  if (taken === 0) return { skipped: true as const };
+  const emails = await runEmailJobs();
+  const reconcile = await runReconcileJobs();
+  return { emails, reconcile };
+}

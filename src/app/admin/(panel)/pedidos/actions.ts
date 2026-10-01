@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { bravopayMode, isProductionDeploy } from "@/lib/env";
@@ -114,5 +115,36 @@ export async function resendEmailAction(_: ActionResult, fd: FormData): Promise<
     await audit(admin.id, "email_resent", "order", id, { summary: `${EMAIL_TYPE_LABEL[type]} — pedido ${order.orderNumber} para ${order.customer.email}: ${r.ok ? "enviado" : r.error}` });
     revalidatePath(`/admin/pedidos/${id}`);
     return r.ok ? { ok: true, message: `${EMAIL_TYPE_LABEL[type]} enviado para ${order.customer.email}.` } : { error: r.error };
+  });
+}
+
+/** Reenvio rápido pela lista: escolhe o e-mail certo pelo status do pedido. */
+export async function quickResendEmail(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  return withAdmin("EDITOR", async (admin) => {
+    const id = str(fd, "id", 40);
+    const order = await db.order.findUniqueOrThrow({ where: { id }, include: { customer: { select: { email: true } } } });
+    const type: EmailType = isPaidStatus(order.status) ? (order.status === "SHIPPED" || order.status === "DELIVERED" ? "ORDER_SHIPPED" : "PURCHASE_CONFIRMATION") : "PIX_RECOVERY";
+    const r = await resendEmail(id, type, admin.id);
+    await audit(admin.id, "email_resent", "order", id, { summary: `${EMAIL_TYPE_LABEL[type]} — pedido ${order.orderNumber} para ${order.customer.email}: ${r.ok ? "enviado" : r.error}` });
+    revalidatePath("/admin/pedidos");
+    return r.ok ? { ok: true, message: `${EMAIL_TYPE_LABEL[type]} enviado.` } : { error: r.error };
+  });
+}
+
+/** Exclui o pedido (e itens, pagamentos, eventos e e-mails dele). Fica registrado na auditoria. */
+export async function deleteOrder(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  return withAdmin("ADMIN", async (admin) => {
+    const id = str(fd, "id", 40);
+    const order = await db.order.findUnique({ where: { id }, include: { customer: { select: { name: true, email: true } }, items: { select: { productName: true, quantity: true } } } });
+    if (!order) return { error: "Pedido não encontrado." };
+    await db.order.delete({ where: { id } });
+    await audit(admin.id, "order_deleted", "order", id, {
+      summary: `Pedido ${order.orderNumber} excluído (${ORDER_STATUS_LABEL[order.status]}, ${order.customer.email})`,
+      before: { orderNumber: order.orderNumber, status: order.status, totalCents: order.totalCents, customer: order.customer.email, items: order.items.map((i) => `${i.quantity}x ${i.productName}`), createdAt: order.createdAt.toISOString() },
+    });
+    revalidatePath("/admin/pedidos");
+    revalidatePath("/admin");
+    if (str(fd, "back", 10) === "1") redirect("/admin/pedidos");
+    return { ok: true, message: `Pedido ${order.orderNumber} excluído.` };
   });
 }

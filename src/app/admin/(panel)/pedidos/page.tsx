@@ -7,6 +7,8 @@ import { ORDER_STATUS_LABEL } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { formatBRL, formatDate, formatPhone } from "@/utils/format";
 import { resolvePeriod } from "@/server/admin/period";
+import { RowActions } from "@/components/admin/RowActions";
+import { deleteOrder, quickResendEmail } from "./actions";
 
 export const metadata = { title: "Pedidos" };
 type SP = Promise<Record<string, string | string[] | undefined>>;
@@ -59,17 +61,30 @@ export default async function OrdersPage({ searchParams }: { searchParams: SP })
         rowKey={(o) => o.id}
         empty="Nenhum pedido encontrado."
         columns={[
-          { key: "id", label: "Pedido", render: (o) => <Link href={`/admin/pedidos/${o.id}`} className="font-semibold underline-offset-2 hover:underline">{o.orderNumber}</Link> },
-          { key: "d", label: "Data", render: (o) => formatDate(o.createdAt, true) },
+          {
+            key: "id",
+            label: "Pedido · data e hora",
+            render: (o) => (
+              <div className="whitespace-nowrap">
+                <Link href={`/admin/pedidos/${o.id}`} className="font-semibold underline-offset-2 hover:underline">{o.orderNumber}</Link>
+                <span className="block text-xs text-slate-500">{formatDate(o.createdAt, true)}</span>
+              </div>
+            ),
+          },
           { key: "c", label: "Cliente", render: (o) => o.customer.name },
+          { key: "v", label: "Valor", align: "right", render: (o) => formatBRL(o.totalCents) },
+          { key: "s", label: "Status", render: (o) => <Badge tone={ORDER_TONE[o.status] ?? "slate"}>{ORDER_STATUS_LABEL[o.status]}</Badge> },
+          {
+            key: "a",
+            label: "Ações",
+            render: (o) => <RowActions id={o.id} primary={quickResendEmail} onDelete={deleteOrder} deleteConfirm={`Excluir o pedido ${o.orderNumber} definitivamente? Itens, pagamentos e e-mails dele também serão apagados.`} />,
+          },
           { key: "w", label: "WhatsApp", render: (o) => formatPhone(o.customer.phone) },
           { key: "e", label: "E-mail", render: (o) => <span className="block max-w-[180px] truncate">{o.customer.email}</span> },
           { key: "p", label: "Produto", render: (o) => <span className="block max-w-[200px] truncate">{o.items.filter((i) => i.kind === "PRODUCT" || i.kind === "UPSELL" || i.kind === "CROSS_SELL").map((i) => `${i.quantity}× ${i.productName}`).join(", ")}</span> },
-          { key: "v", label: "Valor", align: "right", render: (o) => formatBRL(o.totalCents) },
           { key: "b", label: "Bumps", align: "right", render: (o) => o.items.filter((i) => i.kind === "ORDER_BUMP").length || "—" },
           { key: "u", label: "Upsells", align: "right", render: (o) => (o.source === "UPSELL" ? <Badge tone="blue">upsell</Badge> : upsellCount.get(o.id) ?? "—") },
           { key: "pg", label: "Pagamento", render: (o) => o.paymentMethod },
-          { key: "s", label: "Status", render: (o) => <Badge tone={ORDER_TONE[o.status] ?? "slate"}>{ORDER_STATUS_LABEL[o.status]}</Badge> },
           { key: "o", label: "Origem", render: (o) => o.utmSource ?? o.channel ?? "—" },
           { key: "cp", label: "Campanha", render: (o) => o.utmCampaign ?? "—" },
         ]}

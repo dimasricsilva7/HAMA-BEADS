@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request";
 import { cancelScheduled } from "@/lib/email";
 import { findOrderByAccess } from "@/server/orders";
+import { findLeadByToken } from "@/server/checkout-leads";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,15 @@ const page = (title: string, body: string, form = "") =>
 
 async function optOut(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
+  const lead = await findLeadByToken(sp.get("lead"));
+  if (lead) {
+    await db.checkoutLead.update({ where: { id: lead.id }, data: { emailOptOut: true, ...(lead.emailStatus === "SCHEDULED" ? { emailStatus: "CANCELLED", emailError: "Descadastrou" } : {}) } });
+    if (lead.email) {
+      await db.checkoutLead.updateMany({ where: { email: lead.email, emailStatus: "SCHEDULED" }, data: { emailStatus: "CANCELLED", emailError: "Descadastrou" } });
+      await db.customer.updateMany({ where: { email: lead.email }, data: { emailOptOutAt: new Date() } });
+    }
+    return true;
+  }
   const order = await findOrderByAccess(sp.get("pedido"), sp.get("t"));
   if (!order) return false;
   await db.customer.update({ where: { id: order.customerId }, data: { emailOptOutAt: new Date() } });

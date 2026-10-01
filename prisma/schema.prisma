@@ -299,6 +299,7 @@ model Order {
   paymentEvents     PaymentEvent[]
   upsellEvents      UpsellEvent[]
   emailEvents       EmailEvent[]
+  checkoutLead      CheckoutLead?
 
   @@index([status, createdAt])
   @@index([createdAt])
@@ -715,4 +716,42 @@ model JobLock {
   name      String   @id
   lockedAt  DateTime
   expiresAt DateTime
+}
+
+/// Quem abriu o checkout e digitou contato (nome/e-mail/WhatsApp), mesmo sem gerar pedido.
+/// Usado para o e-mail de "checkout abandonado" e para contato manual no admin.
+model CheckoutLead {
+  id                String       @id @default(cuid())
+  /// Chave gerada no navegador (uma por carrinho/checkout)
+  clientKey         String       @unique
+  /// Token público do link de recuperação (/checkout?recuperar=...)
+  token             String       @unique
+  name              String?
+  email             String?
+  phone             String?
+  items             Json
+  bumpIds           Json?
+  couponCode        String?
+  itemsSummary      String?
+  totalCents        Int          @default(0)
+  sessionId         String?
+  visitorId         String?
+  utmSource         String?
+  utmCampaign       String?
+  device            String?
+  orderId           String?      @unique
+  order             Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  emailStatus       EmailStatus?
+  emailScheduledFor DateTime?
+  emailSentAt       DateTime?
+  emailAttempts     Int          @default(0)
+  emailCount        Int          @default(0)
+  emailError        String?
+  emailOptOut       Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([emailStatus, emailScheduledFor])
+  @@index([createdAt])
+  @@index([email])
 }

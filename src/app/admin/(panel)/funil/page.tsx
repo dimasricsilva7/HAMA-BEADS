@@ -94,7 +94,7 @@ export default async function FunnelPage({ searchParams }: { searchParams: SP })
                         </td>
                       ))}
                       <td className="px-2 py-2 text-right font-semibold tabular-nums">{pct(d.conversion, 2)}</td>
-                      <td className="py-2 pl-2 text-right tabular-nums">{formatBRL(d.revenue)}</td>
+                      <td className="whitespace-nowrap py-2 pl-2 text-right tabular-nums">{formatBRL(d.revenue)}</td>
                     </tr>
                   );
                 })}

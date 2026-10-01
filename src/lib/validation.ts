@@ -73,7 +73,21 @@ export const checkoutSchema = z.object({
   couponCode: optStr(40),
   marketingConsent: z.boolean().default(false),
   paymentEventId: optStr(80),
+  leadKey: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/).optional().nullable(),
   context: clientContextSchema.optional(),
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+/** Dados parciais digitados no checkout (antes de gerar o PIX). */
+export const checkoutLeadSchema = z.object({
+  clientKey: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/),
+  name: optStr(120),
+  email: optStr(160),
+  phone: optStr(30),
+  items: cartItemsSchema.min(1),
+  bumpIds: z.array(idSchema).max(10).default([]),
+  couponCode: optStr(40),
+  context: clientContextSchema.optional(),
+});
+export type CheckoutLeadInput = z.infer<typeof checkoutLeadSchema>;

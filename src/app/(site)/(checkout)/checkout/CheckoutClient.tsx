@@ -31,6 +31,20 @@ type Form = {
 const EMPTY: Form = { name: "", email: "", phone: "", cpf: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" };
 const FORM_KEY = "hb_checkout_form";
 const TOKEN_KEY = "hb_checkout_token";
+const LEAD_KEY = "hb_lead_key";
+
+/** Chave do lead deste carrinho (persiste entre abas; renovada após gerar o pedido). */
+function leadKey(): string {
+  try {
+    const saved = localStorage.getItem(LEAD_KEY);
+    if (saved && /^[A-Za-z0-9_-]{16,64}$/.test(saved)) return saved;
+    const k = randomId(32);
+    localStorage.setItem(LEAD_KEY, k);
+    return k;
+  } catch {
+    return randomId(32);
+  }
+}
 
 function Field({ id, label, error, children, className = "" }: { id: string; label: string; error?: string; children: React.ReactNode; className?: string }) {
   return (
@@ -118,6 +132,50 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
       /* ignore */
     }
   }, [form]);
+
+  // Link do e-mail de checkout abandonado (?recuperar=token): restaura carrinho e contato
+  const [restoring, setRestoring] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("recuperar"));
+  useEffect(() => {
+    if (!cart.ready || !restoring) return;
+    const token = new URLSearchParams(window.location.search).get("recuperar");
+    fetch(`/api/checkout/lead?token=${encodeURIComponent(token ?? "")}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((lead: { clientKey: string; name: string | null; email: string | null; phone: string | null; items: { productId: string; quantity: number }[]; bumpIds: string[]; couponCode: string | null } | null) => {
+        if (!lead) return;
+        if (lead.items?.length) cart.restore({ items: lead.items, bumpIds: lead.bumpIds, couponCode: lead.couponCode });
+        setForm((f) => ({ ...f, name: f.name || lead.name || "", email: f.email || lead.email || "", phone: f.phone || (lead.phone ? maskPhone(lead.phone) : "") }));
+        try {
+          localStorage.setItem(LEAD_KEY, lead.clientKey);
+        } catch {
+          /* ignore */
+        }
+        track("checkout_recovered", { props: { via: "email" } });
+      })
+      .catch(() => null)
+      .finally(() => {
+        setRestoring(false);
+        window.history.replaceState(null, "", "/checkout");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.ready, restoring]);
+
+  // Salva o contato digitado (e-mail ou WhatsApp) para recuperar a compra se a pessoa sair do checkout
+  const lastLead = useRef("");
+  useEffect(() => {
+    if (!cart.ready || restoring || !cart.items.length) return;
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim());
+    if (!emailOk && onlyDigits(form.phone).length < 10) return;
+    const t = setTimeout(() => {
+      const payload = { clientKey: leadKey(), name: form.name.trim() || null, email: emailOk ? form.email.trim() : null, phone: onlyDigits(form.phone) || null, items: cart.items, bumpIds: cart.bumpIds, couponCode: cart.couponCode, context: getClientContext() };
+      const sig = JSON.stringify([payload.clientKey, payload.name, payload.email, payload.phone, payload.items, payload.bumpIds, payload.couponCode]);
+      if (sig === lastLead.current) return;
+      lastLead.current = sig;
+      fetch("/api/checkout/lead", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true }).catch(() => {
+        lastLead.current = "";
+      });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [cart.ready, restoring, cart.items, cart.bumpIds, cart.couponCode, form.name, form.email, form.phone]);
 
   // checkout_started + InitiateCheckout (uma vez, quando o orçamento chega)
   useEffect(() => {
@@ -235,6 +293,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           couponCode: cart.couponCode,
           marketingConsent: consent,
           paymentEventId,
+          leadKey: leadKey(),
           context: getClientContext(),
         }),
       });
@@ -254,6 +313,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
       try {
         sessionStorage.removeItem(TOKEN_KEY);
         sessionStorage.removeItem(FORM_KEY);
+        localStorage.removeItem(LEAD_KEY);
       } catch {
         /* ignore */
       }
@@ -265,7 +325,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
     }
   }
 
-  if (cart.ready && !cart.items.length) {
+  if (cart.ready && !cart.items.length && !restoring) {
     return (
       <div className="container-page max-w-lg py-20 text-center">
         <h1 className="h-section">Seu carrinho está vazio</h1>
@@ -405,6 +465,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           </Field>
           <Field id="email" label="E-mail" error={errors.email}>
             <input id="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value.trim())} autoComplete="email" inputMode="email" className="input" {...inv("email")} />
+            <p className="mt-1 text-xs text-muted">Guardamos seu contato para você poder continuar a compra depois, caso saia desta página.</p>
           </Field>
           {requireCpf && (
             <Field id="cpf" label="CPF (exigido para o PIX)" error={errors.cpf}>

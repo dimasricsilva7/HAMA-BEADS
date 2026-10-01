@@ -134,3 +134,21 @@ ${button(b, orderUrl, "Acompanhar meu pedido")}`;
   const text = `Seu pedido ${o.orderNumber} foi enviado!${o.trackingCode ? `\nCódigo de rastreio: ${o.trackingCode}` : ""}\n\nAcompanhe: ${orderUrl}\n\n${b.store}`;
   return { subject, html: layout(b, { preheader: o.trackingCode ? `Código de rastreio: ${o.trackingCode}` : "Seu pedido saiu para entrega.", eyebrow: "Pedido enviado", title: "Seu kit está a caminho!", body, footerNote: `Você recebeu este e-mail porque fez uma compra na ${b.store}.` }), text };
 }
+
+export type EmailLead = { firstName: string | null; lines: string[]; totalCents: number };
+
+/** Checkout abandonado: a pessoa digitou o contato mas não gerou o PIX. */
+export function checkoutRecoveryEmail(b: EmailBrand, l: EmailLead, checkoutUrl: string, unsubscribeUrl?: string) {
+  const hi = l.firstName ? `Oi, ${esc(l.firstName)}!` : "Oi!";
+  const subject = l.firstName ? `${l.firstName}, seu kit ficou no carrinho` : "Seu kit ficou no carrinho";
+  const rows = l.lines
+    .map((line) => `<tr><td style="padding:10px 0;border-bottom:1px solid ${LINE};font-family:${BODY};font-size:14px;color:#17142E">${esc(line)}</td></tr>`)
+    .join("");
+  const body = `${p(`${hi} Você começou a finalizar sua compra na ${esc(b.store)}, mas não chegou a gerar o PIX. Guardamos seu carrinho do jeitinho que você deixou.`)}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:8px">${rows}
+<tr><td style="padding:10px 0 0;font-family:${FONT};font-size:20px;font-weight:800;color:#17142E" align="right">${brl(l.totalCents)}</td></tr></table>
+${button(b, checkoutUrl, "Finalizar minha compra")}
+${p("O pagamento é por PIX, com confirmação na hora. Se tiver qualquer dúvida, é só responder este e-mail.", `font-size:13px;color:${MUTED}`)}`;
+  const text = `${hi.replace(/<[^>]+>/g, "")} Você começou a finalizar sua compra na ${b.store}, mas não gerou o PIX.\n\n${l.lines.join("\n")}\nTotal: ${brl(l.totalCents)}\n\nContinue de onde parou: ${checkoutUrl}\n\n${b.store}`;
+  return { subject, html: layout(b, { preheader: "Guardamos seu carrinho. Termine a compra em poucos segundos.", eyebrow: "Carrinho salvo", title: "Seu kit está te esperando", body, footerNote: `Você recebeu este e-mail porque informou seu contato no checkout da ${b.store}.`, unsubscribeUrl }), text };
+}

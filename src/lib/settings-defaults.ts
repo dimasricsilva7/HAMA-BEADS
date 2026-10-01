@@ -41,6 +41,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   // E-mails transacionais (Resend)
   email_confirmation_enabled: "true",
   email_recovery_enabled: "true",
+  email_checkout_enabled: "true",
   email_recovery_delay_minutes: "10",
   email_shipping_enabled: "true",
   // Rastreamento

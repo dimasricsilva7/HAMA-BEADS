@@ -164,10 +164,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
               {emailProvider() === "resend" ? <Badge tone="green">ativo — enviando por {process.env.EMAIL_FROM}</Badge> : <Badge tone="red">desativado — defina RESEND_API_KEY e EMAIL_FROM na Vercel</Badge>}
             </p>
             {form(
-              ["email_confirmation_enabled", "email_recovery_enabled", "email_recovery_delay_minutes", "email_shipping_enabled"],
+              ["email_confirmation_enabled", "email_recovery_enabled", "email_checkout_enabled", "email_recovery_delay_minutes", "email_shipping_enabled"],
               <div className="space-y-3">
                 {check("email_confirmation_enabled", "Confirmação de compra — enviada assim que o pagamento é aprovado")}
                 {check("email_recovery_enabled", "Lembrete de PIX pendente (carrinho abandonado) — cancelado automaticamente se o cliente pagar antes")}
+                {check("email_checkout_enabled", "Checkout abandonado — para quem digitou o e-mail no checkout mas não gerou o PIX (com link que restaura o carrinho)")}
                 <Field label="Enviar o lembrete após (minutos)" hint="Padrão 10. O PIX expira conforme Configurações → Checkout; o lembrete não é enviado se o PIX já tiver expirado.">
                   <input name="email_recovery_delay_minutes" inputMode="numeric" defaultValue={s.email_recovery_delay_minutes} className={`${inputCls} max-w-[140px]`} />
                 </Field>

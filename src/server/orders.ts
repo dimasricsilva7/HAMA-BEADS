@@ -15,6 +15,7 @@ import { linkSessionToCustomer, trackServerEvent } from "@/lib/analytics";
 import { sendCapiEvent, fbcFromClickId } from "@/lib/meta/capi";
 import { cancelScheduled, onOrderPaidEmail, onPixGeneratedEmail } from "@/lib/email";
 import { quoteCart } from "@/server/cart";
+import { linkLeadToOrder } from "@/server/checkout-leads";
 import { isSellable } from "@/server/catalog";
 import { getSettingsFresh, isOn, settingInt } from "@/server/settings";
 import type { CheckoutInput } from "@/lib/validation";
@@ -191,6 +192,7 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
     experiments,
   });
   log.info("checkout", "pedido criado", { order: order.orderNumber, total: order.totalCents, channel: order.channel });
+  await linkLeadToOrder(input.leadKey, order.id, input.customer.email);
   await linkSessionToCustomer(order.sessionId, order.customerId);
 
   const withPix = await ensurePix(order.id);

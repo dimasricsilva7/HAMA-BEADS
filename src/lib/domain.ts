@@ -109,6 +109,7 @@ export const TRACKED_EVENTS = [
   "pix_generated",
   "pix_copy",
   "pix_renewed",
+  "checkout_recovered",
   "pix_error",
   "payment_pending",
   "payment_paid",
