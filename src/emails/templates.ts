@@ -30,6 +30,8 @@ export type EmailOrder = {
   requiresShipping: boolean;
   pixCopyPaste: string | null;
   pixExpiresAt: Date | null;
+  /** PIX vencido/inexistente: o e-mail leva à página do pedido para gerar um código novo */
+  pixExpired?: boolean;
   trackingCode: string | null;
   address: string | null;
 };
@@ -109,8 +111,9 @@ ${button(b, orderUrl, o.hasDigital ? "Ver pedido e acessar modelos" : "Acompanha
 }
 
 export function pixRecoveryEmail(b: EmailBrand, o: EmailOrder, orderUrl: string, unsubscribeUrl?: string) {
+  if (o.pixExpired) return pixRenewEmail(b, o, orderUrl, unsubscribeUrl);
   const subject = `Seu pedido ${o.orderNumber} está aguardando pagamento`;
-  const expires = o.pixExpiresAt ? o.pixExpiresAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : null;
+  const expires = o.pixExpiresAt ?o.pixExpiresAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : null;
   const body = `${p(`Oi, ${esc(o.firstName)}! Vimos que o PIX do pedido <b>${esc(o.orderNumber)}</b> ainda não foi pago. Seu kit está reservado — é só concluir o pagamento pelo app do banco.`)}
 ${itemsTable(o)}
 ${button(b, orderUrl, `Pagar ${brl(o.totalCents)} com PIX`)}
@@ -151,4 +154,15 @@ ${button(b, checkoutUrl, "Finalizar minha compra")}
 ${p("O pagamento é por PIX, com confirmação na hora. Se tiver qualquer dúvida, é só responder este e-mail.", `font-size:13px;color:${MUTED}`)}`;
   const text = `${hi.replace(/<[^>]+>/g, "")} Você começou a finalizar sua compra na ${b.store}, mas não gerou o PIX.\n\n${l.lines.join("\n")}\nTotal: ${brl(l.totalCents)}\n\nContinue de onde parou: ${checkoutUrl}\n\n${b.store}`;
   return { subject, html: layout(b, { preheader: "Guardamos seu carrinho. Termine a compra em poucos segundos.", eyebrow: "Carrinho salvo", title: "Seu kit está te esperando", body, footerNote: `Você recebeu este e-mail porque informou seu contato no checkout da ${b.store}.`, unsubscribeUrl }), text };
+}
+
+/** PIX vencido: sem código no e-mail; o botão abre o pedido, onde o cliente gera um PIX novo em 1 clique. */
+function pixRenewEmail(b: EmailBrand, o: EmailOrder, orderUrl: string, unsubscribeUrl?: string) {
+  const subject = `Seu pedido ${o.orderNumber} ainda pode ser finalizado`;
+  const body = `${p(`Oi, ${esc(o.firstName)}! O código PIX do pedido <b>${esc(o.orderNumber)}</b> expirou antes do pagamento, mas seu pedido continua salvo com os mesmos itens e o mesmo valor.`)}
+${itemsTable(o)}
+${button(b, orderUrl, "Gerar novo PIX e finalizar")}
+${p("É só tocar no botão: um código novo aparece na hora, e a confirmação do pagamento é automática.", `font-size:13px;color:${MUTED}`)}`;
+  const text = `Oi, ${o.firstName}! O PIX do pedido ${o.orderNumber} (${brl(o.totalCents)}) expirou, mas seu pedido continua salvo.\n\nGere um novo PIX e finalize: ${orderUrl}\n\n${b.store}`;
+  return { subject, html: layout(b, { preheader: "Seu pedido continua salvo. Gere um novo PIX em 1 clique.", eyebrow: "Pedido salvo", title: "Seu kit ainda está te esperando", body, footerNote: `Você recebeu este e-mail porque iniciou um pedido na ${b.store}.`, unsubscribeUrl }), text };
 }

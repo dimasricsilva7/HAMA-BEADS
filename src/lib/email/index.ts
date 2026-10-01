@@ -55,6 +55,7 @@ export function toEmailOrder(o: LoadedOrder): EmailOrder {
     requiresShipping: o.items.some((i) => i.fulfillment !== "DIGITAL"),
     pixCopyPaste: o.pixCopyPaste,
     pixExpiresAt: o.pixExpiresAt,
+    pixExpired: o.status === "EXPIRED" || o.status === "FAILED" || !o.pixCopyPaste || (!!o.pixExpiresAt && o.pixExpiresAt < new Date()),
     trackingCode: o.trackingCode,
     address: a?.street ? `${a.street}, ${a.number}${a.complement ? ` — ${a.complement}` : ""} · ${a.district} · ${a.city}/${a.state} · ${formatCep(a.cep ?? "")}` : null,
   };
@@ -82,9 +83,13 @@ export function renderEmail(type: EmailType, o: LoadedOrder, s: Settings): { sub
 function eligibility(type: EmailType, o: LoadedOrder, manual: boolean): string | null {
   if (type === "PIX_RECOVERY") {
     if (o.customer.emailOptOutAt) return "Cliente descadastrou dos lembretes";
-    if (!isAwaitingStatus(o.status)) return `Pedido não está aguardando pagamento (${o.status})`;
-    if (!o.pixCopyPaste) return "PIX não foi gerado";
-    if (o.pixExpiresAt && o.pixExpiresAt < new Date()) return "PIX expirado";
+    // Envio manual (admin) também vale para PIX expirado: o e-mail leva à página do pedido, que gera um PIX novo
+    const renewable = o.status === "EXPIRED" || o.status === "FAILED";
+    if (!isAwaitingStatus(o.status) && !(manual && renewable)) return `Pedido não está aguardando pagamento (${o.status})`;
+    if (!manual) {
+      if (!o.pixCopyPaste) return "PIX não foi gerado";
+      if (o.pixExpiresAt && o.pixExpiresAt < new Date()) return "PIX expirado";
+    }
   }
   if (type === "PURCHASE_CONFIRMATION" && !isPaidStatus(o.status)) return "Pedido não está pago";
   if (type === "ORDER_SHIPPED" && !manual && o.status !== "SHIPPED") return "Pedido não está como enviado";
