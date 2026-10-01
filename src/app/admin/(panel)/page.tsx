@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, PageHeader, Stat } from "@/components/admin/ui";
 import { PeriodFilter } from "@/components/admin/PeriodFilter";
+import { OnlineNow } from "@/components/admin/OnlineNow";
 import { DayBars, HBars } from "@/components/admin/charts";
 import { int, pct, ratioLabel } from "@/components/admin/format";
 import { bravopayMode, envHealth } from "@/lib/env";
@@ -31,6 +32,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: SP
           <Link href="/admin/configuracoes" className="mt-1 inline-block font-semibold underline">Ver diagnóstico</Link>
         </div>
       )}
+
+      <OnlineNow />
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Stat label="Receita" value={formatBRL(d.revenue)} hint={`${d.paidOrders} pedido(s) pago(s)`} />

@@ -217,3 +217,15 @@ export function metaEvent(eventName: string, params: Record<string, unknown> = {
 export function gaEvent(name: string, params: Record<string, unknown> = {}) {
   if (adsAllowed() && window.gtag) window.gtag("event", name, params);
 }
+
+// ───────────── Online agora (batimento) ─────────────
+if (typeof window !== "undefined" && !location.pathname.startsWith("/admin")) {
+  const ping = () => {
+    if (document.visibilityState !== "visible") return;
+    const body = JSON.stringify({ sid: getClientContext().sessionId, path: location.pathname });
+    const blob = new Blob([body], { type: "application/json" });
+    if (!(navigator.sendBeacon && navigator.sendBeacon("/api/ping", blob))) fetch("/api/ping", { method: "POST", body, headers: { "Content-Type": "application/json" }, keepalive: true }).catch(() => {});
+  };
+  setInterval(ping, 30_000);
+  addEventListener("visibilitychange", () => document.visibilityState === "visible" && ping());
+}
