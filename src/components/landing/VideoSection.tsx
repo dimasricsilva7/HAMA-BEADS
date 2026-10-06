@@ -14,6 +14,7 @@ export function VideoSection({ title, subtitle, mobileUrl, desktopUrl, posterUrl
   const [src, setSrc] = useState(mobileUrl);
   const [muted, setMuted] = useState(true);
   const [embedOpen, setEmbedOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
   const embed = embedUrl(mobileUrl);
 
   useEffect(() => {
@@ -55,6 +56,9 @@ export function VideoSection({ title, subtitle, mobileUrl, desktopUrl, posterUrl
     };
   }, [src]);
 
+  // Arquivo indisponível (ex.: armazenamento bloqueado): esconde a seção em vez de mostrar um quadro preto
+  if (failed) return null;
+
   return (
     <section id="video" className="section pt-4">
       <div className="container-page grid items-center gap-8 lg:grid-cols-[1fr_380px] lg:gap-16">
@@ -90,7 +94,7 @@ export function VideoSection({ title, subtitle, mobileUrl, desktopUrl, posterUrl
             )
           ) : (
             <>
-              <video key={src} ref={ref} src={src} poster={posterUrl ?? undefined} muted={muted} playsInline preload="metadata" controls={!muted} className="absolute inset-0 h-full w-full object-cover" aria-label={title ?? "Vídeo do produto"} />
+              <video key={src} ref={ref} src={src} onError={() => setFailed(true)} poster={posterUrl ?? undefined} muted={muted} playsInline preload="metadata" controls={!muted} className="absolute inset-0 h-full w-full object-cover" aria-label={title ?? "Vídeo do produto"} />
               {muted && (
                 <button
                   onClick={() => {

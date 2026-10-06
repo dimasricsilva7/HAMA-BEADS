@@ -19,7 +19,16 @@ export function MediaInput({ name, defaultValue, accept = "image/*", label, fold
       try {
         const blob = await upload(`${folder}/${safe}`, file, { access: "public", handleUploadUrl: "/api/admin/blob" });
         setUrl(blob.url);
-      } catch {
+      } catch (blobErr) {
+        // Em produção não existe fallback (o servidor recusa arquivos grandes): mostra o erro real
+        if (process.env.NODE_ENV === "production") {
+          const msg = blobErr instanceof Error ? blobErr.message : "";
+          throw new Error(
+            /blocked|suspend|forbidden|403/i.test(msg)
+              ? "Armazenamento de arquivos da Vercel bloqueado (limite do plano). Cole um link do YouTube/Vimeo ou de um MP4 hospedado em outro lugar."
+              : `Falha no upload${msg ? `: ${msg}` : ""}. Você pode colar um link do YouTube/Vimeo no lugar.`
+          );
+        }
         const fd = new FormData();
         fd.append("file", file);
         const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
