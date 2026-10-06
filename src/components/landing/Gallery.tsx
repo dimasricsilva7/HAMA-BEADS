@@ -59,7 +59,6 @@ export function Gallery({ title, subtitle, items, ctaLabel, ctaTarget }: { title
     <section id="galeria" className="section bg-surface">
       <div className="container-page">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="eyebrow text-accent">Inspiração</p>
           {title && <h2 className="h-section mt-2">{title}</h2>}
           {subtitle && <p className="lead mt-3">{subtitle}</p>}
         </div>
@@ -124,7 +123,6 @@ export function Inspiration({ title, subtitle, ctaLabel, ctaTarget, items }: { t
     <section className="section overflow-hidden">
       <div className="container-page">
         <div className="max-w-2xl">
-          <p className="eyebrow text-primary">Ideias</p>
           {title && <h2 className="h-section mt-2">{title}</h2>}
           {subtitle && <p className="lead mt-3">{subtitle}</p>}
         </div>

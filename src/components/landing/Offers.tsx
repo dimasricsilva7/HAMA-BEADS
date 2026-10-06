@@ -35,7 +35,8 @@ export function QuickKits({ section, kits, highlightId }: { section: SectionData
                   {k.colorCount ?? "—"} <span className="text-sm font-bold">cores</span>
                 </p>
                 {k.beadCount != null && <p className="mt-1 text-xs font-semibold text-muted sm:text-sm">{nf.format(k.beadCount)} peças</p>}
-                <p className="mt-2 font-display text-lg font-extrabold tabular-nums sm:text-xl">{formatBRL(k.priceCents)}</p>
+                {k.shortDescription && k.shortDescription.length <= 90 && <p className="mt-1.5 text-[12px] leading-snug text-ink/80 sm:text-sm">{k.shortDescription}</p>}
+                <p className="mt-auto pt-2 font-display text-lg font-extrabold tabular-nums sm:text-xl">{formatBRL(k.priceCents)}</p>
                 <AddToCartButton
                   product={{ id: k.id, name: k.name, sku: k.sku, priceCents: k.priceCents, category: k.category }}
                   label="Comprar"

@@ -32,7 +32,7 @@ export function ProductInUse({ section }: { section: SectionData }) {
           <Visual url={section.imageUrl} alt={section.title ?? "Produto em uso"} sprite={cfgStr(section.config, "spriteKey") || "cat"} className="aspect-[4/3]" />
         </Reveal>
         <Reveal>
-          <SectionHeading eyebrow="Na prática" title={section.title} align="left" />
+          <SectionHeading title={section.title} align="left" />
           <RichText text={section.body} className="lead mt-4" />
           {section.ctaLabel && (
             <a href={section.ctaTarget || "#kits"} data-cta="product_in_use_cta" className="btn-light mt-6">
@@ -53,7 +53,7 @@ export function Benefits({ section }: { section: SectionData }) {
   return (
     <section className="section">
       <div className="container-page">
-        <SectionHeading eyebrow="Por que Hama Beads" title={section.title} subtitle={section.subtitle} />
+        <SectionHeading title={section.title} subtitle={section.subtitle} />
         <ul className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {items.map((it, i) => (
             <Reveal key={i} delay={i * 60}>
@@ -79,7 +79,7 @@ export function HowItWorks({ section }: { section: SectionData }) {
   return (
     <section id="como-funciona" className="section bg-ink text-white">
       <div className="container-page">
-        <SectionHeading eyebrow="Passo a passo" title={section.title} subtitle={section.subtitle} tone="text-secondary" />
+        <SectionHeading title={section.title} subtitle={section.subtitle} tone="text-secondary" />
         <ol className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {steps.map((s, i) => (
             <Reveal key={i} delay={i * 50}>
@@ -112,7 +112,7 @@ export function Audience({ sections }: { sections: SectionData[] }) {
   return (
     <section className="section">
       <div className="container-page">
-        <SectionHeading eyebrow="Para quem é" title="Para todas as idades" subtitle="Uma atividade criativa que funciona para a família toda." />
+        <SectionHeading title="Pra criança e pra adulto" subtitle="Cada um do seu jeito." />
         <div className={`mt-10 grid gap-4 ${sections.length > 1 ? "lg:grid-cols-2" : ""}`}>
           {sections.map((s, i) => {
             const items = cfgArr<string>(s.config, "items").filter(Boolean);
@@ -156,7 +156,7 @@ export function ModelsIncluded({ section }: { section: SectionData }) {
     <section id="modelos" className="section bg-secondary/25">
       <div className="container-page grid items-center gap-10 lg:grid-cols-2">
         <Reveal>
-          <SectionHeading eyebrow="Incluso em todos os kits" title={section.title} align="left" tone="text-ink" />
+          <SectionHeading title={section.title} align="left" tone="text-ink" />
           <RichText text={section.body} className="lead mt-4" />
           {note && (
             <p className="mt-5 flex items-start gap-2 rounded-2xl bg-surface p-4 text-sm font-semibold shadow-soft">
@@ -210,7 +210,7 @@ export function Reviews({ section, reviews }: { section: SectionData; reviews: R
   return (
     <section id="depoimentos" className="section">
       <div className="container-page">
-        <SectionHeading eyebrow="Avaliações" title={section.title} subtitle={section.subtitle} />
+        <SectionHeading title={section.title} subtitle={section.subtitle} />
         <div className="mx-auto mt-6 flex w-fit flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-full bg-surface px-5 py-2.5 shadow-soft">
           <span className="font-display text-2xl font-extrabold">{avg.toFixed(1).replace(".", ",")}</span>
           <Stars rating={avg} className="text-xl" />

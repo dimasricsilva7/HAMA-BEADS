@@ -9,7 +9,6 @@ export function Faq({ title, items }: { title: string | null; items: { id: strin
     <section id="faq" className="section bg-surface">
       <div className="container-page max-w-3xl">
         <div className="text-center">
-          <p className="eyebrow text-primary">Dúvidas</p>
           {title && <h2 className="h-section mt-2">{title}</h2>}
         </div>
         <div className="mt-8 divide-y divide-line rounded-card border border-line bg-bg">

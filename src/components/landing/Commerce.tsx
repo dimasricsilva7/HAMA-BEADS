@@ -61,7 +61,8 @@ export function KitCard({ p, index, highlighted }: { p: PublicProduct; index: nu
               )}
             </ul>
           )}
-          <p className="mt-1 text-xs text-muted md:hidden">Mini ferro, pegboard, pinças e bônus inclusos</p>
+          {p.shortDescription && p.shortDescription.length <= 90 && <p className="mt-1 text-[13px] leading-snug text-ink/80 md:hidden">{p.shortDescription}</p>}
+          <p className="mt-1 text-xs text-muted md:hidden">Mini ferro, placa, pinças e brinde inclusos</p>
           <div className="mt-auto pt-2 md:pt-5">
             {p.promoLabel && <p className="mb-1 text-xs font-bold uppercase text-accent">{p.promoLabel}</p>}
             <div className="flex items-baseline gap-2 md:block">
@@ -108,7 +109,7 @@ export function KitSelector({ section, kits, highlightId }: { section: SectionDa
   return (
     <section id="kits" className="section bg-gradient-to-b from-bg to-primary/[0.06]">
       <div className="container-page">
-        <SectionHeading eyebrow="Kits" title={section.title} subtitle={section.subtitle} />
+        <SectionHeading title={section.title} subtitle={section.subtitle} />
         <div className={`mt-8 grid gap-3 md:mt-10 md:gap-5 ${kits.length >= 4 ? "md:grid-cols-2 xl:grid-cols-4" : kits.length === 3 ? "lg:grid-cols-3" : kits.length === 2 ? "md:grid-cols-2" : "mx-auto max-w-md"} lg:items-stretch`}>
           {kits.map((k, i) => (
             <Reveal key={k.id} delay={i * 80} className={`h-full ${k.id === highlightId ? "order-first md:order-none" : ""}`}>
@@ -214,7 +215,7 @@ export function CompleteKit({ section, products }: { section: SectionData; produ
   return (
     <section id="complementos" className="section">
       <div className="container-page">
-        <SectionHeading eyebrow="Complementos" title={section.title} subtitle={section.subtitle} />
+        <SectionHeading title={section.title} subtitle={section.subtitle} />
         <ul className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {products.map((p, i) => (
             <li key={p.id}>

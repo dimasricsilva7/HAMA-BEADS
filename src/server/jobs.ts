@@ -47,6 +47,7 @@ export async function runEmailJobs() {
 
 export async function runAllJobs() {
   const started = Date.now();
+  await runContentUpdates().catch((e) => log.error("content", "falha", { error: e instanceof Error ? e.message : String(e) }));
   const reconcile = await runReconcileJobs();
   const emails = await runEmailJobs();
   const cleanup = await runCleanupJobs();
@@ -80,7 +81,21 @@ export async function runTick() {
     ON CONFLICT ("name") DO UPDATE SET "lockedAt" = EXCLUDED."lockedAt", "expiresAt" = EXCLUDED."expiresAt"
     WHERE "JobLock"."expiresAt" < ${now}`;
   if (taken === 0) return { skipped: true as const };
+  await runContentUpdates().catch((e) => log.error("content", "falha", { error: e instanceof Error ? e.message : String(e) }));
   const emails = await runEmailJobs();
   const reconcile = await runReconcileJobs();
   return { emails, reconcile };
+}
+
+/** Atualizações de conteúdo pendentes (uma vez por banco). Invalida o cache da landing. */
+export async function runContentUpdates() {
+  const { applyCopyV3 } = await import("@/server/data/copy-v3");
+  const r = await applyCopyV3(db);
+  if (!("skipped" in r)) {
+    const { revalidatePath, revalidateTag } = await import("next/cache");
+    for (const t of ["landing", "catalog", "faq", "settings"]) revalidateTag(t);
+    revalidatePath("/", "layout");
+    log.info("content", "textos v3 aplicados", r);
+  }
+  return r;
 }
