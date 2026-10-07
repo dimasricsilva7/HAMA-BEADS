@@ -11,7 +11,7 @@ const check = unstable_cache(
   async (url: string) => {
     try {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 2500);
+      const t = setTimeout(() => ctrl.abort(), 1200);
       const res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-0" }, signal: ctrl.signal, cache: "no-store" });
       clearTimeout(t);
       res.body?.cancel().catch(() => {});

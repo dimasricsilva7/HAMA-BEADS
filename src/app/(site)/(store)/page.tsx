@@ -45,10 +45,12 @@ export default async function LandingPage() {
   const audiences = sections.filter((s) => s.type === "audience");
   const ledSection = sections.find((s) => s.type === "led_board");
   const ledId = ledSection ? cfgStr(ledSection.config, "productId") : "";
-  const ledBump = ledId ? await getActiveBumpForProduct(ledId) : null;
-  // Vídeo da seção indisponível (ex.: armazenamento bloqueado) → seção desativada automaticamente
   const videoSection = sections.find((s) => s.type === "video");
-  const videoOk = videoSection?.videoUrl ? await isMediaAvailable(videoSection.videoUrl) : false;
+  // Em paralelo: nada aqui pode segurar a página (vídeo indisponível → seção desativada automaticamente)
+  const [ledBump, videoOk] = await Promise.all([
+    ledId ? getActiveBumpForProduct(ledId) : Promise.resolve(null),
+    videoSection?.videoUrl ? isMediaAvailable(videoSection.videoUrl) : Promise.resolve(false),
+  ]);
   let audienceRendered = false;
 
   const render = (s: SectionData) => {
