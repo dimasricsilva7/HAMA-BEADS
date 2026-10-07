@@ -12,6 +12,7 @@ import { siteUrl } from "@/lib/env";
 import { currentAssignments, getPublicCatalog } from "@/server/catalog";
 import { cfgArr, cfgStr, getActiveBumpForProduct, getApprovedReviews, getFaqs, getGallery, getLandingSections, type SectionData } from "@/server/landing";
 import { getSettings, isOn } from "@/server/settings";
+import { isMediaAvailable } from "@/server/media";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,9 @@ export default async function LandingPage() {
   const ledSection = sections.find((s) => s.type === "led_board");
   const ledId = ledSection ? cfgStr(ledSection.config, "productId") : "";
   const ledBump = ledId ? await getActiveBumpForProduct(ledId) : null;
+  // Vídeo da seção indisponível (ex.: armazenamento bloqueado) → seção desativada automaticamente
+  const videoSection = sections.find((s) => s.type === "video");
+  const videoOk = videoSection?.videoUrl ? await isMediaAvailable(videoSection.videoUrl) : false;
   let audienceRendered = false;
 
   const render = (s: SectionData) => {
@@ -67,7 +71,7 @@ export default async function LandingPage() {
       case "product_in_use":
         return <ProductInUse section={s} />;
       case "video":
-        return s.videoUrl ? <VideoSection title={s.title} subtitle={s.subtitle} mobileUrl={s.videoUrl} desktopUrl={cfgStr(s.config, "desktopVideoUrl") || null} posterUrl={cfgStr(s.config, "posterUrl") || s.imageUrl} /> : null;
+        return s.videoUrl && videoOk ? <VideoSection title={s.title} subtitle={s.subtitle} mobileUrl={s.videoUrl} desktopUrl={cfgStr(s.config, "desktopVideoUrl") || null} posterUrl={cfgStr(s.config, "posterUrl") || s.imageUrl} /> : null;
       case "benefits":
         return <Benefits section={s} />;
       case "how_it_works":

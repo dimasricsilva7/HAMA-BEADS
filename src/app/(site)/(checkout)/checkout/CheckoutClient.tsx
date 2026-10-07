@@ -85,6 +85,12 @@ function Summary({ q, compact = false }: { q: CartQuote; compact?: boolean }) {
           <span className="tabular-nums">− {formatBRL(q.discountCents)}</span>
         </div>
       )}
+      {q.requiresShipping && q.shippingCents === 0 && (
+        <div className="flex justify-between">
+          <span className="text-muted">Frete</span>
+          <span className="font-bold text-success">Grátis</span>
+        </div>
+      )}
       {q.shippingCents > 0 && (
         <div className="flex justify-between">
           <span className="text-muted">Frete</span>
@@ -115,6 +121,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
   const started = useRef(false);
   const modalShown = useRef(false);
   const [modalBump, setModalBump] = useState<QuoteBump | null>(null);
+  const [showAllBumps, setShowAllBumps] = useState(false);
 
   // Dados do formulário guardados apenas nesta aba (sessionStorage)
   useEffect(() => {
@@ -413,10 +420,65 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           </ul>
         </section>
 
+        {/* Dados */}
+        <section className="card space-y-4 p-4 sm:p-5" aria-labelledby="h-dados">
+          <h2 id="h-dados" className="text-lg font-extrabold">Seus dados</h2>
+          <Field id="name" label="Nome completo" error={errors.name}>
+            <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} autoComplete="name" className="input" {...inv("name")} />
+          </Field>
+          <Field id="phone" label="WhatsApp" error={errors.phone}>
+            <input id="phone" value={form.phone} onChange={(e) => set("phone", maskPhone(e.target.value))} autoComplete="tel-national" inputMode="tel" placeholder="(11) 91234-5678" className="input" {...inv("phone")} />
+          </Field>
+          <Field id="email" label="E-mail" error={errors.email}>
+            <input id="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value.trim())} autoComplete="email" inputMode="email" className="input" {...inv("email")} />
+            <p className="mt-1 text-xs text-muted">Guardamos seu contato para você poder continuar a compra depois, caso saia desta página.</p>
+          </Field>
+          {requireCpf && (
+            <Field id="cpf" label="CPF (exigido para o PIX)" error={errors.cpf}>
+              <input id="cpf" value={form.cpf} onChange={(e) => set("cpf", maskCpf(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" className="input" {...inv("cpf")} />
+            </Field>
+          )}
+        </section>
+
+        {/* Entrega */}
+        {q.requiresShipping && (
+          <section className="card grid grid-cols-6 gap-4 p-4 sm:p-5" aria-labelledby="h-entrega">
+            <h2 id="h-entrega" className="col-span-6 flex flex-wrap items-center gap-2 text-lg font-extrabold">Entrega{q.shippingCents === 0 && <span className="rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-extrabold text-success">Frete grátis · 3 a 5 dias úteis</span>}</h2>
+            {shippingNote && <p className="col-span-6 -mt-2 text-sm text-muted">{shippingNote}</p>}
+            <Field id="cep" label={cepLoading ? "CEP (buscando…)" : "CEP"} error={errors.cep} className="col-span-6 sm:col-span-3">
+              <input id="cep" value={form.cep} onChange={(e) => { set("cep", maskCep(e.target.value)); if (onlyDigits(e.target.value).length === 8) lookupCep(e.target.value); }} autoComplete="postal-code" inputMode="numeric" placeholder="00000-000" className="input" {...inv("cep")} />
+            </Field>
+            <Field id="street" label="Endereço" error={errors.street} className="col-span-6">
+              <input id="street" value={form.street} onChange={(e) => set("street", e.target.value)} autoComplete="address-line1" className="input" {...inv("street")} />
+            </Field>
+            <Field id="number" label="Número" error={errors.number} className="col-span-2">
+              <input id="number" value={form.number} onChange={(e) => set("number", e.target.value)} inputMode="numeric" className="input" {...inv("number")} />
+            </Field>
+            <Field id="complement" label="Complemento" className="col-span-4">
+              <input id="complement" value={form.complement} onChange={(e) => set("complement", e.target.value)} autoComplete="address-line2" placeholder="Opcional" className="input" />
+            </Field>
+            <Field id="district" label="Bairro" error={errors.district} className="col-span-6 sm:col-span-3">
+              <input id="district" value={form.district} onChange={(e) => set("district", e.target.value)} className="input" {...inv("district")} />
+            </Field>
+            <Field id="city" label="Cidade" error={errors.city} className="col-span-4 sm:col-span-2">
+              <input id="city" value={form.city} onChange={(e) => set("city", e.target.value)} autoComplete="address-level2" className="input" {...inv("city")} />
+            </Field>
+            <Field id="state" label="UF" error={errors.state} className="col-span-2 sm:col-span-1">
+              <select id="state" value={form.state} onChange={(e) => set("state", e.target.value)} autoComplete="address-level1" className="input px-2" {...inv("state")}>
+                <option value="">—</option>
+                {UF_LIST.map((uf) => (
+                  <option key={uf}>{uf}</option>
+                ))}
+              </select>
+            </Field>
+          </section>
+        )}
+
         {/* Order bumps — opcionais, desmarcados por padrão */}
         {q.bumps.length > 0 && (
-          <section className="space-y-3" aria-label="Ofertas opcionais">
-            {q.bumps.map((b) => {
+          <section className="space-y-3" aria-labelledby="h-extras">
+            <h2 id="h-extras" className="px-1 text-lg font-extrabold">Quer aproveitar? <span className="text-sm font-semibold text-muted">(opcional)</span></h2>
+            {q.bumps.filter((b, i) => showAllBumps || i < 2 || cart.bumpIds.includes(b.id)).map((b) => {
               const selected = cart.bumpIds.includes(b.id);
               return (
               <label key={b.id} className={`flex cursor-pointer gap-3 rounded-card border-2 border-dashed p-4 transition ${selected ? "border-success bg-success/[0.06]" : "border-accent/60 bg-surface"}`}>
@@ -451,60 +513,11 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
               </label>
               );
             })}
-          </section>
-        )}
-
-        {/* Dados */}
-        <section className="card space-y-4 p-4 sm:p-5" aria-labelledby="h-dados">
-          <h2 id="h-dados" className="text-lg font-extrabold">Seus dados</h2>
-          <Field id="name" label="Nome completo" error={errors.name}>
-            <input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} autoComplete="name" className="input" {...inv("name")} />
-          </Field>
-          <Field id="phone" label="WhatsApp" error={errors.phone}>
-            <input id="phone" value={form.phone} onChange={(e) => set("phone", maskPhone(e.target.value))} autoComplete="tel-national" inputMode="tel" placeholder="(11) 91234-5678" className="input" {...inv("phone")} />
-          </Field>
-          <Field id="email" label="E-mail" error={errors.email}>
-            <input id="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value.trim())} autoComplete="email" inputMode="email" className="input" {...inv("email")} />
-            <p className="mt-1 text-xs text-muted">Guardamos seu contato para você poder continuar a compra depois, caso saia desta página.</p>
-          </Field>
-          {requireCpf && (
-            <Field id="cpf" label="CPF (exigido para o PIX)" error={errors.cpf}>
-              <input id="cpf" value={form.cpf} onChange={(e) => set("cpf", maskCpf(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" className="input" {...inv("cpf")} />
-            </Field>
-          )}
-        </section>
-
-        {/* Entrega */}
-        {q.requiresShipping && (
-          <section className="card grid grid-cols-6 gap-4 p-4 sm:p-5" aria-labelledby="h-entrega">
-            <h2 id="h-entrega" className="col-span-6 text-lg font-extrabold">Entrega</h2>
-            {shippingNote && <p className="col-span-6 -mt-2 text-sm text-muted">{shippingNote}</p>}
-            <Field id="cep" label={cepLoading ? "CEP (buscando…)" : "CEP"} error={errors.cep} className="col-span-6 sm:col-span-3">
-              <input id="cep" value={form.cep} onChange={(e) => { set("cep", maskCep(e.target.value)); if (onlyDigits(e.target.value).length === 8) lookupCep(e.target.value); }} autoComplete="postal-code" inputMode="numeric" placeholder="00000-000" className="input" {...inv("cep")} />
-            </Field>
-            <Field id="street" label="Endereço" error={errors.street} className="col-span-6">
-              <input id="street" value={form.street} onChange={(e) => set("street", e.target.value)} autoComplete="address-line1" className="input" {...inv("street")} />
-            </Field>
-            <Field id="number" label="Número" error={errors.number} className="col-span-2">
-              <input id="number" value={form.number} onChange={(e) => set("number", e.target.value)} inputMode="numeric" className="input" {...inv("number")} />
-            </Field>
-            <Field id="complement" label="Complemento" className="col-span-4">
-              <input id="complement" value={form.complement} onChange={(e) => set("complement", e.target.value)} autoComplete="address-line2" placeholder="Opcional" className="input" />
-            </Field>
-            <Field id="district" label="Bairro" error={errors.district} className="col-span-6 sm:col-span-3">
-              <input id="district" value={form.district} onChange={(e) => set("district", e.target.value)} className="input" {...inv("district")} />
-            </Field>
-            <Field id="city" label="Cidade" error={errors.city} className="col-span-4 sm:col-span-2">
-              <input id="city" value={form.city} onChange={(e) => set("city", e.target.value)} autoComplete="address-level2" className="input" {...inv("city")} />
-            </Field>
-            <Field id="state" label="UF" error={errors.state} className="col-span-2 sm:col-span-1">
-              <select id="state" value={form.state} onChange={(e) => set("state", e.target.value)} autoComplete="address-level1" className="input px-2" {...inv("state")}>
-                <option value="">—</option>
-                {UF_LIST.map((uf) => (
-                  <option key={uf}>{uf}</option>
-                ))}
-              </select>
-            </Field>
+            {!showAllBumps && q.bumps.filter((b, i) => i >= 2 && !cart.bumpIds.includes(b.id)).length > 0 && (
+              <button type="button" onClick={() => setShowAllBumps(true)} className="w-full text-center text-sm font-bold text-primary underline-offset-2 hover:underline">
+                Ver mais {q.bumps.filter((b, i) => i >= 2 && !cart.bumpIds.includes(b.id)).length} oferta(s)
+              </button>
+            )}
           </section>
         )}
 

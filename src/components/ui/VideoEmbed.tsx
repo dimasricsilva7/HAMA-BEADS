@@ -1,3 +1,5 @@
+import { LazyVideo } from "./LazyVideo";
+
 /** Converte links do YouTube/Vimeo em URL de embed. Retorna null para arquivos de vídeo. */
 export function videoEmbedUrl(url: string): string | null {
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,20})/);
@@ -17,5 +19,5 @@ export function VideoEmbed({ url, title, className = "", vertical = false }: { u
       </div>
     );
   }
-  return <video src={url} controls playsInline preload="metadata" className={`w-full bg-ink ${className}`} aria-label={title} />;
+  return <LazyVideo url={url} title={title} className={className} vertical={vertical} />;
 }

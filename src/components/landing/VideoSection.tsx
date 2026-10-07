@@ -24,6 +24,11 @@ export function VideoSection({ title, subtitle, mobileUrl, desktopUrl, posterUrl
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
+    // Erro antes da hidratação não dispara onError no React: confere o estado do elemento
+    if (v.error || v.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+      setFailed(true);
+      return;
+    }
     const io = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) v.play().catch(() => {});
