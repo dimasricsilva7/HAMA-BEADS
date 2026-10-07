@@ -221,7 +221,11 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const j = await res.json();
-      if (!j.erro) setForm((f) => ({ ...f, street: j.logradouro || f.street, district: j.bairro || f.district, city: j.localidade || f.city, state: j.uf || f.state }));
+      if (!j.erro) {
+        setForm((f) => ({ ...f, street: j.logradouro || f.street, district: j.bairro || f.district, city: j.localidade || f.city, state: j.uf || f.state }));
+        // Endereço preenchido: leva direto para o número (o que falta digitar)
+        setTimeout(() => document.getElementById(j.logradouro ? "number" : "street")?.focus(), 50);
+      }
       else setErrors((e) => ({ ...e, cep: "CEP não encontrado. Confira ou preencha o endereço." }));
     } catch {
       /* preenchimento manual */
@@ -384,6 +388,11 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
     <form onSubmit={submit} noValidate className="container-page grid gap-6 py-6 sm:py-10 lg:grid-cols-[1fr_380px] lg:items-start lg:gap-10">
       <div className="space-y-5">
         <h1 className="font-display text-3xl font-extrabold sm:text-4xl">Finalizar compra</h1>
+        <ul className="-mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold text-muted" aria-label="Garantias da compra">
+          {q.shippingCents === 0 && <li className="flex items-center gap-1"><PixelIcon name="truck" className="h-4 w-4 text-success" /> Frete grátis · 3 a 5 dias úteis</li>}
+          <li className="flex items-center gap-1"><PixelIcon name="shield" className="h-4 w-4 text-success" /> Compra segura</li>
+          <li className="flex items-center gap-1"><PixelIcon name="pix" className="h-4 w-4 text-success" /> PIX com confirmação na hora</li>
+        </ul>
 
         {/* Resumo imediato (mobile) */}
         <section className="card p-4 lg:hidden">
