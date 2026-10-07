@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const [p, catalog, reviews, settings] = await Promise.all([getPublicProduct(slug), getPublicCatalog(), getApprovedReviews(), getSettings()]);
+  const [p, catalog, reviews, settings] = await Promise.all([getPublicProduct(slug), getPublicCatalog(), getApprovedReviews().catch(() => []), getSettings()]);
   if (!p) notFound();
   const images = [...(p.imageUrl ? [{ url: p.imageUrl, alt: p.name }] : []), ...p.gallery];
   const cross = p.crossSellIds.map((id) => catalog.find((x) => x.id === id)).filter((x): x is NonNullable<typeof x> => Boolean(x)).slice(0, 4);

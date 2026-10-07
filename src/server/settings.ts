@@ -7,15 +7,21 @@ export type Settings = Record<string, string>;
 
 const toStr = (v: unknown) => (typeof v === "string" ? v : v == null ? "" : String(v));
 
-async function load(): Promise<Settings> {
-  const rows = await db.setting.findMany().catch(() => []);
+async function loadStrict(): Promise<Settings> {
+  const rows = await db.setting.findMany(); // erro do banco lança: nunca vai para o cache
   const map: Settings = { ...SETTING_DEFAULTS };
   for (const r of rows) map[r.key] = toStr(r.value);
   return map;
 }
 
-/** Leitura com cache (páginas). Invalidada pela tag "settings" ao salvar no admin. */
-export const getSettings = unstable_cache(load, ["settings"], { tags: ["settings"], revalidate: 300 });
+async function load(): Promise<Settings> {
+  return loadStrict().catch(() => ({ ...SETTING_DEFAULTS }));
+}
+
+const cachedSettings = unstable_cache(loadStrict, ["settings-v2"], { tags: ["settings"], revalidate: 300 });
+
+/** Leitura com cache (páginas). Invalidada pela tag "settings" ao salvar no admin. Falha do banco → padrões, sem cachear. */
+export const getSettings = (): Promise<Settings> => cachedSettings().catch(() => load());
 
 /** Leitura sem cache (checkout, jobs, webhooks): valores sempre atuais. */
 export const getSettingsFresh = load;

@@ -19,15 +19,15 @@ export const getActiveProducts = unstable_cache(
 
 export const getActiveExperiments = unstable_cache(
   async (): Promise<ExperimentDef[]> => {
-    const rows = await db.experiment.findMany({ where: { active: true } }).catch(() => []);
+    const rows = await db.experiment.findMany({ where: { active: true } }); // erro não vai para o cache
     return rows.map((r) => ({ key: r.key, target: r.target, variants: asArray<ExperimentVariant>(r.variants) }));
   },
-  ["active-experiments"],
+  ["active-experiments-v2"],
   { tags: ["experiments"], revalidate: 300 }
 );
 
 export async function assignmentsFor(visitorId: string | null | undefined): Promise<Assignment[]> {
-  return assignAll(visitorId, await getActiveExperiments());
+  return assignAll(visitorId, await getActiveExperiments().catch(() => []));
 }
 
 /** Variantes A/B do visitante atual (cookie hb_vid, definido pelo middleware). */

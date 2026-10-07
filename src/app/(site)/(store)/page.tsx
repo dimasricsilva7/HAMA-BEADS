@@ -10,7 +10,8 @@ import { LedBoardSection, QuickKits } from "@/components/landing/Offers";
 import { valueFor } from "@/lib/experiments";
 import { siteUrl } from "@/lib/env";
 import { currentAssignments, getPublicCatalog } from "@/server/catalog";
-import { cfgArr, cfgStr, getActiveBumpForProduct, getApprovedReviews, getFaqs, getGallery, getLandingSections, type SectionData } from "@/server/landing";
+import { cfgArr, cfgStr, getActiveBumpForProduct, getApprovedReviews, getFaqs, getGallery, getLandingSections, loadLandingSectionsDirect, safeLoad, type SectionData } from "@/server/landing";
+import { db } from "@/lib/db";
 import { getSettings, isOn } from "@/server/settings";
 import { isMediaAvailable } from "@/server/media";
 
@@ -25,12 +26,13 @@ function orderSections(sections: SectionData[], override: string | null) {
 
 export default async function LandingPage() {
   const assignments = await currentAssignments();
+  // Cada leitura é independente: uma falha do banco nunca derruba a página inteira
   const [sectionsRaw, catalog, gallery, faqs, reviews, settings] = await Promise.all([
-    getLandingSections(),
+    safeLoad(getLandingSections, loadLandingSectionsDirect, []),
     getPublicCatalog(assignments),
-    getGallery(),
-    getFaqs(),
-    getApprovedReviews(),
+    safeLoad(getGallery, () => db.galleryItem.findMany({ where: { active: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }), []),
+    safeLoad(getFaqs, () => db.faq.findMany({ where: { active: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }), []),
+    safeLoad(getApprovedReviews, async () => [], []),
     getSettings(),
   ]);
 
@@ -48,7 +50,7 @@ export default async function LandingPage() {
   const videoSection = sections.find((s) => s.type === "video");
   // Em paralelo: nada aqui pode segurar a página (vídeo indisponível → seção desativada automaticamente)
   const [ledBump, videoOk] = await Promise.all([
-    ledId ? getActiveBumpForProduct(ledId) : Promise.resolve(null),
+    ledId ? getActiveBumpForProduct(ledId).catch(() => null) : Promise.resolve(null),
     videoSection?.videoUrl ? isMediaAvailable(videoSection.videoUrl) : Promise.resolve(false),
   ]);
   let audienceRendered = false;
