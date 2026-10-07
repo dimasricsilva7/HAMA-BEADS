@@ -91,6 +91,7 @@ export async function runTick() {
 export async function runContentUpdates() {
   const { applyCopyV3 } = await import("@/server/data/copy-v3");
   const r = await applyCopyV3(db);
+  await updateCookiePolicy();
   if (!("skipped" in r)) {
     const { revalidatePath, revalidateTag } = await import("next/cache");
     for (const t of ["landing", "catalog", "faq", "settings"]) revalidateTag(t);
@@ -98,4 +99,21 @@ export async function runContentUpdates() {
     log.info("content", "textos v3 aplicados", r);
   }
   return r;
+}
+
+/** Política de cookies → modelo de recusa (Pixel ativo por padrão). Idempotente: só troca o texto antigo. */
+async function updateCookiePolicy() {
+  const row = await db.setting.findUnique({ where: { key: "policy_cookies" } });
+  const text = row ? String(row.value ?? "") : "";
+  if (!row || !text.includes("somente com o seu consentimento")) return;
+  const next = text
+    .replace(
+      "e, somente com o seu consentimento, cookies de medição e marketing (Meta Pixel e Google Analytics) para medir campanhas.",
+      "e cookies de medição e marketing (Meta Pixel e Google Analytics) para medir e melhorar nossos anúncios. Os cookies de medição e marketing ficam ativos por padrão, e você pode recusá-los a qualquer momento pelo aviso de cookies ou pelo link \"Preferências de cookies\" no rodapé do site. Depois de recusar, nenhum dado da sua navegação ou compra é enviado ao Meta ou ao Google."
+    )
+    .replace(/\n*Você pode alterar sua escolha a qualquer momento limpando os cookies do navegador\./, "");
+  await db.setting.update({ where: { key: "policy_cookies" }, data: { value: next, updatedBy: "consent-optout" } });
+  const { revalidateTag } = await import("next/cache");
+  revalidateTag("settings");
+  log.info("content", "política de cookies atualizada (modelo de recusa)");
 }

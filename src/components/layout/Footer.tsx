@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CookiePreferencesLink } from "@/components/providers/CookieBanner";
 import type { Settings } from "@/server/settings";
 import { Logo } from "./Logo";
 import { PixelIcon } from "@/components/ui/PixelArt";
@@ -47,6 +48,7 @@ export function Footer({ s }: { s: Settings }) {
             <li><Link href="/termos" className="hover:text-white">Termos de uso</Link></li>
             <li><Link href="/trocas-e-devolucoes" className="hover:text-white">Trocas e devoluções</Link></li>
             <li><Link href="/cookies" className="hover:text-white">Cookies</Link></li>
+            <li><CookiePreferencesLink className="text-left hover:text-white" /></li>
           </ul>
         </nav>
         {(hasContact || socials.length > 0) && (

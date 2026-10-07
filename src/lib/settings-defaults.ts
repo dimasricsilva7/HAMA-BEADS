@@ -89,9 +89,7 @@ Compras online podem ser canceladas em até 7 dias corridos após o recebimento 
 [PREENCHER prazos, forma de devolução e política para conteúdo digital já acessado].`,
   policy_cookies: `[PREENCHER] Política de Cookies
 
-Usamos cookies essenciais para o funcionamento da loja (carrinho, sessão e segurança) e, somente com o seu consentimento, cookies de medição e marketing (Meta Pixel e Google Analytics) para medir campanhas.
-
-Você pode alterar sua escolha a qualquer momento limpando os cookies do navegador.`,
+Usamos cookies essenciais para o funcionamento da loja (carrinho, sessão e segurança) e cookies de medição e marketing (Meta Pixel e Google Analytics) para medir e melhorar nossos anúncios. Os cookies de medição e marketing ficam ativos por padrão, e você pode recusá-los a qualquer momento pelo aviso de cookies ou pelo link "Preferências de cookies" no rodapé do site. Depois de recusar, nenhum dado da sua navegação ou compra é enviado ao Meta ou ao Google.`,
 };
 
 export const POLICY_PAGES = {

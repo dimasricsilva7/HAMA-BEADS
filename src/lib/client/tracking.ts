@@ -7,7 +7,7 @@ import type { Attribution, ClientContext, Touch } from "@/types/tracking";
  * - session_id (expira após 30 min sem atividade) e visitor_id (1 ano, definido pelo middleware)
  * - captura de UTMs e click IDs (fbclid, gclid, ttclid) com first-touch e last-touch
  * - fila de eventos próprios enviada em lote para /api/track
- * - Meta Pixel / GA4 somente com consentimento, com o mesmo event_id enviado à CAPI
+ * - Meta Pixel / GA4 ativos por padrão (modelo de recusa), com o mesmo event_id enviado à CAPI
  */
 
 const SESSION_TTL = 30 * 60 * 1000;
@@ -113,9 +113,13 @@ export function configureConsent(enabled: boolean) {
   bannerEnabled = enabled;
 }
 export const getConsent = (): ConsentState => (readCookie(CONSENT_COOKIE) as ConsentState) ?? null;
-export const adsAllowed = () => !bannerEnabled || getConsent() === "granted";
+/** Modelo de recusa: medição/marketing ativos por padrão; desligados se o visitante recusar. */
+export const adsAllowed = () => !bannerEnabled || getConsent() !== "denied";
 export function setConsent(v: "granted" | "denied") {
   writeCookie(CONSENT_COOKIE, v, 365 * 24 * 3600);
+  // Recusou com o Pixel já carregado nesta página: a Meta para de registrar a partir daqui
+  if (v === "denied" && typeof window.fbq === "function") window.fbq("consent", "revoke");
+  if (v === "granted" && typeof window.fbq === "function") window.fbq("consent", "grant");
   window.dispatchEvent(new CustomEvent("hb:consent", { detail: v }));
 }
 
@@ -195,7 +199,7 @@ export function newEventId(prefix: string) {
 
 /**
  * Evento no Meta Pixel + (opcional) espelho na CAPI via /api/track com o MESMO
- * event_id — a Meta deduplica. Sem consentimento, nada é enviado à Meta.
+ * event_id — a Meta deduplica. Se o visitante recusar, nada é enviado à Meta.
  */
 export function metaEvent(eventName: string, params: Record<string, unknown> = {}, opts: { eventId?: string; mirror?: boolean; internal?: QueuedEvent } = {}) {
   const eventId = opts.eventId ?? newEventId(eventName.toLowerCase());
