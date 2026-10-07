@@ -15,7 +15,7 @@ export function Hero({ section, headline, ctaLabel, imageUrl }: { section: Secti
   return (
     <section id="inicio" className="relative overflow-hidden">
       <div className="pegboard pointer-events-none absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden="true" />
-      <div className="container-page relative grid items-center gap-5 pb-12 pt-4 sm:pt-10 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pb-20 lg:pt-16">
+      <div className="container-page relative grid items-center gap-8 pb-12 pt-6 sm:pt-10 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pb-20 lg:pt-16">
         <div className="animate-rise">
           {cfgStr(c, "eyebrow") && (
             <p className="inline-flex items-center gap-2 rounded-full bg-ink px-3 py-1.5 text-white">
@@ -27,7 +27,7 @@ export function Hero({ section, headline, ctaLabel, imageUrl }: { section: Secti
               <span className="eyebrow">{cfgStr(c, "eyebrow")}</span>
             </p>
           )}
-          <h1 className="mt-1 font-display text-[2.15rem] font-extrabold leading-[1.02] lg:mt-4 sm:text-5xl lg:text-[3.6rem]">{headline}</h1>
+          <h1 className="mt-4 font-display text-[2.35rem] font-extrabold leading-[1.02] sm:text-5xl lg:text-[3.6rem]">{headline}</h1>
           {section.subtitle && <p className="lead mt-4 max-w-xl">{section.subtitle}</p>}
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <a href={section.ctaTarget || "#kits"} data-cta="hero_cta" className="btn-primary w-full sm:w-auto sm:px-8">
@@ -41,9 +41,8 @@ export function Hero({ section, headline, ctaLabel, imageUrl }: { section: Secti
           </div>
         </div>
 
-        {/* Celular: a foto do produto vem primeiro (confirma o que a pessoa viu no anúncio) */}
-        <div className="relative order-first mx-auto w-full max-w-[520px] lg:order-none">
-          <div className="relative aspect-[16/10] overflow-hidden rounded-card border-2 border-ink bg-surface shadow-pixel sm:aspect-square">
+        <div className="relative mx-auto w-full max-w-[520px] animate-rise [animation-delay:120ms]">
+          <div className="relative aspect-[5/4] overflow-hidden rounded-card border-2 border-ink bg-surface shadow-pixel sm:aspect-square">
             {imageUrl ? (
               <Image src={imageUrl} alt={section.title ?? "Kit Hama Beads"} fill priority sizes="(min-width: 1024px) 520px, 100vw" className="object-cover" />
             ) : (

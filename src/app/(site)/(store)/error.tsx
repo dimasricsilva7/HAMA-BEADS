@@ -20,7 +20,7 @@ export default function StoreError({ reset }: { error: Error; reset: () => void 
     }
   }, []);
   return (
-    <div className="container-page flex min-h-[100svh] flex-col items-center justify-center py-16 text-center">
+    <div className="container-page flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
       <PixelArt sprite="heart" className="w-16" />
       <p className="mt-4 font-display text-xl font-extrabold">Só um instante, estamos carregando a loja…</p>
       <button onClick={() => (reset(), window.location.reload())} className="btn-primary mt-6">

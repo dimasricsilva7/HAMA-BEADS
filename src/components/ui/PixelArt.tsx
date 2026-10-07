@@ -1,33 +1,33 @@
-import { PIXEL_ICON_ROWS, SPRITES } from "@/lib/pixel-art";
+import { PIXEL_ICON_ROWS, spritePixels } from "@/lib/pixel-art";
 
-/**
- * Sprite em pixel art no estilo "beads". Servido como SVG em cache (/px/<sprite>.svg):
- * uma imagem leve em vez de centenas de elementos no HTML da página.
- */
+/** Sprite em pixel art renderizado como "beads" (SVG inline, sem requisições). */
 export function PixelArt({ sprite, className = "", title, board = false }: { sprite: string; className?: string; title?: string; board?: boolean }) {
-  const key = sprite in SPRITES ? sprite : "heart";
+  const { width, height, pixels } = spritePixels(sprite);
+  const size = Math.max(width, height);
+  const offX = (size - width) / 2;
+  const offY = (size - height) / 2;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={`/px/${key}${board ? "-b" : ""}.svg`} width={100} height={100} alt={title ?? ""} aria-hidden={title ? undefined : true} className={className} draggable={false} decoding="async" />
+    <svg viewBox={`0 0 ${size * 10} ${size * 10}`} className={className} role={title ? "img" : undefined} aria-label={title} aria-hidden={title ? undefined : true}>
+      {board &&
+        Array.from({ length: size * size }, (_, i) => (
+          <circle key={`b${i}`} cx={(i % size) * 10 + 5} cy={Math.floor(i / size) * 10 + 5} r={1.1} fill="currentColor" opacity={0.12} />
+        ))}
+      {pixels.map((p, i) => (
+        <g key={i} transform={`translate(${(p.x + offX) * 10} ${(p.y + offY) * 10})`}>
+          <rect x={0.5} y={0.5} width={9} height={9} rx={3.4} fill={p.color} />
+          <circle cx={5} cy={5} r={1.7} fill="#000" opacity={0.16} />
+        </g>
+      ))}
+    </svg>
   );
-}
-
-const iconPaths = new Map<string, string>();
-/** Um único <path> por ícone (em vez de um <rect> por pixel): HTML bem menor. */
-function iconPath(name: string) {
-  const cached = iconPaths.get(name);
-  if (cached) return cached;
-  const rows = PIXEL_ICON_ROWS[name] ?? PIXEL_ICON_ROWS.star;
-  const d = rows.flatMap((row, y) => [...row].map((ch, x) => (ch === "#" ? `M${x} ${y}h1v1h-1z` : ""))).join("");
-  iconPaths.set(name, d);
-  return d;
 }
 
 /** Ícone 8×8 monocromático (usa currentColor). */
 export function PixelIcon({ name, className = "h-6 w-6" }: { name: string; className?: string }) {
+  const rows = PIXEL_ICON_ROWS[name] ?? PIXEL_ICON_ROWS.star;
   return (
     <svg viewBox="0 0 8 8" className={className} aria-hidden="true" shapeRendering="crispEdges">
-      <path d={iconPath(name)} fill="currentColor" />
+      {rows.flatMap((row, y) => [...row].map((ch, x) => (ch === "#" ? <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="currentColor" /> : null)))}
     </svg>
   );
 }

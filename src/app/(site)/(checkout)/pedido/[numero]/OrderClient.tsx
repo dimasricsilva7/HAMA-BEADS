@@ -79,7 +79,7 @@ function UpsellOffer({ order, token, upsell }: { order: PublicOrder; token: stri
       </div>
       <div className="grid gap-4 p-5 sm:grid-cols-[140px_1fr]">
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#EFE8FF]">
-          {upsell.imageUrl ? <Image src={upsell.imageUrl} alt={upsell.productName} fill sizes="140px" className="object-cover" /> : <PixelArt sprite="rocket" className="absolute left-[15%] top-[15%] h-[70%] w-[70%]" />}
+          {upsell.imageUrl ? <Image src={upsell.imageUrl} alt={upsell.productName} fill sizes="140px" className="object-cover" /> : <PixelArt sprite="rocket" className="absolute inset-[15%]" />}
         </div>
         <div>
           <h2 id="upsell-title" className="font-display text-2xl font-extrabold">{upsell.title}</h2>
