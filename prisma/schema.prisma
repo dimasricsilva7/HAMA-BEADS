@@ -200,6 +200,13 @@ enum OrderStatus {
   REFUNDED
   CHARGEBACK
   FAILED
+  // Crediário (protocolo próprio — não é cartão): análise manual pelo admin.
+  // CREDIARIO_APROVADO conta como pago e segue para PROCESSING/SHIPPED/DELIVERED.
+  CREDIARIO_PENDENTE
+  CREDIARIO_EM_ANALISE
+  CREDIARIO_APROVADO
+  CREDIARIO_RECUSADO
+  CREDIARIO_CANCELADO
 }
 
 enum PaymentStatus {
@@ -300,6 +307,7 @@ model Order {
   upsellEvents      UpsellEvent[]
   emailEvents       EmailEvent[]
   checkoutLead      CheckoutLead?
+  crediario         CrediarioData?
 
   @@index([status, createdAt])
   @@index([createdAt])
@@ -754,4 +762,28 @@ model CheckoutLead {
   @@index([emailStatus, emailScheduledFor])
   @@index([createdAt])
   @@index([email])
+}
+
+/// Dados do CREDIÁRIO (protocolo próprio do cliente — NÃO é cartão de crédito).
+/// Protocolo, validade e dígitos do CPF ficam cifrados (AES-256-GCM); só o admin
+/// autorizado revela, com registro na auditoria. Nunca vão para Meta/Google/logs.
+model CrediarioData {
+  id                String   @id @default(cuid())
+  orderId           String   @unique
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  protocolEnc       String
+  protocolLast4     String
+  validityEnc       String
+  cpfLast3Enc       String
+  validityFormat    String
+  installments      Int
+  installmentCents  Int
+  /// Rótulo exibido ao cliente no momento da compra (ex.: "2x de R$ 59,95")
+  installmentLabel  String
+  methodLabel       String
+  analysisNote      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([createdAt])
 }

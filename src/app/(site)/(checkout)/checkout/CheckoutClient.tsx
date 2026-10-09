@@ -14,6 +14,10 @@ import { formatBRL } from "@/utils/format";
 import { maskCep, maskCpf, maskPhone, onlyDigits, UF_LIST } from "@/utils/validators";
 import type { CartQuote, QuoteBump } from "@/types/catalog";
 import { OfferModal } from "./OfferModal";
+import { CrediarioFields, EMPTY_CREDIARIO, type CrediarioValue } from "@/components/checkout/CrediarioFields";
+import { parseValidity, validateCrediario, type CrediarioConfig } from "@/lib/crediario";
+
+export type PixOption = { enabled: boolean; label: string; badge: string; description: string; button: string };
 
 type Form = {
   name: string;
@@ -105,7 +109,7 @@ function Summary({ q, compact = false }: { q: CartQuote; compact?: boolean }) {
   );
 }
 
-export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consentLabel }: { requireCpf: boolean; checkoutNote: string | null; shippingNote: string | null; consentLabel: string }) {
+export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consentLabel, pix, crediario }: { requireCpf: boolean; checkoutNote: string | null; shippingNote: string | null; consentLabel: string; pix: PixOption; crediario: CrediarioConfig }) {
   const cart = useCart();
   const router = useRouter();
   const q = cart.quote;
@@ -121,6 +125,10 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
   const started = useRef(false);
   const modalShown = useRef(false);
   const [modalBump, setModalBump] = useState<QuoteBump | null>(null);
+  const availableMethods = [pix.enabled && "PIX", crediario.enabled && "CREDIARIO"].filter(Boolean) as ("PIX" | "CREDIARIO")[];
+  const [method, setMethod] = useState<"PIX" | "CREDIARIO">(availableMethods[0] ?? "PIX");
+  const [cred, setCred] = useState<CrediarioValue>(EMPTY_CREDIARIO);
+  const credStarted = useRef(false);
   const [showAllBumps, setShowAllBumps] = useState(false);
 
   // Dados do formulário guardados apenas nesta aba (sessionStorage)
@@ -248,6 +256,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
       if (!form.city.trim()) e.city = "Informe a cidade";
       if (!form.state) e.state = "Selecione a UF";
     }
+    if (method === "CREDIARIO") for (const [k, v] of Object.entries(validateCrediario(cred, crediario))) e[`crediario.${k}`] = v;
     return e;
   }
 
@@ -258,7 +267,10 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
     setErrors(e);
     if (Object.keys(e).length) {
       setFormError("Confira os campos destacados.");
-      document.getElementById(Object.keys(e)[0])?.focus();
+      const first = Object.keys(e)[0];
+      const id = first.startsWith("crediario.") ? ({ protocol: "cred-protocol", validity: "cred-validity", cpfLast3: "cred-cpf", installments: "cred-protocol" }[first.slice(10)] ?? "h-pagamento") : first;
+      document.getElementById(id)?.focus();
+      document.getElementById(id)?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
     // Oferta em destaque: abre o modal uma única vez, antes de gerar o PIX
@@ -274,7 +286,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
     setSubmitting(true);
     // Token de idempotência ligado ao conteúdo do carrinho: repetir o envio do mesmo
     // carrinho reaproveita o pedido; carrinho alterado gera um pedido novo.
-    const sig = JSON.stringify([cart.items, bumpIds, cart.couponCode, form.email]);
+    const sig = JSON.stringify([cart.items, bumpIds, cart.couponCode, form.email, method, method === "CREDIARIO" ? cred.installments : 0]);
     let token = "";
     try {
       const saved = JSON.parse(sessionStorage.getItem(TOKEN_KEY) ?? "null") as { token: string; sig: string } | null;
@@ -303,6 +315,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           bumpIds,
           couponCode: cart.couponCode,
           marketingConsent: consent,
+          paymentMethod: method,
+          crediario: method === "CREDIARIO" ? cred : null,
           paymentEventId,
           leadKey: leadKey(),
           context: getClientContext(),
@@ -317,10 +331,10 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
         }
         if (res.status === 409) cart.refresh();
         // Pedido criado mas PIX falhou: mantém o token para não duplicar o pedido na nova tentativa
-        throw new Error(json.error ?? "Não conseguimos gerar o PIX agora. Tente novamente.");
+        throw new Error(json.error ?? (method === "CREDIARIO" ? crediario.errorMessage : "Não conseguimos gerar o PIX agora. Tente novamente."));
       }
-      metaEvent("AddPaymentInfo", { value: json.totalCents / 100, currency: "BRL", payment_type: "pix" }, { eventId: paymentEventId });
-      gaEvent("add_payment_info", { currency: "BRL", value: json.totalCents / 100, payment_type: "pix" });
+      metaEvent("AddPaymentInfo", { value: json.totalCents / 100, currency: "BRL", payment_type: method === "PIX" ? "pix" : "crediario" }, { eventId: paymentEventId });
+      gaEvent("add_payment_info", { currency: "BRL", value: json.totalCents / 100, payment_type: method === "PIX" ? "pix" : "crediario" });
       try {
         sessionStorage.removeItem(TOKEN_KEY);
         sessionStorage.removeItem(FORM_KEY);
@@ -557,16 +571,48 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           )}
         </section>
 
-        {/* Pagamento */}
+        {/* Forma de pagamento */}
         <section className="card p-4 sm:p-5" aria-labelledby="h-pagamento">
-          <h2 id="h-pagamento" className="text-lg font-extrabold">Pagamento</h2>
-          <div className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-success bg-success/[0.06] p-4">
-            <PixelIcon name="pix" className="h-8 w-8 shrink-0 text-success" />
-            <div>
-              <p className="font-extrabold">PIX</p>
-              <p className="text-sm text-muted">Geramos o QR Code e o código copia e cola na próxima tela. A confirmação é automática.</p>
-            </div>
+          <h2 id="h-pagamento" className="text-lg font-extrabold">Forma de pagamento</h2>
+          {availableMethods.length === 0 && <p className="mt-3 rounded-xl bg-warning/10 px-4 py-3 text-sm">Os pagamentos estão temporariamente indisponíveis. Tente novamente em alguns minutos.</p>}
+          <div className="mt-3 grid gap-3" role="radiogroup" aria-label="Forma de pagamento">
+            {pix.enabled && (
+              <button type="button" role="radio" aria-checked={method === "PIX"} onClick={() => setMethod("PIX")} data-cta="method_pix" className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition ${method === "PIX" ? "border-primary bg-primary/[0.05]" : "border-line hover:border-ink/25"}`}>
+                <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${method === "PIX" ? "border-primary" : "border-line"}`}>{method === "PIX" && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}</span>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-success/10 text-success"><PixelIcon name="pix" className="h-6 w-6" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2 font-extrabold">{pix.label}{pix.badge && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">{pix.badge}</span>}</span>
+                  {pix.description && <span className="block text-[13px] text-muted">{pix.description}</span>}
+                </span>
+              </button>
+            )}
+            {crediario.enabled && (
+              <button type="button" role="radio" aria-checked={method === "CREDIARIO"} onClick={() => { setMethod("CREDIARIO"); if (!credStarted.current) { credStarted.current = true; trackOnce("crediario_started", "crediario_started", { valueCents: q.totalCents }); } }} data-cta="method_crediario" className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition ${method === "CREDIARIO" ? "border-primary bg-primary/[0.05]" : "border-line hover:border-ink/25"}`}>
+                <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${method === "CREDIARIO" ? "border-primary" : "border-line"}`}>{method === "CREDIARIO" && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}</span>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><PixelIcon name="gift" className="h-6 w-6" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-extrabold">{crediario.methodLabel}</span>
+                  {crediario.methodSubtitle && <span className="block text-[13px] text-muted">{crediario.methodSubtitle}</span>}
+                </span>
+              </button>
+            )}
           </div>
+          {method === "CREDIARIO" && crediario.enabled && (
+            <div className="mt-5 border-t border-line pt-5">
+              <CrediarioFields
+                cfg={crediario}
+                totalCents={q.totalCents}
+                value={cred}
+                onChange={(v, field) => {
+                  setCred(v);
+                  setErrors(({ [`crediario.${field}`]: _omit, ...rest }) => rest);
+                  const ok = v.protocol.length === crediario.protocolDigits && v.cpfLast3.length === crediario.cpfDigits && parseValidity(v.validity, crediario.validityFormat);
+                  if (ok) trackOnce("crediario_data", "crediario_data_completed", { valueCents: q.totalCents });
+                }}
+                errors={Object.fromEntries(Object.entries(errors).filter(([k]) => k.startsWith("crediario.")).map(([k, v]) => [k.slice(10), v]))}
+              />
+            </div>
+          )}
           {checkoutNote && <p className="mt-3 text-sm text-muted">{checkoutNote}</p>}
         </section>
 
@@ -582,8 +628,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
         )}
 
         <div className="lg:hidden">
-          <button type="submit" disabled={submitting || cart.loading} data-cta="checkout_submit" className="btn-primary w-full">
-            {submitting ? "Gerando PIX…" : `Gerar PIX · ${formatBRL(q.totalCents)}`}
+          <button type="submit" disabled={submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary w-full">
+            {submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? `${crediario.buttonLabel} · ${formatBRL(q.totalCents)}` : `${pix.button} · ${formatBRL(q.totalCents)}`}
           </button>
           <p className="mt-2 text-center text-xs text-muted">
             Ao continuar, você concorda com os <Link href="/termos" className="underline">Termos</Link> e a <Link href="/politica-de-privacidade" className="underline">Política de Privacidade</Link>.
@@ -597,8 +643,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           <div className="mt-4">
             <Summary q={q} />
           </div>
-          <button type="submit" disabled={submitting || cart.loading} data-cta="checkout_submit" className="btn-primary mt-5 w-full">
-            {submitting ? "Gerando PIX…" : "Gerar PIX"}
+          <button type="submit" disabled={submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary mt-5 w-full">
+            {submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? crediario.buttonLabel : pix.button}
           </button>
           <p className="mt-3 text-center text-xs text-muted">
             Ao continuar, você concorda com os <Link href="/termos" className="underline">Termos</Link> e a <Link href="/politica-de-privacidade" className="underline">Política de Privacidade</Link>.

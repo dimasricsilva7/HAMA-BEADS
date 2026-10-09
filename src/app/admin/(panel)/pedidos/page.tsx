@@ -19,10 +19,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: SP })
   const p = resolvePeriod({ periodo: "30d", ...sp });
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const status = typeof sp.status === "string" ? sp.status : "";
+  const metodo = sp.metodo === "CREDIARIO" || sp.metodo === "PIX" ? sp.metodo : "";
   const page = Math.max(1, Number(sp.page) || 1);
 
   const where: Prisma.OrderWhereInput = {
     createdAt: { gte: p.from, lt: p.to },
+    ...(metodo ? { paymentMethod: metodo } : {}),
     ...(status && status in ORDER_STATUS_LABEL ? { status: status as keyof typeof ORDER_STATUS_LABEL } : {}),
     ...(q
       ? {

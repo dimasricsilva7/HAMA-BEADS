@@ -15,16 +15,15 @@ export async function POST(req: NextRequest) {
   if (!rateLimit(`checkout:${ip}`, 10, 10 * 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." }, { status: 429 });
   }
-  // Sem gateway configurado não criamos pedidos que nunca poderiam ser pagos.
-  if (bravopayMode() === "disabled") {
-    log.error("checkout", "BravoPay não configurada (BRAVOPAY_API_KEY ausente)");
-    return NextResponse.json({ error: "Pagamentos temporariamente indisponíveis. Tente novamente em alguns minutos." }, { status: 503 });
-  }
-
   const parsed = checkoutSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     const fields = Object.fromEntries(parsed.error.issues.map((i) => [i.path.join("."), i.message]));
     return NextResponse.json({ error: "Confira os dados informados.", fields }, { status: 422 });
+  }
+  // Sem gateway configurado não criamos pedidos PIX que nunca poderiam ser pagos (crediário não depende do gateway).
+  if (parsed.data.paymentMethod !== "CREDIARIO" && bravopayMode() === "disabled") {
+    log.error("checkout", "BravoPay não configurada (BRAVOPAY_API_KEY ausente)");
+    return NextResponse.json({ error: "Pagamentos temporariamente indisponíveis. Tente novamente em alguns minutos." }, { status: 503 });
   }
   // Visitor ID do cookie tem prioridade: é ele que define as variantes de preço dos testes A/B
   const vid = req.cookies.get("hb_vid")?.value;

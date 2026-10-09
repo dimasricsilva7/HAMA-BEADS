@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { PixelArt, PixelIcon } from "@/components/ui/PixelArt";
 import { Price } from "@/components/ui/Price";
 import { gaEvent, metaEvent, track } from "@/lib/client/tracking";
-import { ORDER_STATUS_LABEL, isAwaitingStatus, isPaidStatus } from "@/lib/domain";
+import { ORDER_STATUS_LABEL, isAwaitingStatus, isCrediarioPending, isPaidStatus } from "@/lib/domain";
 import { formatBRL } from "@/utils/format";
 import type { PublicOrder, PublicUpsell } from "@/types/order";
 
@@ -40,6 +40,9 @@ function Items({ order }: { order: PublicOrder }) {
         <div className="flex justify-between"><span className="text-muted">Frete</span><span>{formatBRL(order.shippingCents)}</span></div>
       )}
       <div className="flex justify-between border-t border-line pt-2 font-bold"><span>Total</span><span className="tabular-nums">{formatBRL(order.totalCents)}</span></div>
+      {order.crediario && (
+        <div className="flex justify-between pt-1 text-muted"><span>{order.crediario.methodLabel}</span><span className="font-semibold text-ink">{order.crediario.installmentLabel}</span></div>
+      )}
     </div>
   );
 }
@@ -101,7 +104,9 @@ function UpsellOffer({ order, token, upsell }: { order: PublicOrder; token: stri
   );
 }
 
-export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeName }: { initial: PublicOrder; token: string; qrSvg: string | null; upsell: PublicUpsell | null; whatsappUrl: string | null; storeName: string }) {
+export type CrediarioTexts = { successTitle: string; successMessage: string; infoMessage: string };
+
+export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeName, crediarioTexts }: { initial: PublicOrder; token: string; qrSvg: string | null; upsell: PublicUpsell | null; whatsappUrl: string | null; storeName: string; crediarioTexts: CrediarioTexts }) {
   const router = useRouter();
   const [order, setOrder] = useState(initial);
   const [copied, setCopied] = useState(false);
@@ -206,6 +211,8 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
       setRenewing(false);
     }
   };
+  const credPending = isCrediarioPending(order.status);
+  const credRejected = order.status === "CREDIARIO_RECUSADO";
   const canRenew = order.status === "EXPIRED" || order.status === "FAILED";
   const expiredNow = awaiting && left === 0;
 
@@ -218,9 +225,29 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
         <p className="text-sm font-semibold text-muted">Pedido {order.orderNumber}</p>
         {awaiting && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Falta pouco, {order.customerFirstName}!</h1>}
         {paid && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Pagamento confirmado! 🎉</h1>}
+        {credPending && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">{crediarioTexts.successTitle}</h1>}
         {canRenew && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Seu kit ainda está te esperando, {order.customerFirstName}!</h1>}
-        {!awaiting && !paid && !canRenew && <h1 className="mt-1 font-display text-3xl font-extrabold">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</h1>}
+        {!awaiting && !paid && !canRenew && !credPending && <h1 className="mt-1 font-display text-3xl font-extrabold">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</h1>}
       </div>
+
+      {/* Crediário: pedido registrado, aguardando análise do protocolo */}
+      {credPending && (
+        <section className="card p-5 text-center" aria-labelledby="cred-title">
+          <PixelArt sprite="heart" className="mx-auto w-14" />
+          <p id="cred-title" className="mt-3 font-extrabold">{order.crediario?.methodLabel ?? "Crediário"}{order.crediario?.installmentLabel ? ` · ${order.crediario.installmentLabel}` : ""}</p>
+          {crediarioTexts.successMessage && <p className="mt-2 text-muted">{crediarioTexts.successMessage}</p>}
+          {crediarioTexts.infoMessage && <p className="mt-3 rounded-xl bg-surface px-4 py-3 text-sm">{crediarioTexts.infoMessage}</p>}
+          <p className="mt-3 text-sm font-semibold text-primary">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL]}</p>
+        </section>
+      )}
+
+      {credRejected && (
+        <section className="card p-5 text-center">
+          <p className="font-extrabold">{ORDER_STATUS_LABEL.CREDIARIO_RECUSADO}</p>
+          <p className="mt-2 text-muted">Não foi possível aprovar este pedido no crediário. Fale com a gente para concluir a compra de outra forma.</p>
+          {whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-light mt-4 inline-block">Falar no WhatsApp</a>}
+        </section>
+      )}
 
       {/* PIX vencido → novo código no mesmo pedido */}
       {(canRenew || expiredNow) && (

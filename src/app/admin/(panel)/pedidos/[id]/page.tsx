@@ -2,11 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, Card, Field, PageHeader, ORDER_TONE, inputCls, textareaCls, btnSecondary } from "@/components/admin/ui";
 import { ActionForm, ConfirmAction, SubmitButton } from "@/components/admin/client";
-import { ORDER_STATUS_LABEL, isAwaitingStatus, isPaidStatus } from "@/lib/domain";
+import { CREDIARIO_TRANSITIONS, ORDER_STATUS_LABEL, isAwaitingStatus, isCrediarioStatus, isPaidStatus, type CrediarioStatus } from "@/lib/domain";
 import { bravopayMode, isProductionDeploy, siteUrl } from "@/lib/env";
 import { db } from "@/lib/db";
 import { formatBRL, formatCep, formatCpf, formatDate, formatPhone } from "@/utils/format";
-import { cancelOrder, deleteOrder, recheckPayment, resendEmailAction, simulatePayment, updateFulfillment } from "../actions";
+import { cancelOrder, deleteOrder, recheckPayment, resendEmailAction, revealCrediarioData, simulatePayment, updateCrediarioStatusAction, updateFulfillment } from "../actions";
 import { EMAIL_TYPE_LABEL } from "@/lib/email";
 import { emailProvider } from "@/lib/email/provider";
 
@@ -25,6 +25,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       parentOrder: { select: { id: true, orderNumber: true } },
       upsellEvents: { include: { upsell: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
       emailEvents: { orderBy: { createdAt: "desc" } },
+      crediario: true,
     },
   });
   if (!order) notFound();
@@ -158,6 +159,33 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </div>
             <p className="mt-3 text-xs text-slate-500">Reembolso: a API da BravoPay não documenta reembolso — faça pelo painel BravoPay; o webhook transaction.refunded atualiza o pedido.</p>
           </Card>
+
+          {order.crediario && (
+            <Card title="Crediário (protocolo — não é cartão)">
+              <dl className="space-y-1.5 text-sm">
+                <div><dt className="inline text-slate-500">Método: </dt><dd className="inline">{order.crediario.methodLabel} · {order.crediario.installmentLabel}</dd></div>
+                <div><dt className="inline text-slate-500">Protocolo: </dt><dd className="inline font-mono">•••• •••• •••• {order.crediario.protocolLast4}</dd></div>
+                <div><dt className="inline text-slate-500">Validade informada: </dt><dd className="inline">{order.crediario.validityFormat}</dd></div>
+                {order.crediario.analysisNote && <div><dt className="inline text-slate-500">Observação: </dt><dd className="inline">{order.crediario.analysisNote}</dd></div>}
+              </dl>
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <ConfirmAction action={revealCrediarioData} label="Revelar protocolo completo" description="Mostra o protocolo, a validade e os dígitos do CPF informados. A visualização fica registrada na auditoria." hidden={{ id: order.id }} />
+              </div>
+              {isCrediarioStatus(order.status) && (CREDIARIO_TRANSITIONS[order.status as CrediarioStatus]?.length ?? 0) > 0 && (
+                <ActionForm action={updateCrediarioStatusAction} className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                  <input type="hidden" name="id" value={order.id} />
+                  <Field label="Mudar status para">
+                    <select name="status" defaultValue={CREDIARIO_TRANSITIONS[order.status as CrediarioStatus][0]} className={inputCls}>
+                      {CREDIARIO_TRANSITIONS[order.status as CrediarioStatus].map((st) => <option key={st} value={st}>{ORDER_STATUS_LABEL[st]}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Observação da análise (opcional)"><input name="note" className={inputCls} placeholder="Ex.: protocolo confirmado com a financeira" /></Field>
+                  <SubmitButton>Atualizar crediário</SubmitButton>
+                  <p className="text-xs text-slate-500">Ao aprovar, o pedido conta como pago: dispara a confirmação por e-mail, libera o conteúdo digital e passa a aceitar as etapas de entrega.</p>
+                </ActionForm>
+              )}
+            </Card>
+          )}
 
           <div id="emails" className="scroll-mt-20" />
           <Card title="E-mails">

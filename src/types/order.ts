@@ -32,6 +32,8 @@ export type PublicUpsell = {
 export type PublicOrder = {
   orderNumber: string;
   status: string;
+  paymentMethod: string;
+  crediario: { methodLabel: string; installmentLabel: string } | null;
   source: "STOREFRONT" | "UPSELL";
   parent: { orderNumber: string; token: string } | null;
   totalCents: number;

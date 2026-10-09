@@ -12,6 +12,7 @@ const GROUPS: { title: string; items: { href: string; label: string; owner?: boo
       { href: "/admin", label: "Dashboard" },
       { href: "/admin/funil", label: "Funil" },
       { href: "/admin/pix-pendentes", label: "PIX pendentes" },
+      { href: "/admin/pagamentos", label: "Pagamentos" },
       { href: "/admin/checkouts", label: "Checkouts abandonados" },
     ],
   },

@@ -59,14 +59,36 @@ export const ORDER_STATUS_LABEL = {
   REFUNDED: "Reembolsado",
   CHARGEBACK: "Contestação",
   FAILED: "Falhou",
+  CREDIARIO_PENDENTE: "Crediário pendente",
+  CREDIARIO_EM_ANALISE: "Crediário em análise",
+  CREDIARIO_APROVADO: "Crediário aprovado",
+  CREDIARIO_RECUSADO: "Crediário recusado",
+  CREDIARIO_CANCELADO: "Crediário cancelado",
 } as const;
 export type OrderStatusKey = keyof typeof ORDER_STATUS_LABEL;
 
-/** Status em que o pagamento já foi confirmado (receita). */
-export const PAID_STATUSES = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
+export const PAYMENT_METHOD_LABEL = { PIX: "PIX", CREDIARIO: "Crediário" } as const;
+
+/** Status em que o pagamento já foi confirmado (receita). Crediário aprovado conta como pago. */
+export const PAID_STATUSES = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CREDIARIO_APROVADO"] as const;
 export const AWAITING_STATUSES = ["PENDING", "PIX_GENERATED"] as const;
 export const isPaidStatus = (s: string) => (PAID_STATUSES as readonly string[]).includes(s);
 export const isAwaitingStatus = (s: string) => (AWAITING_STATUSES as readonly string[]).includes(s);
+
+/** Crediário: estados próprios (análise manual do protocolo pelo admin). */
+export const CREDIARIO_STATUSES = ["CREDIARIO_PENDENTE", "CREDIARIO_EM_ANALISE", "CREDIARIO_APROVADO", "CREDIARIO_RECUSADO", "CREDIARIO_CANCELADO"] as const;
+export type CrediarioStatus = (typeof CREDIARIO_STATUSES)[number];
+export const isCrediarioStatus = (s: string) => (CREDIARIO_STATUSES as readonly string[]).includes(s);
+export const isCrediarioPending = (s: string) => s === "CREDIARIO_PENDENTE" || s === "CREDIARIO_EM_ANALISE";
+
+/** Transições permitidas do crediário. Aprovado segue para a entrega pelo fluxo normal. */
+export const CREDIARIO_TRANSITIONS: Record<CrediarioStatus, CrediarioStatus[]> = {
+  CREDIARIO_PENDENTE: ["CREDIARIO_EM_ANALISE", "CREDIARIO_APROVADO", "CREDIARIO_RECUSADO", "CREDIARIO_CANCELADO"],
+  CREDIARIO_EM_ANALISE: ["CREDIARIO_APROVADO", "CREDIARIO_RECUSADO", "CREDIARIO_CANCELADO", "CREDIARIO_PENDENTE"],
+  CREDIARIO_APROVADO: ["CREDIARIO_CANCELADO"],
+  CREDIARIO_RECUSADO: ["CREDIARIO_EM_ANALISE"],
+  CREDIARIO_CANCELADO: [],
+};
 
 // ───────────── Galeria ─────────────
 
@@ -110,6 +132,14 @@ export const TRACKED_EVENTS = [
   "pix_copy",
   "pix_renewed",
   "checkout_recovered",
+  "crediario_started",
+  "crediario_data_completed",
+  "crediario_order_created",
+  "crediario_pending",
+  "crediario_in_review",
+  "crediario_approved",
+  "crediario_rejected",
+  "crediario_cancelled",
   "pix_error",
   "payment_pending",
   "payment_paid",

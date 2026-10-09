@@ -64,8 +64,18 @@ export const addressSchema = z.object({
     .refine((v) => (UF_LIST as readonly string[]).includes(v), "UF inválida"),
 });
 
+/** Dados do crediário: o formato fino (dígitos, validade) é validado no servidor com a configuração atual. */
+export const crediarioSchema = z.object({
+  protocol: z.string().transform(onlyDigits).pipe(z.string().max(32)),
+  validity: z.string().trim().max(10),
+  cpfLast3: z.string().transform(onlyDigits).pipe(z.string().max(11)),
+  installments: z.number().int().min(1).max(24),
+});
+
 export const checkoutSchema = z.object({
   checkoutToken: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/),
+  paymentMethod: z.enum(["PIX", "CREDIARIO"]).default("PIX"),
+  crediario: crediarioSchema.optional().nullable(),
   customer: customerSchema,
   address: addressSchema.optional().nullable(),
   items: cartItemsSchema.min(1, "Carrinho vazio"),

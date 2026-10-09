@@ -4,17 +4,18 @@ import { db } from "@/lib/db";
 import { siteUrl } from "@/lib/env";
 import { log } from "@/lib/log";
 import { randomInt } from "crypto";
-import { hashIp, randomToken, safeEqual } from "@/lib/crypto";
+import { encryptField, hashIp, randomToken, safeEqual } from "@/lib/crypto";
 import { paymentService, PaymentError, type PaymentSnapshot, type PaymentStatus } from "@/lib/payments";
 import { assignmentMap } from "@/lib/experiments";
 import { effectivePrice, formatOrderNumber, MIN_PIX_CENTS } from "@/lib/pricing";
-import { isPaidStatus } from "@/lib/domain";
+import { isPaidStatus, CREDIARIO_TRANSITIONS, ORDER_STATUS_LABEL, type CrediarioStatus } from "@/lib/domain";
 import { canTransition } from "@/lib/order-status";
 import { classifyChannel, parseUserAgent } from "@/utils/channel";
 import { linkSessionToCustomer, trackServerEvent } from "@/lib/analytics";
 import { sendCapiEvent, fbcFromClickId } from "@/lib/meta/capi";
 import { cancelScheduled, onOrderPaidEmail, onPixGeneratedEmail } from "@/lib/email";
 import { quoteCart } from "@/server/cart";
+import { crediarioConfig, installmentOptions, validateCrediario } from "@/lib/crediario";
 import { linkLeadToOrder } from "@/server/checkout-leads";
 import { isSellable } from "@/server/catalog";
 import { getSettingsFresh, isOn, settingInt } from "@/server/settings";
@@ -114,10 +115,34 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
   if (quote.removed.length) throw new CheckoutError(`Alguns itens não estão mais disponíveis: ${quote.removed.join(", ")}. Revise seu carrinho.`, 409);
   if (!quote.lines.some((l) => l.kind !== "ORDER_BUMP")) throw new CheckoutError("Seu carrinho está vazio.");
   if (input.couponCode && quote.coupon && !quote.coupon.valid) throw new CheckoutError(quote.coupon.message ?? "Cupom inválido.", 422, { couponCode: quote.coupon.message ?? "Cupom inválido" });
-  if (quote.totalCents < MIN_PIX_CENTS) throw new CheckoutError("O valor mínimo para pagamento via PIX é R$ 5,00.");
+  if (quote.totalCents < MIN_PIX_CENTS) throw new CheckoutError("O valor mínimo do pedido é R$ 5,00.");
 
   if (isOn(settings.require_cpf) && !input.customer.cpf) throw new CheckoutError("Confira os dados informados.", 422, { "customer.cpf": "Informe seu CPF" });
   if (quote.requiresShipping && !input.address) throw new CheckoutError("Confira os dados informados.", 422, { "address.cep": "Informe o endereço de entrega" });
+
+  // Forma de pagamento: PIX (gateway) ou Crediário (protocolo próprio, análise manual)
+  const method = input.paymentMethod ?? "PIX";
+  if (method === "CREDIARIO" && !isOn(settings.crediario_enabled)) throw new CheckoutError("O crediário está indisponível no momento.", 503);
+  const cfg = crediarioConfig(settings);
+  let crediarioRow: Omit<Prisma.CrediarioDataUncheckedCreateInput, "orderId"> | null = null;
+  if (method === "CREDIARIO") {
+    const c = input.crediario;
+    if (!c) throw new CheckoutError(cfg.errorMessage, 422, { "crediario.protocol": cfg.protocolError });
+    const errs = validateCrediario(c, cfg);
+    if (Object.keys(errs).length) throw new CheckoutError(cfg.errorMessage, 422, Object.fromEntries(Object.entries(errs).map(([k, v]) => [`crediario.${k}`, v])));
+    const opt = installmentOptions(quote.totalCents, cfg).find((o) => o.n === c.installments) ?? installmentOptions(quote.totalCents, cfg)[0];
+    crediarioRow = {
+      protocolEnc: encryptField(c.protocol),
+      protocolLast4: c.protocol.slice(-4),
+      validityEnc: encryptField(c.validity.trim()),
+      cpfLast3Enc: encryptField(c.cpfLast3),
+      validityFormat: cfg.validityFormat,
+      installments: opt.n,
+      installmentCents: opt.cents,
+      installmentLabel: opt.label,
+      methodLabel: cfg.methodLabel,
+    };
+  }
 
   const attr = attributionFields(input.context, meta.host);
   const ua = parseUserAgent(meta.userAgent);
@@ -139,6 +164,10 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
         data: {
           customerId: customer.id,
           customerSnapshot,
+          status: method === "CREDIARIO" ? "CREDIARIO_PENDENTE" : "PENDING",
+          paymentMethod: method,
+          paymentProvider: method === "PIX" ? "bravopay" : "crediario",
+          ...(crediarioRow ? { crediario: { create: crediarioRow } } : {}),
           shippingAddress: shippingAddress ?? Prisma.DbNull,
           subtotalCents: quote.subtotalCents,
           discountCents: quote.discountCents,
@@ -195,10 +224,17 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
   await linkLeadToOrder(input.leadKey, order.id, input.customer.email);
   await linkSessionToCustomer(order.sessionId, order.customerId);
 
-  const withPix = await ensurePix(order.id);
+  const main = quote.lines.find((l) => l.kind !== "ORDER_BUMP");
+  if (method === "CREDIARIO") {
+    await logOrderEvent(order.id, "crediario_pending", `Pedido no crediário (${crediarioRow!.installmentLabel}) — aguardando análise`, { installments: crediarioRow!.installments, protocolLast4: crediarioRow!.protocolLast4 }, "CREDIARIO_PENDENTE");
+    await trackServerEvent(order, "crediario_order_created", { valueCents: order.totalCents, productId: main?.productId });
+    await trackServerEvent(order, "crediario_pending", { valueCents: order.totalCents, productId: main?.productId });
+  }
 
-  // Meta: AddPaymentInfo (mesmo event_id do navegador → deduplicação)
-  if (withPix.pixCopyPaste && input.paymentEventId && order.adsConsent) {
+  const withPix = method === "PIX" ? await ensurePix(order.id) : order;
+
+  // Meta: AddPaymentInfo (mesmo event_id do navegador → deduplicação). Crediário também conta.
+  if ((method === "CREDIARIO" || withPix.pixCopyPaste) && input.paymentEventId && order.adsConsent) {
     const [firstName, ...rest] = input.customer.name.split(/\s+/);
     await sendCapiEvent({
       eventName: "AddPaymentInfo",
@@ -464,6 +500,42 @@ async function onPaid(orderId: string) {
   });
 }
 
+// ───────────────────────── CREDIÁRIO (análise manual pelo admin) ─────────────────────────
+
+const CREDIARIO_EVENT: Partial<Record<CrediarioStatus, "crediario_in_review" | "crediario_approved" | "crediario_rejected" | "crediario_cancelled" | "crediario_pending">> = {
+  CREDIARIO_PENDENTE: "crediario_pending",
+  CREDIARIO_EM_ANALISE: "crediario_in_review",
+  CREDIARIO_APROVADO: "crediario_approved",
+  CREDIARIO_RECUSADO: "crediario_rejected",
+  CREDIARIO_CANCELADO: "crediario_cancelled",
+};
+
+/** Altera o status do crediário (pendente → análise → aprovado/recusado). Aprovado conta como pago. */
+export async function updateCrediarioStatus(orderId: string, next: CrediarioStatus, actor: string, note?: string | null) {
+  const order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+  if (order.paymentMethod !== "CREDIARIO") throw new Error("Este pedido não é do crediário.");
+  const from = order.status as CrediarioStatus;
+  if (from === next) return { order, changed: false };
+  if (!CREDIARIO_TRANSITIONS[from]?.includes(next)) throw new Error(`Transição não permitida: ${ORDER_STATUS_LABEL[from]} → ${ORDER_STATUS_LABEL[next]}.`);
+
+  const now = new Date();
+  const moved = await db.order.updateMany({
+    where: { id: order.id, status: from },
+    data: {
+      status: next,
+      ...(next === "CREDIARIO_APROVADO" ? { paymentStatus: "PAID", paidAt: now, paidAmountCents: order.totalCents } : {}),
+      ...(next === "CREDIARIO_RECUSADO" ? { paymentStatus: "FAILED" } : {}),
+    },
+  });
+  if (!moved.count) throw new Error("O status do pedido mudou. Recarregue a página.");
+  if (note) await db.crediarioData.update({ where: { orderId }, data: { analysisNote: note.slice(0, 1000) } }).catch(() => {});
+  await logOrderEvent(order.id, "status_change", `${ORDER_STATUS_LABEL[from]} → ${ORDER_STATUS_LABEL[next]} (${actor})`, note ? { note } : undefined, next);
+  const ev = CREDIARIO_EVENT[next];
+  if (ev) await trackServerEvent(order, ev, { valueCents: order.totalCents });
+  if (next === "CREDIARIO_APROVADO") await onPaid(order.id); // confirmação, acesso digital, estoque, Purchase
+  return { order: await db.order.findUniqueOrThrow({ where: { id: order.id } }), changed: true };
+}
+
 /**
  * PIX vencido → novo código no MESMO pedido (mesmo número, link e valores congelados).
  * Usa uma nova external_reference (HB12345-2026-R2-xxx) para o gateway criar outra cobrança;
@@ -551,7 +623,7 @@ export async function findOrderByAccess(orderNumber: string | null | undefined, 
   if (!orderNumber || !token || token.length < 16 || orderNumber.length > 40) return null;
   const order = await db.order.findUnique({
     where: { orderNumber },
-    include: { items: { include: { product: { select: { digitalDeliveryNote: true, digitalFileUrl: true } }, digitalAccess: true } }, customer: { select: { name: true } }, parentOrder: { select: { orderNumber: true, accessToken: true } } },
+    include: { items: { include: { product: { select: { digitalDeliveryNote: true, digitalFileUrl: true } }, digitalAccess: true } }, customer: { select: { name: true } }, parentOrder: { select: { orderNumber: true, accessToken: true } }, crediario: { select: { methodLabel: true, installmentLabel: true, installments: true } } },
   });
   if (!order || !safeEqual(order.accessToken, token)) return null;
   return order;
@@ -564,6 +636,8 @@ export function toPublicOrder(o: AccessOrder): PublicOrder {
   return {
     orderNumber: o.orderNumber!,
     status: o.status,
+    paymentMethod: o.paymentMethod,
+    crediario: o.crediario ? { methodLabel: o.crediario.methodLabel, installmentLabel: o.crediario.installmentLabel } : null,
     source: o.source,
     parent: o.parentOrder?.orderNumber ? { orderNumber: o.parentOrder.orderNumber, token: o.parentOrder.accessToken } : null,
     totalCents: o.totalCents,

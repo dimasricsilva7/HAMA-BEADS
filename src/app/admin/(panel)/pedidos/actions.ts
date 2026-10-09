@@ -6,12 +6,14 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { bravopayMode, isProductionDeploy } from "@/lib/env";
 import { signWebhookPayload } from "@/lib/payments/bravopay";
-import { isAwaitingStatus, isPaidStatus, ORDER_STATUS_LABEL } from "@/lib/domain";
+import { CREDIARIO_STATUSES, isAwaitingStatus, isPaidStatus, ORDER_STATUS_LABEL, type CrediarioStatus } from "@/lib/domain";
 import { withAdmin, type ActionResult } from "@/server/admin/guard";
 import { optStr, str } from "@/server/admin/forms";
-import { logOrderEvent, syncOrder } from "@/server/orders";
+import { logOrderEvent, syncOrder, updateCrediarioStatus } from "@/server/orders";
 import { handleBravopayWebhook } from "@/server/webhooks";
 import { EMAIL_TYPE_LABEL, onOrderShippedEmail, resendEmail } from "@/lib/email";
+import { decryptField } from "@/lib/crypto";
+import { formatProtocol, maskCpfLast } from "@/lib/crediario";
 import type { EmailType } from "@prisma/client";
 
 const FULFILLMENT = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
@@ -146,5 +148,33 @@ export async function deleteOrder(_: ActionResult, fd: FormData): Promise<Action
     revalidatePath("/admin");
     if (str(fd, "back", 10) === "1") redirect("/admin/pedidos");
     return { ok: true, message: `Pedido ${order.orderNumber} excluído.` };
+  });
+}
+
+/** Crediário: muda o status da análise (pendente → análise → aprovado/recusado/cancelado). */
+export async function updateCrediarioStatusAction(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  return withAdmin("EDITOR", async (admin) => {
+    const id = str(fd, "id", 40);
+    const next = str(fd, "status", 30) as CrediarioStatus;
+    if (!(CREDIARIO_STATUSES as readonly string[]).includes(next)) return { error: "Status inválido." };
+    const before = await db.order.findUniqueOrThrow({ where: { id }, select: { status: true, orderNumber: true } });
+    const { order } = await updateCrediarioStatus(id, next, `admin ${admin.email}`, optStr(fd, "note", 1000));
+    await audit(admin.id, "crediario_status_changed", "order", id, { summary: `Pedido ${order.orderNumber}: ${ORDER_STATUS_LABEL[before.status]} → ${ORDER_STATUS_LABEL[next]}`, before: { status: before.status }, after: { status: next } });
+    revalidatePath(`/admin/pedidos/${id}`);
+    return { ok: true, message: `Status atualizado: ${ORDER_STATUS_LABEL[next]}.` };
+  });
+}
+
+/** Revela o protocolo completo do crediário (só admin; a visualização fica registrada na auditoria). */
+export async function revealCrediarioData(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  return withAdmin("ADMIN", async (admin) => {
+    const id = str(fd, "id", 40);
+    const c = await db.crediarioData.findUnique({ where: { orderId: id }, include: { order: { select: { orderNumber: true } } } });
+    if (!c) return { error: "Este pedido não tem dados de crediário." };
+    const protocol = decryptField(c.protocolEnc);
+    const validity = decryptField(c.validityEnc);
+    const cpf = decryptField(c.cpfLast3Enc);
+    await audit(admin.id, "crediario_data_viewed", "order", id, { summary: `Protocolo do pedido ${c.order.orderNumber} visualizado` });
+    return { ok: true, message: `Protocolo: ${protocol ? formatProtocol(protocol) : "—"} · Validade: ${validity ?? "—"} · CPF: ${cpf ? maskCpfLast(cpf) : "—"}` };
   });
 }

@@ -70,6 +70,11 @@ export const ORDER_TONE: Record<string, keyof typeof TONES> = {
   FAILED: "red",
   REFUNDED: "slate",
   CHARGEBACK: "red",
+  CREDIARIO_PENDENTE: "amber",
+  CREDIARIO_EM_ANALISE: "amber",
+  CREDIARIO_APROVADO: "green",
+  CREDIARIO_RECUSADO: "red",
+  CREDIARIO_CANCELADO: "slate",
 };
 
 export function EmptyState({ title, text, action }: { title: string; text?: string; action?: React.ReactNode }) {
