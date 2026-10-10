@@ -6,7 +6,9 @@ import { CREDIARIO_TRANSITIONS, ORDER_STATUS_LABEL, isAwaitingStatus, isCrediari
 import { bravopayMode, isProductionDeploy, siteUrl } from "@/lib/env";
 import { db } from "@/lib/db";
 import { formatBRL, formatCep, formatCpf, formatDate, formatPhone } from "@/utils/format";
-import { cancelOrder, deleteOrder, recheckPayment, resendEmailAction, revealCrediarioData, simulatePayment, updateCrediarioStatusAction, updateFulfillment } from "../actions";
+import { cancelOrder, deleteOrder, recheckPayment, resendEmailAction, simulatePayment, updateCrediarioStatusAction, updateFulfillment } from "../actions";
+import { decryptField } from "@/lib/crypto";
+import { formatProtocol } from "@/lib/crediario";
 import { EMAIL_TYPE_LABEL } from "@/lib/email";
 import { emailProvider } from "@/lib/email/provider";
 
@@ -164,13 +166,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <Card title="Crediário (protocolo — não é cartão)">
               <dl className="space-y-1.5 text-sm">
                 <div><dt className="inline text-slate-500">Método: </dt><dd className="inline">{order.crediario.methodLabel} · {order.crediario.installmentLabel}</dd></div>
-                <div><dt className="inline text-slate-500">Protocolo: </dt><dd className="inline font-mono">•••• •••• •••• {order.crediario.protocolLast4}</dd></div>
-                <div><dt className="inline text-slate-500">Validade informada: </dt><dd className="inline">{order.crediario.validityFormat}</dd></div>
+                <div><dt className="inline text-slate-500">Número do protocolo: </dt><dd className="inline select-all font-mono font-semibold">{(() => { const p = decryptField(order.crediario.protocolEnc); return p ? formatProtocol(p) : `•••• •••• •••• ${order.crediario.protocolLast4}`; })()}</dd></div>
+                <div><dt className="inline text-slate-500">Validade do protocolo: </dt><dd className="inline select-all font-mono font-semibold">{decryptField(order.crediario.validityEnc) ?? "—"}</dd></div>
+                <div><dt className="inline text-slate-500">Últimos dígitos do CPF: </dt><dd className="inline select-all font-mono font-semibold">{decryptField(order.crediario.cpfLast3Enc) ?? "—"}</dd></div>
+                <div><dt className="inline text-slate-500">Parcelas: </dt><dd className="inline">{order.crediario.installments}x de {formatBRL(order.crediario.installmentCents)}</dd></div>
                 {order.crediario.analysisNote && <div><dt className="inline text-slate-500">Observação: </dt><dd className="inline">{order.crediario.analysisNote}</dd></div>}
               </dl>
-              <div className="mt-4 border-t border-slate-100 pt-4">
-                <ConfirmAction action={revealCrediarioData} label="Revelar protocolo completo" description="Mostra o protocolo, a validade e os dígitos do CPF informados. A visualização fica registrada na auditoria." hidden={{ id: order.id }} />
-              </div>
+              <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">Dados informados pelo cliente no checkout, guardados com o pedido (cifrados no banco). Use para processar o crediário com a sua financeira.</p>
               {isCrediarioStatus(order.status) && (CREDIARIO_TRANSITIONS[order.status as CrediarioStatus]?.length ?? 0) > 0 && (
                 <ActionForm action={updateCrediarioStatusAction} className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                   <input type="hidden" name="id" value={order.id} />

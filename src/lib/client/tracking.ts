@@ -230,6 +230,6 @@ if (typeof window !== "undefined" && !location.pathname.startsWith("/admin")) {
     const blob = new Blob([body], { type: "application/json" });
     if (!(navigator.sendBeacon && navigator.sendBeacon("/api/ping", blob))) fetch("/api/ping", { method: "POST", body, headers: { "Content-Type": "application/json" }, keepalive: true }).catch(() => {});
   };
-  setInterval(ping, 30_000);
+  setInterval(ping, 7_000);
   addEventListener("visibilitychange", () => document.visibilityState === "visible" && ping());
 }

@@ -76,7 +76,7 @@ export function OnlineNow() {
         )}
       </div>
       <p className="mt-2 text-[11px] text-slate-400">
-        {error ? "Não foi possível atualizar agora — tentando de novo." : "Atualiza a cada 15 s · conta quem está com o site aberto na tela (últimos 90 s)."}
+        {error ? "Não foi possível atualizar agora — tentando de novo." : "Atualiza a cada 15 s · conta quem está com o site aberto na tela (últimos 15 s)."}
       </p>
     </section>
   );
