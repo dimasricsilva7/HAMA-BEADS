@@ -421,3 +421,52 @@ export async function pendingPix(includeExpired: boolean) {
     take: 200,
   });
 }
+
+// ───────────────────────── Comportamento na página ─────────────────────────
+
+/** Profundidade de rolagem na página inicial + onde os visitantes saem do site. */
+export async function behavior(p: Period) {
+  // Só sessões que abriram a página inicial, e o que ELAS fizeram (subconjunto correto)
+  const scroll = await db.$queryRaw<{ landing: bigint; s25: bigint; s50: bigint; s75: bigint; s90: bigint; kit: bigint; cart: bigint; checkout: bigint }[]>`
+    WITH home AS (
+      SELECT DISTINCT e."sessionId" AS sid
+      FROM "AnalyticsEvent" e JOIN "AnalyticsSession" s ON s.id = e."sessionId"
+      WHERE e.name = 'landing_view' AND e."createdAt" >= ${p.from} AND e."createdAt" < ${p.to} AND COALESCE(s.device,'') <> 'servidor'
+    )
+    SELECT
+      (SELECT COUNT(*) FROM home) AS landing,
+      COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name = 'scroll_25') AS s25,
+      COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name = 'scroll_50') AS s50,
+      COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name = 'scroll_75') AS s75,
+      COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name = 'scroll_90') AS s90,
+      COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name = 'kit_selected') AS kit,
+      COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name = 'add_to_cart') AS cart,
+      COUNT(DISTINCT e."sessionId") FILTER (WHERE e.name = 'checkout_started') AS checkout
+    FROM "AnalyticsEvent" e
+    WHERE e."sessionId" IN (SELECT sid FROM home) AND e."createdAt" >= ${p.from} AND e."createdAt" < ${p.to}`;
+  const r = scroll[0] ?? {};
+  const landing = n(r.landing);
+  const depth = [
+    { label: "Abriu a página inicial", value: landing },
+    { label: "Rolou 25% (viu os kits)", value: n(r.s25) },
+    { label: "Rolou 50% (meio da página)", value: n(r.s50) },
+    { label: "Rolou 75%", value: n(r.s75) },
+    { label: "Rolou 90% (quase o fim)", value: n(r.s90) },
+    { label: "Escolheu um kit", value: n(r.kit) },
+    { label: "Adicionou ao carrinho", value: n(r.cart) },
+    { label: "Abriu o checkout", value: n(r.checkout) },
+  ].map((d) => ({ ...d, pct: ratio(d.value, landing) }));
+
+  // Onde os visitantes saíram (última página da sessão)
+  const exits = await db.$queryRaw<{ page: string; sessions: bigint }[]>`
+    SELECT COALESCE(NULLIF(split_part("exitPage", '?', 1), ''), '/') AS page, COUNT(*) AS sessions
+    FROM "AnalyticsSession"
+    WHERE "firstSeenAt" >= ${p.from} AND "firstSeenAt" < ${p.to} AND COALESCE(device,'') <> 'servidor'
+    GROUP BY 1 ORDER BY 2 DESC LIMIT 12`;
+  const totalSessions = exits.reduce((a, e) => a + n(e.sessions), 0);
+  const label = (path: string) =>
+    path === "/" ? "Página inicial" : path.startsWith("/checkout") ? "Checkout" : path.startsWith("/pedido") ? "Página do pedido" : path.startsWith("/produto") ? "Página de produto" : path.startsWith("/loja") ? "Loja" : path;
+  const exitRows = exits.map((e) => ({ page: label(e.page), sessions: n(e.sessions), pct: ratio(n(e.sessions), totalSessions) }));
+
+  return { depth, landing, exits: exitRows, totalSessions };
+}

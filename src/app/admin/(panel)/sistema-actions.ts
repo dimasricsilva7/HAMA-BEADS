@@ -21,6 +21,7 @@ const VALIDATORS: Record<string, (v: string) => string | null> = {
   email_recovery_delay_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 1440 ? null : "Tempo do lembrete entre 1 e 1440 minutos"),
   shipping_flat_cents: (v) => (/^\d{1,7}$/.test(v) ? null : "Frete inválido"),
   pix_expiration_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 5 && Number(v) <= 1440 ? null : "Validade do PIX entre 5 e 1440 minutos"),
+  checkout_reservation_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 0 && Number(v) <= 120 ? null : "Barra de reserva entre 0 e 120 minutos (0 = desligada)"),
 };
 const URL_KEYS = ["logo_url", "favicon_url", "og_image_url", "instagram_url", "tiktok_url", "facebook_url", "youtube_url"];
 const BOOL_KEYS = ["email_confirmation_enabled", "email_recovery_enabled", "email_checkout_enabled", "email_shipping_enabled", "sticky_cta_enabled", "require_cpf", "meta_pixel_enabled", "meta_capi_enabled", "ga_enabled", "cookie_banner_enabled", "pix_enabled", "crediario_enabled", "crediario_validity_reject_expired"];

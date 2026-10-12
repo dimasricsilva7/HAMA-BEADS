@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useCart } from "./CartProvider";
 import { ProductVisual } from "@/components/ui/ProductVisual";
+import { PixelIcon } from "@/components/ui/PixelArt";
 import { formatBRL } from "@/utils/format";
 import { trackOnce } from "@/lib/client/tracking";
 
@@ -132,16 +133,25 @@ export function CartDrawer() {
 
         {q && lines.length > 0 && (
           <footer className="border-t border-line bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-            <div className="flex items-center justify-between text-sm text-muted">
-              <span>Subtotal</span>
-              <span className="tabular-nums">{formatBRL(q.lines.filter((l) => l.kind !== "ORDER_BUMP").reduce((s, l) => s + l.totalCents, 0))}</span>
+            {q.requiresShipping && q.shippingCents === 0 && (
+              <p className="mb-2 flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-1.5 text-[13px] font-bold text-success">
+                <PixelIcon name="truck" className="h-4 w-4" /> Frete grátis · chega em 3 a 5 dias úteis
+              </p>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted">Total</span>
+              <span className="font-display text-xl font-extrabold tabular-nums">{formatBRL(q.totalCents)}</span>
             </div>
-            <Link href="/checkout" onClick={cart.closeDrawer} data-cta="drawer_checkout" className={`btn-primary mt-3 w-full ${cart.loading ? "opacity-80" : ""}`}>
-              Finalizar compra
+            <Link href="/checkout" onClick={cart.closeDrawer} data-cta="drawer_checkout" className={`btn-primary mt-3 flex w-full items-center justify-center gap-2 ${cart.loading ? "opacity-80" : ""}`}>
+              <PixelIcon name="lock" className="h-4 w-4" /> Finalizar compra · {formatBRL(q.totalCents)}
             </Link>
             <button onClick={cart.closeDrawer} className="btn-ghost mt-1 w-full">
               Continuar escolhendo
             </button>
+            <p className="mt-2 flex items-center justify-center gap-3 text-center text-[11px] font-semibold text-muted">
+              <span className="flex items-center gap-1"><PixelIcon name="shield" className="h-3.5 w-3.5 text-success" /> Compra segura</span>
+              <span className="flex items-center gap-1"><PixelIcon name="pix" className="h-3.5 w-3.5 text-success" /> PIX na hora</span>
+            </p>
           </footer>
         )}
       </div>

@@ -95,12 +95,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
       {tab === "checkout" && (
         <Card title="Checkout e pagamento">
           {form(
-            ["require_cpf", "shipping_flat_cents", "shipping_note", "pix_expiration_minutes", "checkout_note", "marketing_consent_label"],
+            ["require_cpf", "shipping_flat_cents", "shipping_note", "pix_expiration_minutes", "checkout_note", "checkout_reservation_minutes", "marketing_consent_label"],
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">{check("require_cpf", "Exigir CPF (recomendado para PIX)")}</div>
               <Field label="Frete fixo (R$)" hint="0 = sem cobrança de frete. [PREENCHER] conforme a operação."><input name="shipping_flat_cents" defaultValue={(Number(s.shipping_flat_cents) / 100).toFixed(2).replace(".", ",")} className={inputCls} /></Field>
               {text("shipping_note", "Observação de entrega", "Ex.: prazo estimado — só informe prazos reais")}
               {text("pix_expiration_minutes", "Validade do PIX (minutos)")}
+              {text("checkout_reservation_minutes", "Barra de reserva no checkout (minutos)", "0 = sem barra. Cronômetro honesto por visitante, não reinicia a cada recarga")}
               {text("checkout_note", "Observação no pagamento")}
               <Field label="Texto do opt-in de marketing" className="md:col-span-2"><input name="marketing_consent_label" defaultValue={s.marketing_consent_label} className={inputCls} /></Field>
             </div>

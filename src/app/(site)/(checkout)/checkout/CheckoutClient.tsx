@@ -16,6 +16,8 @@ import type { CartQuote, QuoteBump } from "@/types/catalog";
 import { OfferModal } from "./OfferModal";
 import { CrediarioFields, EMPTY_CREDIARIO, type CrediarioValue } from "@/components/checkout/CrediarioFields";
 import { parseValidity, validateCrediario, type CrediarioConfig } from "@/lib/crediario";
+import { ReservationBar } from "@/components/checkout/ReservationBar";
+import { TrustSeals } from "@/components/checkout/TrustSeals";
 
 export type PixOption = { enabled: boolean; label: string; badge: string; description: string; button: string };
 
@@ -109,7 +111,7 @@ function Summary({ q, compact = false }: { q: CartQuote; compact?: boolean }) {
   );
 }
 
-export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consentLabel, pix, crediario }: { requireCpf: boolean; checkoutNote: string | null; shippingNote: string | null; consentLabel: string; pix: PixOption; crediario: CrediarioConfig }) {
+export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consentLabel, pix, crediario, cnpj, companyName, reservationMinutes }: { requireCpf: boolean; checkoutNote: string | null; shippingNote: string | null; consentLabel: string; pix: PixOption; crediario: CrediarioConfig; cnpj: string | null; companyName: string | null; reservationMinutes: number }) {
   const cart = useCart();
   const router = useRouter();
   const q = cart.quote;
@@ -399,14 +401,13 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
         }}
       />
     )}
-    <form onSubmit={submit} noValidate className="container-page grid gap-6 py-6 sm:py-10 lg:grid-cols-[1fr_380px] lg:items-start lg:gap-10">
+    <div className="container-page">
+      {reservationMinutes > 0 && <div className="pt-4 sm:pt-6"><ReservationBar minutes={reservationMinutes} /></div>}
+    </div>
+    <form onSubmit={submit} noValidate className="container-page grid gap-6 py-4 sm:py-6 lg:grid-cols-[1fr_380px] lg:items-start lg:gap-10">
       <div className="space-y-5">
         <h1 className="font-display text-3xl font-extrabold sm:text-4xl">Finalizar compra</h1>
-        <ul className="-mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold text-muted" aria-label="Garantias da compra">
-          {q.shippingCents === 0 && <li className="flex items-center gap-1"><PixelIcon name="truck" className="h-4 w-4 text-success" /> Frete grátis · 3 a 5 dias úteis</li>}
-          <li className="flex items-center gap-1"><PixelIcon name="shield" className="h-4 w-4 text-success" /> Compra segura</li>
-          <li className="flex items-center gap-1"><PixelIcon name="pix" className="h-4 w-4 text-success" /> PIX com confirmação na hora</li>
-        </ul>
+        <TrustSeals freeShipping={q.shippingCents === 0} cnpj={cnpj} companyName={companyName} />
 
         {/* Resumo imediato (mobile) */}
         <section className="card p-4 lg:hidden">
@@ -631,9 +632,13 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           <button type="submit" disabled={submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary w-full">
             {submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? `${crediario.buttonLabel} · ${formatBRL(q.totalCents)}` : `${pix.button} · ${formatBRL(q.totalCents)}`}
           </button>
-          <p className="mt-2 text-center text-xs text-muted">
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-muted">
+            <PixelIcon name="lock" className="h-3.5 w-3.5 text-success" /> Ambiente seguro · seus dados são protegidos
+          </p>
+          <p className="mt-1 text-center text-xs text-muted">
             Ao continuar, você concorda com os <Link href="/termos" className="underline">Termos</Link> e a <Link href="/politica-de-privacidade" className="underline">Política de Privacidade</Link>.
           </p>
+          {(companyName || cnpj) && <p className="mt-1 text-center text-[11px] text-muted">{companyName || "Nossa loja"}{cnpj ? ` · CNPJ ${cnpj}` : ""}</p>}
         </div>
       </div>
 
@@ -646,10 +651,14 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           <button type="submit" disabled={submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary mt-5 w-full">
             {submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? crediario.buttonLabel : pix.button}
           </button>
-          <p className="mt-3 text-center text-xs text-muted">
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-muted">
+            <PixelIcon name="lock" className="h-3.5 w-3.5 text-success" /> Ambiente seguro · dados protegidos
+          </p>
+          <p className="mt-1 text-center text-xs text-muted">
             Ao continuar, você concorda com os <Link href="/termos" className="underline">Termos</Link> e a <Link href="/politica-de-privacidade" className="underline">Política de Privacidade</Link>.
           </p>
         </div>
+        <div className="mt-3"><TrustSeals freeShipping={q.shippingCents === 0} cnpj={cnpj} companyName={companyName} /></div>
       </aside>
     </form>
     </>

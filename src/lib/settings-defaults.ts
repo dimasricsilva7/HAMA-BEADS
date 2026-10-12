@@ -37,6 +37,8 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   shipping_note: "",
   pix_expiration_minutes: "30",
   checkout_note: "",
+  // Confiança/urgência no checkout (CNPJ usa company_document; razão social usa company_name)
+  checkout_reservation_minutes: "15",
   // Forma de pagamento — PIX (exibição no checkout)
   pix_enabled: "true",
   pix_method_label: "PIX",

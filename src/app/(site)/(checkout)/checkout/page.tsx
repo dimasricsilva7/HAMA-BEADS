@@ -23,6 +23,9 @@ export default async function CheckoutPage() {
         button: s.pix_button_label || "Gerar PIX",
       }}
       crediario={crediarioConfig(s)}
+      cnpj={s.company_document || null}
+      companyName={s.company_name || null}
+      reservationMinutes={Number.parseInt(s.checkout_reservation_minutes || "15", 10) || 0}
     />
   );
 }
