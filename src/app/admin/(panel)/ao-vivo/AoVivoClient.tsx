@@ -44,7 +44,6 @@ const elapsed = (v: string) => {
 export function AoVivoClient() {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState(false);
-  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     let active = true;
@@ -58,8 +57,7 @@ export function AoVivoClient() {
     };
     load();
     const refresh = setInterval(load, 5000);
-    const tick = setInterval(() => setNow(Date.now()), 1000);
-    return () => { active = false; clearInterval(refresh); clearInterval(tick); };
+    return () => { active = false; clearInterval(refresh); };
   }, []);
 
   return (
