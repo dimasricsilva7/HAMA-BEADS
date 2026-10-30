@@ -66,6 +66,7 @@ export function Footer({ s }: { s: Settings }) {
       </div>
       <div className="container-page mt-10 border-t border-white/10 pt-6 text-xs text-white/50">
         {s.footer_text && <p className="mb-2">{s.footer_text}</p>}
+        <p className="mb-2 text-white/60">Loja independente, sem afiliação ou representação oficial da Crocs. Crocs® e demais marcas pertencem aos respectivos titulares.</p>
         <p>© {new Date().getFullYear()} {s.company_name || s.store_name}{s.company_document ? ` · CNPJ ${s.company_document}` : ""}{s.address ? ` · ${s.address}` : ""}</p>
       </div>
     </footer>
