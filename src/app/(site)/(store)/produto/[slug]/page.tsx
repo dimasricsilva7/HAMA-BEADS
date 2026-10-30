@@ -48,7 +48,7 @@ export default async function ProductPage({ params }: Props) {
     name: p.name,
     description: p.shortDescription || p.description || undefined,
     sku: p.sku,
-    brand: { "@type": "Brand", name: settings.store_name },
+    brand: { "@type": "Brand", name: p.brandName || settings.store_name },
     image: images.map((x) => x.url),
     offers: {
       "@type": "Offer",
