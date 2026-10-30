@@ -7,7 +7,7 @@ import { assignmentsFor, isSellable, toPublicProduct } from "@/server/catalog";
 import { getSettingsFresh, settingInt } from "@/server/settings";
 import type { CartQuote, QuoteBump, QuoteLine } from "@/types/catalog";
 
-export type CartItemInput = { productId: string; quantity: number; source?: "cross_sell" | null };
+export type CartItemInput = { productId: string; variantId?: string | null; quantity: number; source?: "cross_sell" | null };
 export type QuoteInput = { items: CartItemInput[]; bumpIds?: string[]; couponCode?: string | null; visitorId?: string | null };
 
 const ids = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
@@ -52,11 +52,14 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
 
   const requested = new Map<string, CartItemInput>();
   for (const it of input.items.slice(0, 20)) {
-    const prev = requested.get(it.productId);
-    requested.set(it.productId, { ...it, quantity: Math.min(10, (prev?.quantity ?? 0) + Math.max(1, Math.floor(it.quantity))) });
+    const variantId = it.variantId ?? null;
+    const key = `${it.productId}:${variantId ?? "default"}`;
+    const prev = requested.get(key);
+    requested.set(key, { ...it, variantId, quantity: Math.min(10, (prev?.quantity ?? 0) + Math.max(1, Math.floor(it.quantity))) });
   }
 
-  const products = await db.product.findMany({ where: { id: { in: [...requested.keys()] } } });
+  const productIds = [...new Set([...requested.values()].map((it) => it.productId))];
+  const products = await db.product.findMany({ where: { id: { in: productIds } } });
   const productsById = new Map(products.map((p) => [p.id, p]));
   const removed: string[] = [];
   const lines: QuoteLine[] = [];
@@ -67,13 +70,42 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
       removed.push(p?.name ?? item.productId);
       continue;
     }
-    const price = effectivePrice(p, overrides, now, sectionPercent.get(p.category) ?? null);
+    const variants = Array.isArray(p.variants) ? p.variants as Array<{
+      id: string; sku: string; label: string; options: { name: string; value: string }[];
+      imageUrl: string | null; priceCents: number; listPriceCents: number | null;
+      stockQuantity: number; available: boolean;
+    }> : [];
+    const variant = item.variantId ? variants.find((v) => v.id === item.variantId) : null;
+    if (item.variantId && (!variant || !variant.available || variant.stockQuantity <= 0 || item.quantity > variant.stockQuantity)) {
+      removed.push(`${p.name} — variante indisponível`);
+      continue;
+    }
+    if (variants.length && !item.variantId) {
+      removed.push(`${p.name} — selecione tamanho/cor`);
+      continue;
+    }
+    const variantPriceSource = variant ? {
+      ...p,
+      priceCents: variant.priceCents,
+      compareAtPriceCents: variant.listPriceCents ?? p.compareAtPriceCents,
+      promoPriceCents: null,
+      promoStartsAt: null,
+      promoEndsAt: null,
+      promoLabel: null,
+    } : p;
+    const price = effectivePrice(variantPriceSource, overrides, now, sectionPercent.get(p.category) ?? null);
     const quantity = p.fulfillment === "DIGITAL" ? 1 : item.quantity;
+    const sku = variant?.sku ?? p.sku;
+    const variantLabel = variant?.label ?? null;
     lines.push({
       productId: p.id,
+      variantId: variant?.id ?? null,
+      variantSku: variant?.sku ?? null,
+      variantLabel,
+      variantOptions: variant?.options ?? [],
       slug: p.slug,
       name: p.name,
-      imageUrl: p.imageUrl,
+      imageUrl: variant?.imageUrl ?? p.imageUrl,
       category: p.category,
       fulfillment: p.fulfillment,
       quantity,
@@ -126,6 +158,10 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
     const p = productsById.get(b.productId)!;
     lines.push({
       productId: p.id,
+      variantId: null,
+      variantSku: null,
+      variantLabel: null,
+      variantOptions: [],
       slug: p.slug,
       name: p.name,
       imageUrl: b.imageUrl,
