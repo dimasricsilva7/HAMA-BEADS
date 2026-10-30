@@ -10,7 +10,7 @@ import { formatBRL, slugify } from "@/utils/format";
 import { refreshStore, withAdmin, withAdminVoid, type ActionResult } from "@/server/admin/guard";
 import { bool, int, jsonArray, optStr, parseLocalDateTime, parseMoney, str } from "@/server/admin/forms";
 
-const CATEGORIES: ProductCategory[] = ["KIT", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "ACCESSORY", "TOOL", "OTHER"];
+const CATEGORIES: ProductCategory[] = ["CLOGS", "SANDALS", "SLIDES", "KIDS", "JIBBITZ", "FOOTWEAR", "BEADS", "KIT", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "ACCESSORY", "TOOL", "OTHER"];
 const FULFILLMENTS: FulfillmentType[] = ["PHYSICAL", "DIGITAL", "HYBRID"];
 const STOCK: StockStatus[] = ["IN_STOCK", "OUT_OF_STOCK", "PREORDER"];
 
@@ -30,6 +30,8 @@ function parseProduct(fd: FormData) {
   const compareAt = parseMoney(fd.get("compareAt"));
   if (compareAt != null && compareAt > 0 && compareAt <= price) throw new Error("O preço anterior precisa ser maior que o preço atual (ou deixe em branco).");
   const promoPrice = parseMoney(fd.get("promoPrice"));
+  const individualDiscountPercent = optInt(fd, "individualDiscountPercent");
+  if (individualDiscountPercent != null && individualDiscountPercent > 100) throw new Error("O desconto individual deve estar entre 0% e 100%.");
   const promoStartsAt = parseLocalDateTime(fd.get("promoStartsAt"));
   const promoEndsAt = parseLocalDateTime(fd.get("promoEndsAt"));
   if (promoPrice && (!promoStartsAt || !promoEndsAt || promoEndsAt <= promoStartsAt)) throw new Error("Promoção precisa de data inicial e final válidas.");
@@ -66,7 +68,7 @@ function parseProduct(fd: FormData) {
     name,
     slug: slugify(str(fd, "slug", 80) || name),
     sku: str(fd, "sku", 40).toUpperCase() || `HB-${slugify(name).toUpperCase().slice(0, 20)}`,
-    category: CATEGORIES.includes(category) ? category : "OTHER",
+    category: CATEGORIES.includes(category) ? category : "CLOGS",
     fulfillment: FULFILLMENTS.includes(fulfillment) ? fulfillment : "PHYSICAL",
     shortDescription: optStr(fd, "shortDescription", 300),
     description: optStr(fd, "description", 5000),
@@ -76,6 +78,7 @@ function parseProduct(fd: FormData) {
     promoStartsAt: promoPrice ? promoStartsAt : null,
     promoEndsAt: promoPrice ? promoEndsAt : null,
     promoLabel: promoPrice ? optStr(fd, "promoLabel", 60) : null,
+    individualDiscountPercent,
     beadCount: optInt(fd, "beadCount"),
     colorCount: optInt(fd, "colorCount"),
     pegboardCount: optInt(fd, "pegboardCount"),
