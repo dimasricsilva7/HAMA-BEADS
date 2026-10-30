@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -27,7 +28,7 @@ function ProductCard({p}:{p:MiniProduct}) {
   const discount = p.listPriceCents && p.listPriceCents > p.priceCents ? Math.round((1-p.priceCents/p.listPriceCents)*100) : null;
   return <article className="group overflow-hidden rounded-[22px] border border-[#e8e5df] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
     <Link href={`/produto/${p.slug}`} className="relative block aspect-square overflow-hidden bg-[#f4f2ed]">
-      {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"/> : <div className="grid h-full place-items-center bg-gradient-to-br from-[#f4f2ed] to-[#e7e3db]"><div className="w-[78%]"><ShoeIllustration/></div><span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#777]">Imagem a cadastrar</span></div>}
+      {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition duration-500 group-hover:scale-[1.04]"/> : <div className="grid h-full place-items-center bg-gradient-to-br from-[#f4f2ed] to-[#e7e3db]"><div className="w-[78%]"><ShoeIllustration/></div><span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#777]">Imagem a cadastrar</span></div>}
       {p.badge && <span className="absolute left-3 top-3 rounded-full bg-[#151515] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white">{p.badge}</span>}
       {discount && <span className="absolute right-3 top-3 rounded-full bg-[#df4c3b] px-3 py-1.5 text-[11px] font-extrabold text-white">-{discount}%</span>}
     </Link>
@@ -50,7 +51,7 @@ export default function FootwearHome({products,storeName,heroImageUrl}:{products
   const deals = filtered.filter(p=>p.listPriceCents && p.listPriceCents>p.priceCents).slice(0,4);
   const clogs = filtered.filter(p=>["CLOGS","FOOTWEAR","KIT"].includes(p.category)).slice(0,4);
   const sandals = filtered.filter(p=>["SANDALS","SLIDES"].includes(p.category)).slice(0,4);
-  const section = (id:string,title:string,subtitle:string,list:MiniProduct[]):ReactNode => <section id={id} className="mx-auto max-w-[1380px] px-4 py-12 sm:px-7 lg:px-10 lg:py-16"><div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#a16b56]">{storeName}</p><h2 className="mt-2 text-2xl font-extrabold tracking-tight text-[#181818] sm:text-3xl">{title}</h2><p className="mt-2 max-w-xl text-sm text-[#77736d]">{subtitle}</p></div><Link href="/loja" className="shrink-0 text-xs font-bold uppercase tracking-wide text-[#181818] underline underline-offset-4">Ver todos</Link></div>{list.length?<div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{list.map(p=><ProductCard key={p.id} p={p}/>)}</div>:<div className="rounded-2xl border border-dashed border-[#d7d2ca] bg-white px-5 py-10 text-center"><p className="font-semibold text-[#37332e]">Vitrine pronta para receber produtos</p><p className="mt-1 text-sm text-[#858077]">Cadastre produtos, fotos e preços no painel administrativo.</p><Link href="/admin/produtos/novo" className="mt-4 inline-flex rounded-full bg-[#181818] px-5 py-3 text-xs font-bold text-white">Cadastrar primeiro produto</Link></div>}</section>;
+  const section = (id:string,title:string,subtitle:string,list:MiniProduct[]):ReactNode => <section id={id} className="mx-auto max-w-[1380px] px-4 py-12 sm:px-7 lg:px-10 lg:py-16"><div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#a16b56]">{storeName}</p><h2 className="mt-2 text-2xl font-extrabold tracking-tight text-[#181818] sm:text-3xl">{title}</h2><p className="mt-2 max-w-xl text-sm text-[#77736d]">{subtitle}</p></div><Link href="/loja" className="shrink-0 text-xs font-bold uppercase tracking-wide text-[#181818] underline underline-offset-4">Ver todos</Link></div>{list.length?<div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{list.map(p=><ProductCard key={p.id} p={p}/>)}</div>:<div className="rounded-2xl border border-dashed border-[#d7d2ca] bg-white px-5 py-10 text-center"><p className="font-semibold text-[#37332e]">Vitrine pronta para receber produtos</p><p className="mt-1 text-sm text-[#858077]">Cadastre produtos, fotos e preços no painel administrativo.</p><Link href="/loja" className="mt-4 inline-flex rounded-full bg-[#181818] px-5 py-3 text-xs font-bold text-white">Ver coleção</Link></div>}</section>;
   return <div className="min-h-screen bg-[#fbfaf7] text-[#171717]">
     <div className="bg-[#171717] px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-[.16em] text-white sm:text-xs">Conforto para acompanhar todos os seus passos</div>
     <div className="mx-auto max-w-[1380px] px-4 pt-5 sm:px-7 lg:px-10">
@@ -63,7 +64,7 @@ export default function FootwearHome({products,storeName,heroImageUrl}:{products
           <p className="mt-7 text-[10px] font-medium uppercase tracking-[.15em] text-[#837d73]">Compra segura · PIX · Atendimento ao cliente</p>
         </div>
         <div className="relative mx-auto mt-6 flex aspect-[1.35] w-full max-w-[540px] items-center justify-center overflow-hidden rounded-[24px] lg:mt-0">
-          {heroImageUrl ? <img src={heroImageUrl} alt="Destaque da coleção" className="h-full w-full object-cover"/> : <><div className="absolute h-[78%] w-[78%] rounded-full bg-[#d4c8b8]"/><div className="relative w-full rotate-[-8deg]"><ShoeIllustration/></div><span className="absolute bottom-1 right-2 rounded-full bg-white/80 px-3 py-1 text-[9px] font-semibold uppercase tracking-wider text-[#676057]">Arte ilustrativa original</span></>}
+          {heroImageUrl ? <Image src={heroImageUrl} alt="Destaque da coleção" fill sizes="(min-width: 1024px) 40vw, 100vw" priority className="object-cover"/> : <><div className="absolute h-[78%] w-[78%] rounded-full bg-[#d4c8b8]"/><div className="relative w-full rotate-[-8deg]"><ShoeIllustration/></div><span className="absolute bottom-1 right-2 rounded-full bg-white/80 px-3 py-1 text-[9px] font-semibold uppercase tracking-wider text-[#676057]">Arte ilustrativa original</span></>}
         </div>
       </div>
     </div>
