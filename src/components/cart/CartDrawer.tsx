@@ -135,7 +135,7 @@ export function CartDrawer() {
           <footer className="border-t border-line bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
             {q.requiresShipping && q.shippingCents === 0 && (
               <p className="mb-2 flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-1.5 text-[13px] font-bold text-success">
-                <PixelIcon name="truck" className="h-4 w-4" /> Frete grátis · chega em 3 a 5 dias úteis
+                <PixelIcon name="truck" className="h-4 w-4" /> Frete grátis conforme as condições da loja
               </p>
             )}
             <div className="flex items-center justify-between">
