@@ -20,6 +20,7 @@ const VALIDATORS: Record<string, (v: string) => string | null> = {
   ga_id: (v) => (!v || /^G-[A-Z0-9]{4,15}$/.test(v) ? null : "ID do GA4 no formato G-XXXXXXX"),
   email_recovery_delay_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 1440 ? null : "Tempo do lembrete entre 1 e 1440 minutos"),
   shipping_flat_cents: (v) => (/^\d{1,7}$/.test(v) ? null : "Frete inválido"),
+  shipping_free_threshold_cents: (v) => (/^\d{1,7}$/.test(v) ? null : "Valor mínimo inválido para frete grátis"),
   pix_expiration_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 5 && Number(v) <= 1440 ? null : "Validade do PIX entre 5 e 1440 minutos"),
   checkout_reservation_minutes: (v) => (/^\d+$/.test(v) && Number(v) >= 0 && Number(v) <= 120 ? null : "Barra de reserva entre 0 e 120 minutos (0 = desligada)"),
 };
