@@ -5,7 +5,7 @@ import { Logo } from "./Logo";
 import { PixelIcon } from "@/components/ui/PixelArt";
 
 export function whatsappLink(number: string, text?: string) {
-  const digits = number.replace(/\\D/g, "");
+  const digits = number.replace(/\D/g, "");
   if (digits.length < 10) return null;
   const full = digits.startsWith("55") ? digits : `55${digits}`;
   return `https://wa.me/${full}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
@@ -18,7 +18,7 @@ export function Footer({ s }: { s: Settings }) {
     ["TikTok", s.tiktok_url],
     ["Facebook", s.facebook_url],
     ["YouTube", s.youtube_url],
-  ].filter(([, url]) => url && /^https:\\/\\//.test(url));
+  ].filter(([, url]) => typeof url === "string" && url.startsWith("https://"));
   const hasContact = wa || s.contact_email || s.contact_phone;
 
   return (
