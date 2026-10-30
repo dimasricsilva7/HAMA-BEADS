@@ -7,7 +7,7 @@ import { CATEGORY_LABEL } from "@/lib/domain";
 import { getPublicCatalog } from "@/server/catalog";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Loja", description: "Kits de Hama Beads, pegboards, pinças, modelos digitais e acessórios.", alternates: { canonical: "/loja" } };
+export const metadata: Metadata = { title: "Loja", description: "Explore calçados, sandálias, slides, modelos infantis e acessórios.", alternates: { canonical: "/loja" } };
 
 export default async function StorePage() {
   const catalog = await getPublicCatalog();
@@ -18,8 +18,8 @@ export default async function StorePage() {
   return (
     <div className="container-page py-10 sm:py-14">
       <p className="eyebrow text-primary">Loja</p>
-      <h1 className="h-section mt-2">Tudo para criar com Hama Beads</h1>
-      {!catalog.length && <p className="lead mt-6">Nenhum produto disponível no momento.</p>}
+      <h1 className="h-section mt-2">Encontre seu próximo favorito</h1>
+      {!catalog.length && <p className="lead mt-6">Nenhum produto disponível no momento. Em breve, novidades por aqui.</p>}
       {groups.length > 1 && (
         <nav className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4" aria-label="Categorias">
           {groups.map((g) => (
