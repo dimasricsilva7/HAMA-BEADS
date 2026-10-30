@@ -14,11 +14,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
   const cart = useCart();
   const variants = product.variants.filter((v) => v.available && v.stockQuantity > 0);
   const dimensions = useMemo(() => [...new Set(variants.flatMap((v) => v.options.map((o) => o.name)))], [variants]);
-  const initial = useMemo(() => {
-    const first = variants[0];
-    return Object.fromEntries((first?.options ?? []).map((o) => [o.name, o.value]));
-  }, [variants]);
-  const [chosen, setChosen] = useState<Record<string, string>>(initial);
+  const [chosen, setChosen] = useState<Record<string, string>>({});
   const selected = variants.find((v) => dimensions.every((d) => v.options.some((o) => o.name === d && chosen[d] === o.value))) ?? (dimensions.length === 0 ? variants[0] : undefined);
   const price = selected?.priceCents ?? product.priceCents;
   const list = selected?.listPriceCents ?? product.listPriceCents;
@@ -39,9 +35,11 @@ export default function ProductBuyBox({ product, slug }: Props) {
 
   return (
     <div className="mt-6 rounded-card border border-line bg-surface p-5 shadow-soft">
+      {product.variants.length > 0 && <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">A partir de</p>}
       <Price priceCents={price} listPriceCents={list} size="lg" />
       {product.variants.length > 0 && (
         <div className="mt-5 space-y-4">
+          {selected?.imageUrl && <div className="flex items-center gap-3 rounded-xl bg-bg p-3"><img src={selected.imageUrl} alt={selected.label} className="h-16 w-16 rounded-lg object-cover"/><span className="text-xs text-muted">Imagem da opção selecionada</span></div>}
           {dimensions.map((dimension) => (
             <label key={dimension} className="block">
               <span className="mb-2 block text-sm font-bold text-ink">{dimension}: <span className="font-medium text-muted">{chosen[dimension] || "Selecione"}</span></span>
