@@ -4,6 +4,18 @@ Branch de desenvolvimento: feat/footwear-storefront.
 
 Esta branch adapta a base técnica para uma loja independente de calçados e acessórios. A direção visual usa verde vibrante, branco, grafite e azul de apoio, com identidade própria. A loja não representa canal oficial da Crocs; marcas, logotipos e fotografias de terceiros só devem ser exibidos com autorização.
 
+## Vercel — projeto isolado
+
+- Projeto: `footwear-storefront`
+- Project ID: `prj_JnJoHs1yCcHwQByHHKaXhhc9hJ3H`
+- Git: `dimasricsilva7/HAMA-BEADS`
+- Branch de Preview: `feat/footwear-storefront`
+- Node.js: 22.x
+- Build: `npm run build:local` (gera Prisma + Next.js; não executa migrations automaticamente)
+- Região das Functions: `gru1` (São Paulo)
+
+A integração Git da Vercel está configurada para aceitar builds somente da branch `feat/footwear-storefront`; outras branches são ignoradas para não publicar por engano o app legado de Hama Beads. O banco PostgreSQL ainda precisa ser conectado separadamente ao projeto novo antes de validar o fluxo de checkout.
+
 ## Identidade visual\n\n- Paleta independente: verde #84BD00, branco #FFFFFF, grafite #444444, azul #006DA4 e verde-claro #F2F7E8.\n- Nome, logotipo próprio e banner editáveis no Admin → Configurações → Loja.\n- Paleta editável no Admin → Configurações → Aparência.\n\n## Funcionalidades
 
 - Loja responsiva com home promocional, vitrines por categoria, busca e catálogo.
