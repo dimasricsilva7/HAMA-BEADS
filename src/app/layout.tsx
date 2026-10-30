@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Plus_Jakarta_Sans, Silkscreen } from "next/font/google";
+import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import { siteUrl } from "@/lib/env";
 import { themeCss } from "@/lib/theme";
 import { getSettings } from "@/server/settings";
@@ -7,7 +7,7 @@ import "./globals.css";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display", weight: ["600", "700", "800"], display: "swap" });
 const body = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-body", weight: ["400", "500", "600", "700", "800"], display: "swap" });
-const pixel = Silkscreen({ subsets: ["latin"], variable: "--font-pixel", weight: ["400"], display: "swap" });
+const pixel = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-pixel", weight: ["500", "600", "700"], display: "swap" });
 
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSettings();
@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FFF9F0", viewportFit: "cover" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FBFAF7", viewportFit: "cover" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSettings();
