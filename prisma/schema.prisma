@@ -325,6 +325,7 @@ model Order {
   deliveredAt       DateTime?
   lastCheckedAt     DateTime?
   purchaseTrackedAt DateTime?
+  stockDeductedAt   DateTime?
   couponCountedAt   DateTime?
   notes             String?
   createdAt         DateTime       @default(now())
