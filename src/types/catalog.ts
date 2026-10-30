@@ -1,5 +1,17 @@
 import type { GalleryImage, ProductComponent, ProductSpec } from "@/lib/domain";
 
+export type ProductVariant = {
+  id: string;
+  sku: string;
+  label: string;
+  options: { name: string; value: string }[];
+  imageUrl: string | null;
+  priceCents: number;
+  listPriceCents: number | null;
+  stockQuantity: number;
+  available: boolean;
+};
+
 export type PublicProduct = {
   id: string;
   slug: string;
@@ -20,6 +32,7 @@ export type PublicProduct = {
   components: ProductComponent[];
   specs: ProductSpec[];
   imageUrl: string | null;
+  variants: ProductVariant[];
   gallery: GalleryImage[];
   videoUrl: string | null;
   badge: string | null;
@@ -35,6 +48,10 @@ export type PublicProduct = {
 
 export type QuoteLine = {
   productId: string;
+  variantId: string | null;
+  variantSku: string | null;
+  variantLabel: string | null;
+  variantOptions: { name: string; value: string }[];
   slug: string;
   name: string;
   imageUrl: string | null;
