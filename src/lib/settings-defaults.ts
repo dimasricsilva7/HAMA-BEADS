@@ -4,8 +4,8 @@
  */
 export const SETTING_DEFAULTS: Record<string, string> = {
   // Loja
-  store_name: "Hama Beads",
-  store_tagline: "Kits completos para criar Pixel Art em casa",
+  store_name: "Sua Loja",
+  store_tagline: "Calçados e acessórios para acompanhar sua rotina",
   logo_url: "",
   favicon_url: "",
   company_name: "",
@@ -20,16 +20,16 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   facebook_url: "",
   youtube_url: "",
   // Aparência (tokens do design system — edição limitada)
-  theme_primary: "#2F4BFF",
-  theme_secondary: "#FFC53D",
-  theme_accent: "#FF4F8B",
-  theme_ink: "#17142E",
-  theme_background: "#FFF9F0",
+  theme_primary: "#9B6650",
+  theme_secondary: "#E8DED1",
+  theme_accent: "#C65B46",
+  theme_ink: "#171717",
+  theme_background: "#FBFAF7",
   // Layout
   announcement_text: "",
-  header_cta_label: "Comprar",
+  header_cta_label: "Ver coleção",
   sticky_cta_enabled: "true",
-  sticky_cta_label: "ESCOLHER MEU KIT",
+  sticky_cta_label: "EXPLORAR COLEÇÃO",
   footer_text: "",
   // Checkout
   require_cpf: "true",
@@ -92,9 +92,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   ga_id: "",
   cookie_banner_enabled: "true",
   // SEO
-  seo_title: "Hama Beads — Kit completo para criar Pixel Art",
+  seo_title: "Sua Loja — Calçados e acessórios",
   seo_description:
-    "Kits de Hama Beads de 24 a 96 cores, com até 59.600 peças, mini ferro, pegboard, pinças, acessórios para chaveiro e 100 modelos digitais. Pagamento via PIX.",
+    "Confira calçados e acessórios para diferentes momentos. Encontre seu modelo, escolha o tamanho e compre com segurança.",
   og_image_url: "",
   // Políticas (texto editável — revise com seu jurídico)
   policy_privacy: `[PREENCHER] Política de Privacidade
