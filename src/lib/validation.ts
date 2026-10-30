@@ -27,7 +27,7 @@ export const clientContextSchema = z
   .partial();
 
 export const cartItemsSchema = z
-  .array(z.object({ productId: idSchema, quantity: z.number().int().min(1).max(10), source: z.enum(["cross_sell"]).optional().nullable() }))
+  .array(z.object({ productId: idSchema, variantId: idSchema.optional().nullable(), quantity: z.number().int().min(1).max(10), source: z.enum(["cross_sell"]).optional().nullable() }))
   .max(20);
 
 export const quoteSchema = z.object({
