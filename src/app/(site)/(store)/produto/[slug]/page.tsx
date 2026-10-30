@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ViewTracker } from "@/components/landing/client";
 import ProductBuyBox from "@/components/store/ProductBuyBox";
+import { Price } from "@/components/ui/Price";
 import { ProductVisual } from "@/components/ui/ProductVisual";
 import { CATEGORY_LABEL, FULFILLMENT_LABEL } from "@/lib/domain";
 import { siteUrl } from "@/lib/env";
@@ -34,6 +35,7 @@ export default async function ProductPage({ params }: Props) {
   const slug = (await params).slug;
   const [p, catalog, settings] = await Promise.all([getPublicProduct(slug), getPublicCatalog(), getSettings()]);
   if (!p) notFound();
+  const soldOut = p.stockStatus === "OUT_OF_STOCK" || (p.variants.length > 0 && !p.variants.some((v) => v.available && v.stockQuantity > 0));
   const images = [
     ...(p.imageUrl ? [{ url: p.imageUrl, alt: p.name }] : []),
     ...p.gallery.filter((g) => g.url && g.url !== p.imageUrl),
