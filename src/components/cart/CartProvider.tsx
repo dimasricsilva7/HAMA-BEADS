@@ -4,9 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { gaEvent, metaEvent, track } from "@/lib/client/tracking";
 import type { CartQuote } from "@/types/catalog";
 
-export type CartItem = { productId: string; quantity: number; source?: "cross_sell" | null };
+export type CartItem = { productId: string; variantId?: string | null; quantity: number; source?: "cross_sell" | null };
 type CartState = { items: CartItem[]; bumpIds: string[]; couponCode: string | null };
-export type ProductRef = { id: string; name: string; sku: string; priceCents: number; category?: string };
+export type ProductRef = { id: string; name: string; sku: string; priceCents: number; category?: string; variantId?: string | null };
 
 type CartCtx = CartState & {
   ready: boolean;
@@ -105,10 +105,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const add = useCallback<CartCtx["add"]>((p, opts = {}) => {
     setState((s) => {
-      const existing = s.items.find((i) => i.productId === p.id);
+      const variantId = p.variantId ?? null;
+      const existing = s.items.find((i) => i.productId === p.id && (i.variantId ?? null) === variantId);
       const items = existing
-        ? s.items.map((i) => (i.productId === p.id ? { ...i, quantity: Math.min(10, i.quantity + 1) } : i))
-        : [...s.items, { productId: p.id, quantity: 1, source: opts.source ?? null }];
+        ? s.items.map((i) => (i.productId === p.id && (i.variantId ?? null) === variantId ? { ...i, quantity: Math.min(10, i.quantity + 1) } : i))
+        : [...s.items, { productId: p.id, variantId, quantity: 1, source: opts.source ?? null }];
       return { ...s, items };
     });
     setLastAdded(p.id);
@@ -120,13 +121,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (opts.open !== false) setDrawerOpen(true);
   }, []);
 
-  const setQuantity = useCallback((productId: string, quantity: number) => {
-    setState((s) => ({ ...s, items: s.items.map((i) => (i.productId === productId ? { ...i, quantity: Math.max(1, Math.min(10, quantity)) } : i)) }));
+  const setQuantity = useCallback((productId: string, quantity: number, variantId?: string | null) => {
+    setState((s) => ({ ...s, items: s.items.map((i) => (i.productId === productId && (i.variantId ?? null) === (variantId ?? null) ? { ...i, quantity: Math.max(1, Math.min(10, quantity)) } : i)) }));
   }, []);
 
-  const remove = useCallback((productId: string) => {
-    setState((s) => ({ ...s, items: s.items.filter((i) => i.productId !== productId) }));
-    track("remove_from_cart", { productId });
+  const remove = useCallback((productId: string, variantId?: string | null) => {
+    setState((s) => ({ ...s, items: s.items.filter((i) => !(i.productId === productId && (i.variantId ?? null) === (variantId ?? null))) }));
+    track("remove_from_cart", { productId, variantId: variantId ?? null });
   }, []);
 
   const toggleBump = useCallback((bumpId: string, on: boolean) => {
