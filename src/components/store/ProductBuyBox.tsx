@@ -6,7 +6,7 @@ import { Price } from "@/components/ui/Price";
 import type { ProductVariant } from "@/types/catalog";
 
 type Props = {
-  product: { id: string; name: string; sku: string; category: string; priceCents: number; listPriceCents: number | null; variants: ProductVariant[] };
+  product: { id: string; name: string; sku: string; category: string; priceCents: number; listPriceCents: number | null; variants: ProductVariant[]; stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "PREORDER" };
   slug: string;
 };
 
@@ -21,7 +21,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
   const selected = variants.find((v) => dimensions.every((d) => d === "Variação" ? chosen[d] === v.label : v.options.some((o) => o.name === d && chosen[d] === o.value))) ?? (dimensions.length === 0 ? variants[0] : undefined);
   const price = selected?.priceCents ?? product.priceCents;
   const list = selected?.listPriceCents ?? product.listPriceCents;
-  const soldOut = product.variants.length > 0 && variants.length === 0;
+  const soldOut = product.stockStatus === "OUT_OF_STOCK" || (product.variants.length > 0 && variants.length === 0);
   const values = (name: string) => name === "Variação" ? variants.map((v) => v.label) : [...new Set(variants.flatMap((v) => v.options.filter((o) => o.name === name).map((o) => o.value)))];
 
   function add() {
