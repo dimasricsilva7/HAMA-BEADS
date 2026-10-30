@@ -87,10 +87,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setError(null);
         // Itens que deixaram de existir/estar ativos saem do carrinho
         const q = json as CartQuote;
-        const valid = new Set(q.lines.map((l) => l.productId));
+        const valid = new Set(q.lines.filter((l) => l.kind !== "ORDER_BUMP").map((l) => `${l.productId}:${l.variantId ?? "default"}`));
         const validBumps = new Set(q.bumps.map((b) => b.id));
         setState((s) => {
-          const items = s.items.filter((i) => valid.has(i.productId));
+          const items = s.items.filter((i) => valid.has(`${i.productId}:${i.variantId ?? "default"}`));
           const bumpIds = s.bumpIds.filter((b) => validBumps.has(b));
           return items.length !== s.items.length || bumpIds.length !== s.bumpIds.length ? { ...s, items, bumpIds } : s;
         });
