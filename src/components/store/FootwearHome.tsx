@@ -43,7 +43,7 @@ function ProductCard({p}:{p:MiniProduct}) {
   </article>;
 }
 
-export default function FootwearHome({products,storeName}:{products:MiniProduct[];storeName:string}) {
+export default function FootwearHome({products,storeName,heroImageUrl}:{products:MiniProduct[];storeName:string;heroImageUrl?:string|null}) {
   const [search,setSearch] = useState("");
   const filtered = useMemo(()=>products.filter(p=>`${p.name} ${categoryNames[p.category] ?? ""}`.toLowerCase().includes(search.toLowerCase())),[products,search]);
   const arrivals = filtered.slice(0,4);
@@ -62,7 +62,9 @@ export default function FootwearHome({products,storeName}:{products:MiniProduct[
           <div className="mt-7 flex flex-wrap gap-3"><Link href="/loja" className="rounded-full bg-[#171717] px-7 py-3.5 text-xs font-extrabold uppercase tracking-wide text-white transition hover:bg-[#9b6650]">Explorar coleção</Link><a href="#ofertas" className="rounded-full border border-[#292722] px-7 py-3.5 text-xs font-extrabold uppercase tracking-wide text-[#222]">Ver ofertas</a></div>
           <p className="mt-7 text-[10px] font-medium uppercase tracking-[.15em] text-[#837d73]">Compra segura · PIX · Atendimento ao cliente</p>
         </div>
-        <div className="relative mx-auto mt-6 flex aspect-[1.35] w-full max-w-[540px] items-center justify-center lg:mt-0"><div className="absolute h-[78%] w-[78%] rounded-full bg-[#d4c8b8]"/><div className="relative w-full rotate-[-8deg]"><ShoeIllustration/></div><span className="absolute bottom-1 right-2 rounded-full bg-white/80 px-3 py-1 text-[9px] font-semibold uppercase tracking-wider text-[#676057]">Arte ilustrativa original</span></div>
+        <div className="relative mx-auto mt-6 flex aspect-[1.35] w-full max-w-[540px] items-center justify-center overflow-hidden rounded-[24px] lg:mt-0">
+          {heroImageUrl ? <img src={heroImageUrl} alt="Destaque da coleção" className="h-full w-full object-cover"/> : <><div className="absolute h-[78%] w-[78%] rounded-full bg-[#d4c8b8]"/><div className="relative w-full rotate-[-8deg]"><ShoeIllustration/></div><span className="absolute bottom-1 right-2 rounded-full bg-white/80 px-3 py-1 text-[9px] font-semibold uppercase tracking-wider text-[#676057]">Arte ilustrativa original</span></>}
+        </div>
       </div>
     </div>
     <div className="mx-auto grid max-w-[1380px] grid-cols-2 gap-3 px-4 py-8 sm:grid-cols-4 sm:px-7 lg:px-10">
