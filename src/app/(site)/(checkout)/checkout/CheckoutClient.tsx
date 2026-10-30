@@ -113,7 +113,7 @@ function Summary({ q, compact = false }: { q: CartQuote; compact?: boolean }) {
   );
 }
 
-export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consentLabel, pix, crediario, cnpj, companyName, reservationMinutes }: { requireCpf: boolean; checkoutNote: string | null; shippingNote: string | null; consentLabel: string; pix: PixOption; crediario: CrediarioConfig; cnpj: string | null; companyName: string | null; reservationMinutes: number }) {
+export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consentLabel, pix, crediario, cnpj, companyName, reservationMinutes, previewOnly = false }: { requireCpf: boolean; checkoutNote: string | null; shippingNote: string | null; consentLabel: string; pix: PixOption; crediario: CrediarioConfig; cnpj: string | null; companyName: string | null; reservationMinutes: number; previewOnly?: boolean }) {
   const cart = useCart();
   const router = useRouter();
   const q = cart.quote;
@@ -266,6 +266,10 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
 
   async function submit(ev: React.FormEvent | null, opts: { extraBumpIds?: string[]; skipModal?: boolean } = {}) {
     ev?.preventDefault();
+    if (previewOnly) {
+      setFormError("Pré-visualização: nenhum pedido ou pagamento será criado. O checkout está disponível apenas para conferência visual.");
+      return;
+    }
     if (!q || submitting) return;
     const e = validate();
     setErrors(e);
@@ -577,7 +581,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
         {/* Forma de pagamento */}
         <section className="card p-4 sm:p-5" aria-labelledby="h-pagamento">
           <h2 id="h-pagamento" className="text-lg font-extrabold">Forma de pagamento</h2>
-          {availableMethods.length === 0 && <p className="mt-3 rounded-xl bg-warning/10 px-4 py-3 text-sm">Os pagamentos estão temporariamente indisponíveis. Tente novamente em alguns minutos.</p>}
+          {previewOnly ? <p className="mt-3 rounded-xl bg-warning/10 px-4 py-3 text-sm">Modo de pré-visualização ativo. Você pode conferir esta etapa, mas nenhum pedido, PIX ou cobrança será criado.</p> : availableMethods.length === 0 && <p className="mt-3 rounded-xl bg-warning/10 px-4 py-3 text-sm">Os pagamentos estão temporariamente indisponíveis. Tente novamente em alguns minutos.</p>}
           <div className="mt-3 grid gap-3" role="radiogroup" aria-label="Forma de pagamento">
             {pix.enabled && (
               <button type="button" role="radio" aria-checked={method === "PIX"} onClick={() => setMethod("PIX")} data-cta="method_pix" className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition ${method === "PIX" ? "border-primary bg-primary/[0.05]" : "border-line hover:border-ink/25"}`}>
@@ -631,8 +635,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
         )}
 
         <div className="lg:hidden">
-          <button type="submit" disabled={submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary w-full">
-            {submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? `${crediario.buttonLabel} · ${formatBRL(q.totalCents)}` : `${pix.button} · ${formatBRL(q.totalCents)}`}
+          <button type="submit" disabled={previewOnly || submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary w-full">
+            {previewOnly ? "Prévia do checkout · pagamentos desativados" : submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? `${crediario.buttonLabel} · ${formatBRL(q.totalCents)}` : `${pix.button} · ${formatBRL(q.totalCents)}`}
           </button>
           <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-muted">
             <PixelIcon name="lock" className="h-3.5 w-3.5 text-success" /> Ambiente seguro · seus dados são protegidos
@@ -650,8 +654,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
           <div className="mt-4">
             <Summary q={q} />
           </div>
-          <button type="submit" disabled={submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary mt-5 w-full">
-            {submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? crediario.buttonLabel : pix.button}
+          <button type="submit" disabled={previewOnly || submitting || cart.loading || availableMethods.length === 0} data-cta="checkout_submit" className="btn-primary mt-5 w-full">
+            {previewOnly ? "Prévia do checkout · pagamentos desativados" : submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? crediario.buttonLabel : pix.button}
           </button>
           <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-muted">
             <PixelIcon name="lock" className="h-3.5 w-3.5 text-success" /> Ambiente seguro · dados protegidos
