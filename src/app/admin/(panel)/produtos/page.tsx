@@ -13,7 +13,7 @@ export default async function ProductsPage() {
   const small = "rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium hover:bg-slate-50";
   return (
     <div>
-      <PageHeader title="Produtos" description="Kits, complementos e produtos digitais. Preços e composição 100% editáveis." actions={<Link href="/admin/produtos/novo" className={btnPrimary}>Novo produto</Link>} />
+      <PageHeader title="Produtos" description="Calçados e acessórios. Preços, fotos, categorias, estoque e promoções editáveis." actions={<Link href="/admin/produtos/novo" className={btnPrimary}>Novo produto</Link>} />
       <Table
         rows={products}
         rowKey={(p) => p.id}
