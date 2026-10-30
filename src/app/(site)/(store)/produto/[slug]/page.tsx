@@ -30,8 +30,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-const money = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
 export default async function ProductPage({ params }: Props) {
   const slug = (await params).slug;
   const [p, catalog, settings] = await Promise.all([getPublicProduct(slug), getPublicCatalog(), getSettings()]);
