@@ -28,7 +28,7 @@ export function ProductForm({ product, all }: { product: Product | null; all: { 
               <Field label="Slug (URL)" hint="gerado do nome se vazio"><input name="slug" defaultValue={p?.slug ?? ""} className={inputCls} /></Field>
               <Field label="SKU"><input name="sku" defaultValue={p?.sku ?? ""} className={inputCls} /></Field>
               <Field label="Categoria">
-                <select name="category" defaultValue={p?.category ?? "KIT"} className={inputCls}>
+                <select name="category" defaultValue={p?.category ?? "CLOGS"} className={inputCls}>
                   {Object.entries(CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </Field>
@@ -90,6 +90,9 @@ export function ProductForm({ product, all }: { product: Product | null; all: { 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Preço (R$)"><input name="price" required inputMode="decimal" defaultValue={centsToInput(p?.priceCents ?? 0)} className={inputCls} /></Field>
               <Field label="Preço anterior (R$)" hint="Só use se o preço anterior for real."><input name="compareAt" inputMode="decimal" defaultValue={centsToInput(p?.compareAtPriceCents)} className={inputCls} /></Field>
+              <Field label="Desconto individual (%)" hint="Tem prioridade sobre o desconto da seção. Deixe vazio para herdar a seção.">
+                <input name="individualDiscountPercent" type="number" min="0" max="100" step="1" inputMode="numeric" defaultValue={p?.individualDiscountPercent ?? ""} placeholder="Ex.: 35" className={inputCls} />
+              </Field>
             </div>
             <p className="mt-4 text-xs font-semibold uppercase text-slate-500">Promoção real (opcional)</p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
