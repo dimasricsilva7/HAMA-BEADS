@@ -192,6 +192,9 @@ export async function POST(req: NextRequest) {
     const products = await response.json() as VtexProduct[];
     if (!Array.isArray(products)) return NextResponse.json({ error: "Formato inesperado do catálogo de origem." }, { status: 502 });
 
+    const resourcesHeader = response.headers.get("resources") ?? "";
+    const totalPart = resourcesHeader.split("/").at(-1) ?? "";
+    const total = /^\d+$/.test(totalPart) ? Number(totalPart) : null;
     let created = 0, updated = 0, skipped = 0;
     for (let i = 0; i < products.length; i += 5) {
       const chunk = products.slice(i, i + 5);
@@ -206,6 +209,7 @@ export async function POST(req: NextRequest) {
       collectionId,
       from,
       fetched: products.length,
+      total,
       created,
       updated,
       skipped,
