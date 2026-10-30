@@ -150,7 +150,10 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
   const x = normalizeProduct(p, collectionId);
   if (!x) return "skipped" as const;
   if (x.priceCents <= 0) return "skipped" as const;
-  const existing = await db.product.findUnique({ where: { sourceProductId: x.productId }, select: { id: true } });
+  const existing = await db.product.findUnique({
+    where: { sourceProductId: x.productId },
+    select: { id: true, active: true, individualDiscountPercent: true },
+  });
   const data = {
     name: x.name,
     slug: x.slug,
@@ -161,13 +164,13 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
     description: x.description,
     priceCents: x.priceCents,
     compareAtPriceCents: x.compareAtPriceCents,
-    individualDiscountPercent: null,
+    individualDiscountPercent: existing?.individualDiscountPercent ?? null,
     imageUrl: x.imageUrl,
     gallery: x.gallery,
     variants: x.variants,
     stockQuantity: x.stockQuantity,
     stockStatus: x.stockStatus,
-    active: true,
+    active: existing?.active ?? true,
     sourceUrl: x.sourceUrl,
     sourceCollectionId: collectionId,
     sourceSyncedAt: new Date(),
