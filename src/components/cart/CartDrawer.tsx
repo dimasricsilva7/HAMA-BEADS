@@ -107,13 +107,17 @@ export function CartDrawer() {
                           <p className="text-sm font-bold leading-tight">{p.name}</p>
                           <p className="text-sm text-muted">{formatBRL(p.priceCents)}</p>
                         </div>
-                        <button
-                          onClick={() => cart.add({ id: p.id, name: p.name, sku: p.sku, priceCents: p.priceCents, category: p.category }, { source: "cross_sell", open: true, element: "drawer_cross_sell" })}
-                          className="min-h-[44px] rounded-xl bg-ink px-3 text-sm font-bold text-white"
-                          aria-label={`Adicionar ${p.name}`}
-                        >
-                          + Adicionar
-                        </button>
+                        {p.variants.length > 0 ? (
+                          <Link href={`/produto/${p.slug}`} onClick={cart.closeDrawer} className="inline-flex min-h-[44px] items-center rounded-xl bg-ink px-3 text-sm font-bold text-white">Escolher opções</Link>
+                        ) : (
+                          <button
+                            onClick={() => cart.add({ id: p.id, name: p.name, sku: p.sku, priceCents: p.priceCents, category: p.category }, { source: "cross_sell", open: true, element: "drawer_cross_sell" })}
+                            className="min-h-[44px] rounded-xl bg-ink px-3 text-sm font-bold text-white"
+                            aria-label={`Adicionar ${p.name}`}
+                          >
+                            + Adicionar
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
