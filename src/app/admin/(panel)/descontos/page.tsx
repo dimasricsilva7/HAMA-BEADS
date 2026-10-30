@@ -40,6 +40,8 @@ export default async function DiscountsPage() {
                 startsAt={rule?.startsAt ?? null}
                 endsAt={rule?.endsAt ?? null}
                 products={sectionProducts.filter((p) => p.category === key).slice(0, 4)}
+                inheritCount={Math.max(0, count - overrides.length)}
+                individualCount={overrides.length}
               />
             </Card>
           );
