@@ -2,9 +2,9 @@
 
 Branch de desenvolvimento: feat/footwear-storefront.
 
-Esta branch adapta a base técnica do projeto para uma loja independente de calçados e acessórios. A estrutura é própria; não utiliza logotipo, fotos ou textos da Crocs e não representa a loja oficial da marca.
+Esta branch adapta a base técnica para uma loja independente de calçados e acessórios. A direção visual usa verde vibrante, branco, grafite e azul de apoio, com identidade própria. A loja não representa canal oficial da Crocs; marcas, logotipos e fotografias de terceiros só devem ser exibidos com autorização.
 
-## Funcionalidades
+## Identidade visual\n\n- Paleta independente: verde #84BD00, branco #FFFFFF, grafite #444444, azul #006DA4 e verde-claro #F2F7E8.\n- Nome, logotipo próprio e banner editáveis no Admin → Configurações → Loja.\n- Paleta editável no Admin → Configurações → Aparência.\n\n## Funcionalidades
 
 - Loja responsiva com home promocional, vitrines por categoria, busca e catálogo.
 - Página de produto com galeria, preço, descrição, especificações, estoque e produtos relacionados.
