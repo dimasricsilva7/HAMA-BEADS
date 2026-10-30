@@ -115,8 +115,12 @@ function normalizeProduct(p: VtexProduct, collectionId: string) {
   });
   const priced = variants.filter((v) => v.priceCents > 0);
   const inStock = priced.filter((v) => v.available);
-  const priceCents = (inStock.length ? inStock : priced).reduce((min, v) => Math.min(min, v.priceCents), Number.MAX_SAFE_INTEGER);
-  const listPriceCents = priced.reduce((max, v) => Math.max(max, v.listPriceCents ?? 0), 0);
+  const priceSource = inStock.length ? inStock : priced;
+  const lowestVariant = priceSource.slice().sort((a, b) => a.priceCents - b.priceCents)[0];
+  const priceCents = lowestVariant?.priceCents ?? 0;
+  const listPriceCents = lowestVariant && (lowestVariant.listPriceCents ?? 0) > lowestVariant.priceCents
+    ? lowestVariant.listPriceCents
+    : 0;
   const gallery = [...new Set(items.flatMap((item) => (item.images ?? []).flatMap((img) => img.imageUrl && /^https:\/\//.test(img.imageUrl) ? [img.imageUrl] : [])))].slice(0, 12)
     .map((url) => ({ url, alt: name }));
   const linkText = slugify(String(p.linkText ?? name));
