@@ -22,7 +22,7 @@ type VtexItem = {
   itemId?: string;
   name?: string;
   nameComplete?: string;
-  referenceId?: string;
+  referenceId?: string | { Key?: string; Value?: string }[];
   variations?: unknown;
   variationValues?: unknown;
   images?: { imageUrl?: string; imageText?: string }[];
@@ -55,12 +55,23 @@ function imageUrl(items: VtexItem[]): string | null {
   return null;
 }
 function itemOptions(item: VtexItem) {
+  if (item.variations && !Array.isArray(item.variations) && typeof item.variations === "object") {
+    return Object.entries(item.variations as Record<string, unknown>).flatMap(([name, raw]) => {
+      const value = Array.isArray(raw) ? raw[0] : raw;
+      return value == null || String(value).trim() === "" ? [] : [{ name, value: String(value) }];
+    });
+  }
   const names = Array.isArray(item.variations) ? item.variations : [];
   const values = Array.isArray(item.variationValues) ? item.variationValues : [];
   return names.flatMap((name, i) => {
     const value = values[i];
     return value == null || String(value).trim() === "" ? [] : [{ name: String(name), value: String(value) }];
   });
+}
+function referenceSku(item: VtexItem) {
+  if (typeof item.referenceId === "string") return item.referenceId;
+  if (Array.isArray(item.referenceId)) return item.referenceId.find((x) => x?.Key === "RefId")?.Value ?? item.referenceId[0]?.Value ?? "";
+  return "";
 }
 function productCategory(p: VtexProduct, collectionId: string): ProductCategory {
   if (collectionId === "469") return "JIBBITZ";
@@ -89,7 +100,7 @@ function normalizeProduct(p: VtexProduct, collectionId: string) {
     const options = itemOptions(item);
     return [{
       id,
-      sku: String(item.referenceId || id),
+      sku: referenceSku(item) || id,
       label: item.nameComplete || item.name || options.map((x) => x.value).join(" / ") || name,
       options,
       imageUrl: firstImage && /^https:\/\//.test(firstImage) ? firstImage : null,
