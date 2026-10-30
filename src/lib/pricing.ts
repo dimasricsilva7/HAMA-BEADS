@@ -8,6 +8,7 @@ export type PriceSource = {
   promoStartsAt: Date | string | null;
   promoEndsAt: Date | string | null;
   promoLabel?: string | null;
+  individualDiscountPercent?: number | null;
 };
 
 export type EffectivePrice = {
@@ -30,11 +31,24 @@ export function isPromoActive(p: PriceSource, now = new Date()): boolean {
   return now >= start && now < end;
 }
 
-export function effectivePrice(p: PriceSource, overrides: Record<string, number> = {}, now = new Date()): EffectivePrice {
+export function effectivePrice(
+  p: PriceSource,
+  overrides: Record<string, number> = {},
+  now = new Date(),
+  sectionDiscountPercent: number | null = null
+): EffectivePrice {
   const promo = isPromoActive(p, now);
   const base = overrides[p.id] ?? p.priceCents;
-  const price = promo ? Math.min(p.promoPriceCents!, base) : base;
-  const reference = promo ? Math.max(p.priceCents, p.compareAtPriceCents ?? 0) : (p.compareAtPriceCents ?? 0);
+  // Exceção individual vence o desconto da seção. Descontos percentuais nunca acumulam.
+  const percent = p.individualDiscountPercent ?? sectionDiscountPercent;
+  const percentPrice = percent != null && percent > 0
+    ? Math.round((base * (100 - Math.min(100, Math.max(0, percent)))) / 100)
+    : base;
+  // Promoção por preço fixo compete com o percentual: aplica-se somente o menor preço.
+  const price = promo ? Math.min(p.promoPriceCents!, percentPrice) : percentPrice;
+  const reference = price < base
+    ? Math.max(base, p.compareAtPriceCents ?? 0)
+    : (p.compareAtPriceCents ?? 0);
   return {
     priceCents: price,
     listPriceCents: reference > price ? reference : null,
