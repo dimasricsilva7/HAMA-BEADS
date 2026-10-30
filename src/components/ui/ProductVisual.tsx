@@ -22,7 +22,7 @@ export function ProductVisual({
   if (imageUrl) {
     return (
       <div className={`relative overflow-hidden bg-surface ${className}`}>
-        <img src={imageUrl} alt={name} loading={priority ? "eager" : "lazy"} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={imageUrl} alt={name} data-sizes={sizes} loading={priority ? "eager" : "lazy"} className="absolute inset-0 h-full w-full object-cover" />
       </div>
     );
   }
