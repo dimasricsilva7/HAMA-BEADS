@@ -19,7 +19,7 @@ export async function GET() {
   if (!(await getCurrentAdmin())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const sessions = await db.analyticsSession.findMany({
     where: { lastSeenAt: { gte: new Date(Date.now() - WINDOW_MS) }, NOT: { device: "servidor" } },
-    select: { id: true, exitPage: true, device: true, utmSource: true, channel: true },
+    select: { id: true, visitorId: true, exitPage: true, landingPage: true, referrer: true, device: true, browser: true, os: true, utmSource: true, utmMedium: true, utmCampaign: true, channel: true, firstSeenAt: true, lastSeenAt: true, pageViews: true },
     take: 1000,
   });
   // Quem está na página do pedido: descobre PIX ou Crediário pelo pedido mais recente da sessão
@@ -40,6 +40,23 @@ export async function GET() {
       pages: count(sessions, (s) => pageLabel(s.exitPage, methodBySid.get(s.id))),
       sources: count(sessions, (s) => s.utmSource ?? s.channel ?? "direto"),
       devices: count(sessions, (s) => s.device ?? "desconhecido"),
+      visitors: sessions.map((s) => ({
+        id: s.id.slice(0, 10),
+        visitor: s.visitorId.slice(0, 8),
+        page: pageLabel(s.exitPage, methodBySid.get(s.id)),
+        path: s.exitPage ?? "/",
+        landingPage: s.landingPage ?? "/",
+        source: s.utmSource ?? s.channel ?? "direto",
+        medium: s.utmMedium,
+        campaign: s.utmCampaign,
+        referrer: s.referrer,
+        device: s.device ?? "desconhecido",
+        browser: s.browser,
+        os: s.os,
+        pageViews: s.pageViews,
+        firstSeenAt: s.firstSeenAt,
+        lastSeenAt: s.lastSeenAt,
+      })).sort((a, b) => new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime()),
       at: new Date().toISOString(),
     },
     { headers: { "Cache-Control": "no-store" } }
