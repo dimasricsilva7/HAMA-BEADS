@@ -96,7 +96,7 @@ export default async function ProductPage({ params }: Props) {
 
             {p.promoLabel && <p className="mt-1 text-xs font-bold uppercase text-accent">{p.promoLabel}</p>}
             <ProductBuyBox
-              product={{ id: p.id, name: p.name, sku: p.sku, category: p.category, priceCents: p.priceCents, listPriceCents: p.listPriceCents, variants: p.variants }}
+              product={{ id: p.id, name: p.name, sku: p.sku, category: p.category, priceCents: p.priceCents, listPriceCents: p.listPriceCents, variants: p.variants, stockStatus: p.stockStatus }}
               slug={p.slug}
             />
 
