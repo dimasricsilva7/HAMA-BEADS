@@ -2,18 +2,19 @@ export function ShoeArtwork({ tone = 0 }: { tone?: number }) {
   const upper = ["#E8E4DC", "#30343A", "#B8A48E", "#D5C9BD", "#6F766D"][Math.abs(tone) % 5];
   const sole = ["#282725", "#181818", "#5E5146", "#E9E5DF", "#2E3330"][Math.abs(tone) % 5];
   return (
-    <svg viewBox="0 0 560 360" role="img" aria-label="Ilustração genérica de calçado" className="h-full w-full drop-shadow-xl">
+    <svg viewBox="0 0 560 360" role="img" aria-label="Ilustração genérica original de tênis" className="h-full w-full drop-shadow-xl">
       <defs>
-        <linearGradient id="shoe-upper" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#fff"/><stop offset="1" stopColor={upper}/></linearGradient>
-        <linearGradient id="shoe-sole" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={sole}/><stop offset="1" stopColor="#101010"/></linearGradient>
+        <linearGradient id="sneaker-upper" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#fff"/><stop offset="1" stopColor={upper}/></linearGradient>
+        <linearGradient id="sneaker-sole" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={sole}/><stop offset="1" stopColor="#101010"/></linearGradient>
       </defs>
       <ellipse cx="280" cy="304" rx="215" ry="24" fill="#111" opacity=".17"/>
-      <path d="M68 222 C88 166 128 120 194 88 C241 65 287 77 331 108 L431 177 C464 199 478 233 461 260 C448 281 421 290 389 290 L113 290 C78 290 56 264 68 222Z" fill="url(#shoe-sole)" stroke="#171717" strokeWidth="6"/>
-      <path d="M80 209 C100 162 134 122 196 88 C241 63 285 76 329 105 L421 170 C449 190 457 215 443 236 C430 253 408 260 380 260 L123 260 C91 260 68 240 80 209Z" fill="url(#shoe-upper)" stroke={upper} strokeWidth="5"/>
-      <path d="M97 211 C161 237 253 242 337 232 C384 226 416 214 441 197" fill="none" stroke="#777" strokeOpacity=".26" strokeWidth="5"/>
-      {Array.from({ length: 8 }, (_, i) => <ellipse key={i} cx={164 + i * 27} cy={145 + (i % 2) * 14} rx="7" ry="12" transform={`rotate(26 ${164 + i * 27} ${145 + (i % 2) * 14})`} fill="#777" opacity=".48" />)}
-      <path d="M116 168 C88 131 78 99 106 86 C133 74 153 101 153 131" fill="none" stroke={upper} strokeWidth="18" strokeLinecap="round"/>
-      <path d="M116 168 C88 131 78 99 106 86 C133 74 153 101 153 131" fill="none" stroke="#fff" strokeOpacity=".45" strokeWidth="6" strokeLinecap="round"/>
+      <path d="M58 230 C79 210 105 197 143 191 L213 176 C238 169 255 151 269 132 L293 105 C309 87 327 84 349 98 L414 147 C445 170 478 191 494 218 C506 238 497 264 477 275 C457 286 423 290 384 290 L106 290 C71 290 48 265 58 230Z" fill="url(#sneaker-sole)" stroke="#171717" strokeWidth="6"/>
+      <path d="M68 219 C95 196 124 187 164 183 L222 171 C244 166 259 149 274 128 L296 100 C311 84 327 84 347 98 L408 145 C439 167 470 188 482 211 C491 228 481 246 460 252 C423 261 367 254 319 253 L131 253 C98 253 77 243 68 219Z" fill="url(#sneaker-upper)" stroke={upper} strokeWidth="5"/>
+      <path d="M80 224 C178 244 333 246 482 222" fill="none" stroke="#777" strokeOpacity=".27" strokeWidth="5"/>
+      <path d="M225 172 C243 174 260 183 274 198 M244 154 C266 159 283 169 295 185 M261 136 C282 142 299 152 311 167" fill="none" stroke="#777" strokeOpacity=".65" strokeWidth="7" strokeLinecap="round"/>
+      <path d="M220 177 L300 194 M238 158 L315 177 M257 139 L331 160" fill="none" stroke="#777" strokeOpacity=".65" strokeWidth="4" strokeLinecap="round"/>
+      <path d="M360 114 C348 144 335 168 323 196" fill="none" stroke="#fff" strokeOpacity=".4" strokeWidth="5"/>
+      <path d="M108 213 C122 205 144 199 165 197" fill="none" stroke="#777" strokeOpacity=".32" strokeWidth="4"/>
     </svg>
   );
 }
