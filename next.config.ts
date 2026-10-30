@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: !imageOptimization,
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
+    remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }, { protocol: "https", hostname: "**.vtexassets.com" }],
   },
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
