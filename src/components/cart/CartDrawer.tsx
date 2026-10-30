@@ -63,8 +63,8 @@ export function CartDrawer() {
           {!cart.items.length ? (
             <div className="py-16 text-center">
               <p className="font-bold">Seu carrinho está vazio.</p>
-              <Link href="/#kits" onClick={cart.closeDrawer} className="btn-primary mt-6">
-                Escolher meu kit
+              <Link href="/loja" onClick={cart.closeDrawer} className="btn-primary mt-6">
+                Continuar comprando
               </Link>
             </div>
           ) : !q ? (
@@ -83,11 +83,11 @@ export function CartDrawer() {
                   <li key={l.productId} className={`flex gap-3 rounded-2xl bg-surface p-3 shadow-soft ${cart.lastAdded === l.productId ? "animate-pop ring-2 ring-success" : ""}`}>
                     <ProductVisual imageUrl={l.imageUrl} name={l.name} category={l.category} index={i} className="h-20 w-20 shrink-0 rounded-xl" sizes="80px" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-bold leading-tight">{l.name}</p>
+                      <p className="font-bold leading-tight">{l.name}</p>{l.variantLabel && <p className="mt-0.5 text-xs text-muted">{l.variantLabel}</p>}{l.variantOptions.length > 0 && <p className="text-xs text-muted">{l.variantOptions.map((o) => `${o.name}: ${o.value}`).join(" · ")}</p>}{l.variantSku && <p className="text-[10px] text-muted">SKU: {l.variantSku}</p>}
                       <p className="mt-0.5 text-sm text-muted">{formatBRL(l.unitPriceCents)}{l.quantity > 1 ? " cada" : ""}</p>
                       <div className="mt-2 flex items-center justify-between gap-2">
-                        {l.fulfillment === "DIGITAL" ? <span className="text-xs font-semibold text-muted">Produto digital</span> : <QtyStepper value={l.quantity} onChange={(n) => cart.setQuantity(l.productId, n)} label={l.name} />}
-                        <button onClick={() => cart.remove(l.productId)} className="min-h-[40px] px-2 text-sm font-semibold text-muted underline-offset-2 hover:underline">
+                        {l.fulfillment === "DIGITAL" ? <span className="text-xs font-semibold text-muted">Produto digital</span> : <QtyStepper value={l.quantity} onChange={(n) => cart.setQuantity(l.productId, n, l.variantId)} label={l.name} />}
+                        <button onClick={() => cart.remove(l.productId, l.variantId)} className="min-h-[40px] px-2 text-sm font-semibold text-muted underline-offset-2 hover:underline">
                           Remover
                         </button>
                       </div>
