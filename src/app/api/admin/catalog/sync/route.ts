@@ -119,7 +119,7 @@ function normalizeProduct(p: VtexProduct, collectionId: string) {
   const lowestVariant = priceSource.slice().sort((a, b) => a.priceCents - b.priceCents)[0];
   const priceCents = lowestVariant?.priceCents ?? 0;
   const listPriceCents = lowestVariant && (lowestVariant.listPriceCents ?? 0) > lowestVariant.priceCents
-    ? lowestVariant.listPriceCents
+    ? (lowestVariant.listPriceCents ?? 0)
     : 0;
   const gallery = [...new Set(items.flatMap((item) => (item.images ?? []).flatMap((img) => img.imageUrl && /^https:\/\//.test(img.imageUrl) ? [img.imageUrl] : [])))].slice(0, 12)
     .map((url) => ({ url, alt: name }));
