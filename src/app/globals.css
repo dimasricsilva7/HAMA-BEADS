@@ -4,14 +4,14 @@
 
 /* Tokens do design system. Cores em canais RGB (sobrescritas pelo admin via <style> no layout). */
 :root {
-  --c-primary: 47 75 255;
-  --c-secondary: 255 197 61;
-  --c-accent: 255 79 139;
-  --c-ink: 23 20 46;
-  --c-bg: 255 249 240;
+  --c-primary: 155 102 80;
+  --c-secondary: 232 222 209;
+  --c-accent: 198 91 70;
+  --c-ink: 23 23 23;
+  --c-bg: 251 250 247;
   --c-surface: 255 255 255;
-  --c-muted: 98 94 122;
-  --c-line: 232 226 214;
+  --c-muted: 119 115 109;
+  --c-line: 232 229 223;
   --c-success: 26 158 95;
   --c-warning: 214 138 0;
   --c-danger: 220 38 64;
@@ -47,21 +47,21 @@
 @layer components {
   .container-page { @apply mx-auto w-full max-w-page px-4 sm:px-6; }
   .section { padding-block: var(--space-section); }
-  .eyebrow { @apply font-pixel text-[11px] uppercase tracking-[0.18em]; }
+  .eyebrow { @apply font-sans text-[10px] font-bold uppercase tracking-[0.18em]; }
   .h-section { @apply font-display text-[1.9rem] font-extrabold leading-[1.05] sm:text-4xl lg:text-5xl; }
   .lead { @apply text-base leading-relaxed text-muted sm:text-lg; }
 
   /* Botões — alvo de toque ≥ 48px, feedback de pressão (sem depender de hover) */
-  .btn { @apply inline-flex min-h-[52px] items-center justify-center gap-2 rounded-bead px-6 text-[15px] font-extrabold uppercase tracking-wide transition active:translate-y-[3px] disabled:pointer-events-none disabled:opacity-50; }
-  .btn-primary { @apply btn bg-primary text-white shadow-pixel active:shadow-none; }
-  .btn-accent { @apply btn bg-accent text-white shadow-pixel active:shadow-none; }
-  .btn-light { @apply btn border-2 border-ink bg-surface text-ink shadow-pixel-sm active:shadow-none; }
+  .btn { @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-6 text-sm font-bold tracking-wide transition disabled:pointer-events-none disabled:opacity-50; }
+  .btn-primary { @apply btn bg-primary text-white shadow-sm active:scale-[0.99]; }
+  .btn-accent { @apply btn bg-accent text-white shadow-sm active:scale-[0.99]; }
+  .btn-light { @apply btn border border-ink/20 bg-surface text-ink hover:bg-ink/5; }
   .btn-ghost { @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-bead px-4 text-sm font-bold text-ink underline-offset-4 hover:underline; }
   @media (hover: hover) {
     .btn-primary:hover, .btn-accent:hover, .btn-light:hover { transform: translateY(-1px); }
   }
 
-  .card { @apply rounded-card border border-line bg-surface shadow-soft; }
+  .card { @apply rounded-2xl border border-line bg-surface shadow-sm; }
   .chip { @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold; }
 
   .input {
