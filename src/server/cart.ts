@@ -209,7 +209,11 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
   }
 
   const requiresShipping = lines.some((l) => l.fulfillment !== "DIGITAL");
-  const shippingCents = requiresShipping ? Math.max(0, settingInt(settings, "shipping_flat_cents", 0)) : 0;
+  const shippingFlat = Math.max(0, settingInt(settings, "shipping_flat_cents", 0));
+  const freeShippingThreshold = Math.max(0, settingInt(settings, "shipping_free_threshold_cents", 0));
+  const shippingBasis = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
+  const qualifiesForFreeShipping = freeShippingThreshold > 0 && shippingBasis >= freeShippingThreshold;
+  const shippingCents = requiresShipping && !qualifiesForFreeShipping ? shippingFlat : 0;
   const totals = computeTotals(priced, shippingCents, discount);
 
   return {
