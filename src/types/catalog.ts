@@ -5,7 +5,7 @@ export type PublicProduct = {
   slug: string;
   sku: string;
   name: string;
-  category: "KIT" | "BEADS" | "PEGBOARD" | "TWEEZERS" | "DIGITAL_MODELS" | "ACCESSORY" | "TOOL" | "OTHER";
+  category: "CLOGS" | "SANDALS" | "SLIDES" | "KIDS" | "JIBBITZ" | "FOOTWEAR" | "KIT" | "BEADS" | "PEGBOARD" | "TWEEZERS" | "DIGITAL_MODELS" | "ACCESSORY" | "TOOL" | "OTHER";
   fulfillment: "PHYSICAL" | "DIGITAL" | "HYBRID";
   shortDescription: string | null;
   description: string | null;
