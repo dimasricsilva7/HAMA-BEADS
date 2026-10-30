@@ -80,7 +80,7 @@ export function CartDrawer() {
               )}
               <ul className="space-y-3">
                 {lines.map((l, i) => (
-                  <li key={l.productId} className={`flex gap-3 rounded-2xl bg-surface p-3 shadow-soft ${cart.lastAdded === l.productId ? "animate-pop ring-2 ring-success" : ""}`}>
+                  <li key={`${l.productId}-${l.variantId ?? "default"}`} className={`flex gap-3 rounded-2xl bg-surface p-3 shadow-soft ${cart.lastAdded === l.productId ? "animate-pop ring-2 ring-success" : ""}`}>
                     <ProductVisual imageUrl={l.imageUrl} name={l.name} category={l.category} index={i} className="h-20 w-20 shrink-0 rounded-xl" sizes="80px" />
                     <div className="min-w-0 flex-1">
                       <p className="font-bold leading-tight">{l.name}</p>{l.variantLabel && <p className="mt-0.5 text-xs text-muted">{l.variantLabel}</p>}{l.variantOptions.length > 0 && <p className="text-xs text-muted">{l.variantOptions.map((o) => `${o.name}: ${o.value}`).join(" · ")}</p>}{l.variantSku && <p className="text-[10px] text-muted">SKU: {l.variantSku}</p>}
