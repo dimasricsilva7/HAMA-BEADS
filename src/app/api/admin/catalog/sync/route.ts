@@ -63,8 +63,11 @@ function itemOptions(item: VtexItem) {
   }
   const names = Array.isArray(item.variations) ? item.variations : [];
   const values = Array.isArray(item.variationValues) ? item.variationValues : [];
+  const valueMap = item.variationValues && typeof item.variationValues === "object" && !Array.isArray(item.variationValues)
+    ? item.variationValues as Record<string, unknown>
+    : {};
   return names.flatMap((name, i) => {
-    const value = values[i];
+    const value = values[i] ?? valueMap[String(name)];
     return value == null || String(value).trim() === "" ? [] : [{ name: String(name), value: String(value) }];
   });
 }
