@@ -127,7 +127,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const remove = useCallback((productId: string, variantId?: string | null) => {
     setState((s) => ({ ...s, items: s.items.filter((i) => !(i.productId === productId && (i.variantId ?? null) === (variantId ?? null))) }));
-    track("remove_from_cart", { productId, variantId: variantId ?? null });
+    track("remove_from_cart", { productId, props: { variantId: variantId ?? null } });
   }, []);
 
   const toggleBump = useCallback((bumpId: string, on: boolean) => {
