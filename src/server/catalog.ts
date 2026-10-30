@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { assignAll, priceOverrides, type Assignment, type ExperimentDef, type ExperimentVariant } from "@/lib/experiments";
 import { effectivePrice } from "@/lib/pricing";
 import type { GalleryImage, ProductComponent, ProductSpec } from "@/lib/domain";
-import type { PublicProduct } from "@/types/catalog";
+import type { ProductVariant, PublicProduct } from "@/types/catalog";
 
 const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
@@ -63,6 +63,7 @@ export function toPublicProduct(
     components: asArray<ProductComponent>(p.components),
     specs: asArray<ProductSpec>(p.specs).filter((s) => s?.label && s?.value),
     imageUrl: p.imageUrl,
+    variants: asArray<ProductVariant>(p.variants).filter((v) => v?.id && v?.sku && Number.isInteger(v?.priceCents)),
     gallery: asArray<GalleryImage>(p.gallery).filter((g) => g?.url),
     videoUrl: p.videoUrl,
     badge: p.badge,
