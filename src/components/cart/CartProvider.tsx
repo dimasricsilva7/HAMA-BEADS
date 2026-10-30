@@ -17,8 +17,8 @@ type CartCtx = CartState & {
   count: number;
   lastAdded: string | null;
   add: (p: ProductRef, opts?: { source?: "cross_sell"; open?: boolean; element?: string }) => void;
-  setQuantity: (productId: string, quantity: number) => void;
-  remove: (productId: string) => void;
+  setQuantity: (productId: string, quantity: number, variantId?: string | null) => void;
+  remove: (productId: string, variantId?: string | null) => void;
   toggleBump: (bumpId: string, on: boolean) => void;
   setCoupon: (code: string | null) => void;
   clear: () => void;
