@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth";
 import { Sidebar } from "./Sidebar";
 
-export const metadata: Metadata = { title: { default: "Admin", template: "%s — Admin Hama Beads" }, robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: { default: "Admin", template: "%s — Administração da loja" }, robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
