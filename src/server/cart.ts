@@ -42,6 +42,13 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
   const settings = await getSettingsFresh();
   const assignments = await assignmentsFor(input.visitorId);
   const overrides = priceOverrides(assignments);
+  const now = new Date();
+  const sectionRules = await db.sectionDiscount.findMany({ where: { active: true } }).catch(() => []);
+  const sectionPercent = new Map(
+    sectionRules
+      .filter((r) => (!r.startsAt || r.startsAt <= now) && (!r.endsAt || r.endsAt > now))
+      .map((r) => [r.category, r.percent])
+  );
 
   const requested = new Map<string, CartItemInput>();
   for (const it of input.items.slice(0, 20)) {
@@ -60,7 +67,7 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
       removed.push(p?.name ?? item.productId);
       continue;
     }
-    const price = effectivePrice(p, overrides);
+    const price = effectivePrice(p, overrides, now, sectionPercent.get(p.category) ?? null);
     const quantity = p.fulfillment === "DIGITAL" ? 1 : item.quantity;
     lines.push({
       productId: p.id,
@@ -94,7 +101,7 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
     if (triggers.length && !triggers.some((t) => inCart.has(t))) continue;
     if (forcedBump && b.id !== forcedBump) continue;
     seenBumpProducts.add(b.productId);
-    const price = effectivePrice(b.product, overrides);
+    const price = effectivePrice(b.product, overrides, now, sectionPercent.get(b.product.category) ?? null);
     const priceCents = b.priceCents && b.priceCents > 0 ? b.priceCents : price.priceCents;
     const reference = Math.max(price.priceCents, price.listPriceCents ?? 0);
     bumps.push({
@@ -141,7 +148,7 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
     .map((id) => crossRows.find((p) => p.id === id))
     .filter((p): p is Product => Boolean(p && isSellable(p)))
     .slice(0, 4)
-    .map((p) => toPublicProduct(p, overrides));
+    .map((p) => toPublicProduct(p, overrides, sectionPercent.get(p.category) ?? null, now));
 
   // ───── Cupom ─────
   const priced = lines.map((l) => ({ productId: l.productId, unitPriceCents: l.unitPriceCents, quantity: l.quantity }));
