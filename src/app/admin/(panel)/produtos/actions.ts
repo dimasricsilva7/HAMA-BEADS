@@ -142,7 +142,7 @@ export async function duplicateProduct(fd: FormData) {
     const suffix = Date.now().toString(36).slice(-4);
     const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = src;
     const copy = await db.product.create({
-      data: { ...rest, name: `${src.name} (cópia)`, slug: `${src.slug}-copia-${suffix}`, sku: `${src.sku}-C${suffix.toUpperCase()}`, active: false, components: src.components as Prisma.InputJsonValue, specs: src.specs as Prisma.InputJsonValue, gallery: src.gallery as Prisma.InputJsonValue, crossSellIds: src.crossSellIds as Prisma.InputJsonValue, includedProductIds: src.includedProductIds as Prisma.InputJsonValue },
+      data: { ...rest, sourceProductId: null, sourceUrl: null, sourceCollectionId: null, sourceSyncedAt: null, variants: src.variants == null ? Prisma.JsonNull : src.variants as Prisma.InputJsonValue, name: `${src.name} (cópia)`, slug: `${src.slug}-copia-${suffix}`, sku: `${src.sku}-C${suffix.toUpperCase()}`, active: false, components: src.components as Prisma.InputJsonValue, specs: src.specs as Prisma.InputJsonValue, gallery: src.gallery as Prisma.InputJsonValue, crossSellIds: src.crossSellIds as Prisma.InputJsonValue, includedProductIds: src.includedProductIds as Prisma.InputJsonValue },
     });
     await audit(admin.id, "product_duplicated", "product", copy.id, { summary: `Produto duplicado de ${src.name}` });
     newId = copy.id;
