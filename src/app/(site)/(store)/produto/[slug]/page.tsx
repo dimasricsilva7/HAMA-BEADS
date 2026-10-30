@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AddToCartButton, ViewTracker } from "@/components/landing/client";
-import { Price } from "@/components/ui/Price";
+import { ViewTracker } from "@/components/landing/client";
+import ProductBuyBox from "@/components/store/ProductBuyBox";
 import { ProductVisual } from "@/components/ui/ProductVisual";
 import { CATEGORY_LABEL, FULFILLMENT_LABEL } from "@/lib/domain";
 import { siteUrl } from "@/lib/env";
@@ -39,7 +39,6 @@ export default async function ProductPage({ params }: Props) {
     ...p.gallery.filter((g) => g.url && g.url !== p.imageUrl),
   ];
   const related = catalog.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 4);
-  const soldOut = p.stockStatus === "OUT_OF_STOCK";
   const baseUrl = siteUrl();
   const jsonLd = {
     "@context": "https://schema.org",
@@ -93,20 +92,11 @@ export default async function ProductPage({ params }: Props) {
             {p.badge && <span className="chip mt-3 bg-primary text-white">{p.badge}</span>}
             {p.shortDescription && <p className="lead mt-4">{p.shortDescription}</p>}
 
-            <div className="mt-6 rounded-card border border-line bg-surface p-5 shadow-soft">
-              <Price priceCents={p.priceCents} listPriceCents={p.listPriceCents} size="lg" />
-              {p.promoLabel && <p className="mt-1 text-xs font-bold uppercase text-accent">{p.promoLabel}</p>}
-              <p className="mt-2 text-sm text-muted">Pagamento via PIX seguro. Frete e prazo calculados no checkout, quando aplicável.</p>
-              {soldOut ? (
-                <p className="mt-4 rounded-xl bg-ink/5 py-3 text-center font-bold">Produto indisponível no momento</p>
-              ) : (
-                <AddToCartButton product={{ id: p.id, name: p.name, sku: p.sku, priceCents: p.priceCents, category: p.category }} label="Adicionar ao carrinho" element={`pdp_${p.slug}`} className="btn-primary mt-4 w-full" />
-              )}
-              <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted">
-                <div className="rounded-xl bg-white p-3">Compra protegida</div>
-                <div className="rounded-xl bg-white p-3">Acompanhamento do pedido</div>
-              </div>
-            </div>
+            {p.promoLabel && <p className="mt-1 text-xs font-bold uppercase text-accent">{p.promoLabel}</p>}
+            <ProductBuyBox
+              product={{ id: p.id, name: p.name, sku: p.sku, category: p.category, priceCents: p.priceCents, listPriceCents: p.listPriceCents, variants: p.variants }}
+              slug={p.slug}
+            />
 
             {p.specs.length > 0 && (
               <section className="mt-8">
