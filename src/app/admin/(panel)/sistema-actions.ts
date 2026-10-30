@@ -34,7 +34,7 @@ export async function saveSettings(_: ActionResult, fd: FormData): Promise<Actio
     const changes: { key: string; before: string; after: string }[] = [];
     for (const key of keys) {
       let value = BOOL_KEYS.includes(key) ? String(bool(fd, key)) : str(fd, key, key.startsWith("policy_") ? 30_000 : 2000);
-      if (key === "shipping_flat_cents") {
+      if (key === "shipping_flat_cents" || key === "shipping_free_threshold_cents") {
         const n = Number(value.replace(/[R$\s.]/g, "").replace(",", "."));
         value = Number.isFinite(n) && n >= 0 ? String(Math.round(n * 100)) : "x";
       }
