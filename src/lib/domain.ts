@@ -6,13 +6,19 @@
 // ───────────── Catálogo ─────────────
 
 export const CATEGORY_LABEL = {
-  KIT: "Kit",
+  CLOGS: "Clogs",
+  SANDALS: "Sandálias",
+  SLIDES: "Slides",
+  KIDS: "Infantil",
+  JIBBITZ: "Pins e enfeites",
+  FOOTWEAR: "Calçados",
   BEADS: "Peças (refil)",
+  KIT: "Kits",
   PEGBOARD: "Pegboard",
   TWEEZERS: "Pinças",
   DIGITAL_MODELS: "Modelos digitais",
-  ACCESSORY: "Acessório",
-  TOOL: "Ferramenta",
+  ACCESSORY: "Acessórios",
+  TOOL: "Ferramentas",
   OTHER: "Outros",
 } as const;
 
