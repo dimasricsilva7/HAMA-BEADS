@@ -79,6 +79,12 @@ model AuditLog {
 // ───────────────────────── Catálogo ─────────────────────────
 
 enum ProductCategory {
+  CLOGS
+  SANDALS
+  SLIDES
+  KIDS
+  JIBBITZ
+  FOOTWEAR
   BEADS
   KIT
   PEGBOARD
@@ -106,7 +112,7 @@ model Product {
   slug                String          @unique
   sku                 String          @unique
   name                String
-  category            ProductCategory @default(KIT)
+  category            ProductCategory @default(CLOGS)
   fulfillment         FulfillmentType @default(PHYSICAL)
   shortDescription    String?
   description         String?
@@ -117,6 +123,7 @@ model Product {
   promoStartsAt       DateTime?
   promoEndsAt         DateTime?
   promoLabel          String?
+  individualDiscountPercent Int?
   // Números-chave exibidos na LP (null = não exibir; nunca inventar)
   beadCount           Int?
   colorCount          Int?
@@ -157,6 +164,20 @@ model Product {
   priceHistory        PriceHistory[]
 
   @@index([active, sortOrder])
+}
+
+/// Desconto percentual padrão aplicado a uma seção/categoria.
+model SectionDiscount {
+  id        String          @id @default(cuid())
+  category  ProductCategory @unique
+  percent   Int
+  active    Boolean         @default(true)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([active, startsAt, endsAt])
 }
 
 /// Histórico de preços (análise de preço × conversão). Pedidos já guardam o preço aplicado.
