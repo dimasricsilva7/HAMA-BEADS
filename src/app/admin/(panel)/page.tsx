@@ -63,7 +63,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: SP
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <Card title="Vendas por kit">
+        <Card title="Vendas por produto">
           <HBars rows={d.byKit} format="brl" />
         </Card>
         <Card title="Vendas por origem">
