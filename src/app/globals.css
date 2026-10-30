@@ -4,15 +4,15 @@
 
 /* Tokens do design system. Cores em canais RGB (sobrescritas pelo admin via <style> no layout). */
 :root {
-  --c-primary: 155 102 80;
-  --c-secondary: 232 222 209;
-  --c-accent: 198 91 70;
-  --c-ink: 23 23 23;
-  --c-bg: 251 250 247;
+  --c-primary: 132 189 0;
+  --c-secondary: 242 247 232;
+  --c-accent: 0 109 164;
+  --c-ink: 68 68 68;
+  --c-bg: 255 255 255;
   --c-surface: 255 255 255;
-  --c-muted: 119 115 109;
-  --c-line: 232 229 223;
-  --c-success: 26 158 95;
+  --c-muted: 105 105 105;
+  --c-line: 229 231 235;
+  --c-success: 72 133 20;
   --c-warning: 214 138 0;
   --c-danger: 220 38 64;
   --space-section: clamp(3.5rem, 8vw, 6rem);
@@ -56,7 +56,7 @@
   .btn-primary { @apply btn bg-primary text-white shadow-sm active:scale-[0.99]; }
   .btn-accent { @apply btn bg-accent text-white shadow-sm active:scale-[0.99]; }
   .btn-light { @apply btn border border-ink/20 bg-surface text-ink hover:bg-ink/5; }
-  .btn-ghost { @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-bead px-4 text-sm font-bold text-ink underline-offset-4 hover:underline; }
+  .btn-ghost { @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-4 text-sm font-bold text-ink underline-offset-4 hover:underline; }
   @media (hover: hover) {
     .btn-primary:hover, .btn-accent:hover, .btn-light:hover { transform: translateY(-1px); }
   }
