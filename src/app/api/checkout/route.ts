@@ -10,6 +10,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
+  if (process.env.CHECKOUT_PREVIEW_ONLY === "true") {
+    return NextResponse.json({ error: "Checkout em modo de pré-visualização. Nenhum pedido ou pagamento será criado." }, { status: 403 });
+  }
   if (!isSameOrigin(req)) return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
   const ip = getClientIp(req.headers);
   if (!rateLimit(`checkout:${ip}`, 10, 10 * 60_000)) {
