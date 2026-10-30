@@ -1,10 +1,8 @@
-import Image from "next/image";
-
 export function Logo({ name, logoUrl, className = "" }: { name: string; logoUrl?: string | null; className?: string }) {
   if (logoUrl) {
     return (
       <span className={`relative block h-9 w-36 ${className}`}>
-        <Image src={logoUrl} alt={name} fill sizes="144px" className="object-contain object-left" priority />
+        <img src={logoUrl} alt={name} loading="eager" className="absolute inset-0 h-full w-full object-contain object-left" />
       </span>
     );
   }
