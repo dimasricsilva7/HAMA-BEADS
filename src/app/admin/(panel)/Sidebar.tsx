@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { logoutAction } from "../login/actions";
 
-const GROUPS: { title: string; items: { href: string; label: string; owner?: boolean }[] }[] = [
+const GROUPS: { title: string; items: { href: string; label: string; owner?: boolean; adminOnly?: boolean }[] }[] = [
   {
     title: "Visão geral",
     items: [
@@ -30,7 +30,7 @@ const GROUPS: { title: string; items: { href: string; label: string; owner?: boo
     title: "Catálogo e ofertas",
     items: [
       { href: "/admin/produtos", label: "Produtos" },
-      { href: "/admin/catalogo", label: "Importar catálogo" },
+      { href: "/admin/catalogo", label: "Importar catálogo", adminOnly: true },
       { href: "/admin/descontos", label: "Descontos" },
       { href: "/admin/order-bumps", label: "Order bumps" },
       { href: "/admin/upsells", label: "Upsells" },
@@ -81,7 +81,7 @@ export function Sidebar({ name, email, role }: { name: string; email: string; ro
         <div key={g.title}>
           <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{g.title}</p>
           {g.items
-            .filter((i) => !i.owner || role === "OWNER")
+            .filter((i) => (!i.owner || role === "OWNER") && (!i.adminOnly || role === "ADMIN" || role === "OWNER"))
             .map((item) => (
               <Link
                 key={item.href}
