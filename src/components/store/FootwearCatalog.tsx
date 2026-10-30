@@ -91,7 +91,7 @@ export default function FootwearCatalog({ products }: { products: PublicProduct[
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted">{CATEGORY_LABEL[p.category]}</p>
                       <Link href={`/produto/${p.slug}`} className="mt-1 min-h-10 font-bold leading-tight hover:underline">{p.name}</Link>
                       {p.shortDescription && <p className="mt-1 line-clamp-2 text-xs text-muted">{p.shortDescription}</p>}
-                      <div className="mt-auto pt-3"><Price priceCents={p.priceCents} listPriceCents={p.listPriceCents} size="sm"/><AddToCartButton product={{id:p.id,name:p.name,sku:p.sku,priceCents:p.priceCents,category:p.category}} label="Adicionar" element={`catalog_${p.slug}`} className="mt-3 min-h-[44px] w-full rounded-xl bg-ink text-sm font-bold text-white"/></div>
+                      <div className="mt-auto pt-3"><Price priceCents={p.priceCents} listPriceCents={p.listPriceCents} size="sm"/>{p.variants.length > 0 ? <Link href={`/produto/${p.slug}`} className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl bg-ink text-sm font-bold text-white">Escolher tamanho/cor</Link> : <AddToCartButton product={{id:p.id,name:p.name,sku:p.sku,priceCents:p.priceCents,category:p.category}} label="Adicionar" element={`catalog_${p.slug}`} className="mt-3 min-h-[44px] w-full rounded-xl bg-ink text-sm font-bold text-white"/>}</div>
                     </div>
                   </article>
                 </ViewTracker>
