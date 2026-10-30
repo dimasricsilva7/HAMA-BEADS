@@ -134,6 +134,13 @@ model Product {
   /// Especificações livres: [{ label, value }] (ex.: tamanho das peças, dimensões do pegboard)
   specs               Json            @default("[]")
   imageUrl            String?
+  /// Variantes VTEX/Crocs: [{ id, sku, label, options, imageUrl, priceCents, listPriceCents, stockQuantity, available }]
+  variants            Json            @default("[]")
+  /// Referência de catálogo externo para sincronização idempotente.
+  sourceProductId     String?         @unique
+  sourceUrl           String?
+  sourceCollectionId  String?
+  sourceSyncedAt      DateTime?
   /// Galeria: [{ url, alt }]
   gallery             Json            @default("[]")
   videoUrl            String?
