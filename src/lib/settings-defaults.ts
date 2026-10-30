@@ -7,6 +7,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   store_name: "Sua Loja",
   store_tagline: "Calçados e acessórios para acompanhar sua rotina",
   logo_url: "",
+  hero_banner_url: "",
   favicon_url: "",
   company_name: "",
   company_document: "",
