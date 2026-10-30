@@ -35,6 +35,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   // Checkout
   require_cpf: "true",
   shipping_flat_cents: "0",
+  shipping_free_threshold_cents: "0",
   shipping_note: "",
   pix_expiration_minutes: "30",
   checkout_note: "",
