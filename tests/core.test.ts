@@ -28,6 +28,23 @@ test("preço: 'de' só aparece quando maior que o preço atual", () => {
   assert.equal(effectivePrice({ ...product, compareAtPriceCents: 9990 }).listPriceCents, null);
 });
 
+test("desconto individual prevalece sobre desconto da seção, sem acumular percentuais", () => {
+  const individual = effectivePrice({ ...product, individualDiscountPercent: 20, compareAtPriceCents: 14990 }, {}, new Date("2026-10-30T12:00:00Z"), 30);
+  assert.equal(individual.priceCents, 9592);
+  assert.equal(individual.listPriceCents, 14990);
+  const section = effectivePrice(product, {}, new Date("2026-10-30T12:00:00Z"), 30);
+  assert.equal(section.priceCents, 8393);
+  assert.equal(section.listPriceCents, 11990);
+});
+
+test("promoção de preço fixo concorre com percentual e aplica o menor preço", () => {
+  const now = new Date("2026-10-30T12:00:00Z");
+  const p = { ...product, compareAtPriceCents: 14990, promoPriceCents: 7000, promoStartsAt: new Date("2026-10-01T00:00:00Z"), promoEndsAt: new Date("2026-11-01T00:00:00Z") };
+  const price = effectivePrice(p, {}, now, 20);
+  assert.equal(price.priceCents, 7000);
+  assert.equal(price.listPriceCents, 14990);
+});
+
 test("promoção vale somente dentro da janela configurada", () => {
   const now = new Date("2026-10-10T12:00:00Z");
   const promo = { ...product, promoPriceCents: 9990, promoStartsAt: new Date("2026-10-01T00:00:00Z"), promoEndsAt: new Date("2026-10-12T00:00:00Z") };
