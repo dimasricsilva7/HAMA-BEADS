@@ -36,8 +36,13 @@ export async function currentAssignments(): Promise<Assignment[]> {
   return assignmentsFor(vid);
 }
 
-export function toPublicProduct(p: Product, overrides: Record<string, number> = {}): PublicProduct {
-  const price = effectivePrice(p, overrides);
+export function toPublicProduct(
+  p: Product,
+  overrides: Record<string, number> = {},
+  sectionDiscountPercent: number | null = null,
+  now = new Date()
+): PublicProduct {
+  const price = effectivePrice(p, overrides, now, sectionDiscountPercent);
   return {
     id: p.id,
     slug: p.slug,
@@ -76,9 +81,21 @@ export function toPublicProduct(p: Product, overrides: Record<string, number> = 
 export const isSellable = (p: Pick<Product, "active" | "priceCents" | "stockStatus">) => p.active && p.priceCents > 0 && p.stockStatus !== "OUT_OF_STOCK";
 
 export async function getPublicCatalog(assignments?: Assignment[]) {
-  const [products, list] = await Promise.all([getActiveProducts(), assignments ? Promise.resolve(assignments) : currentAssignments()]);
+  const [products, list, rules] = await Promise.all([
+    getActiveProducts(),
+    assignments ? Promise.resolve(assignments) : currentAssignments(),
+    db.sectionDiscount.findMany({ where: { active: true } }).catch(() => []),
+  ]);
   const overrides = priceOverrides(list);
-  return products.filter((p) => p.priceCents > 0).map((p) => toPublicProduct(p, overrides));
+  const now = new Date();
+  const discountByCategory = new Map(
+    rules
+      .filter((r) => (!r.startsAt || r.startsAt <= now) && (!r.endsAt || r.endsAt > now))
+      .map((r) => [r.category, r.percent])
+  );
+  return products
+    .filter((p) => p.priceCents > 0)
+    .map((p) => toPublicProduct(p, overrides, discountByCategory.get(p.category) ?? null, now));
 }
 
 export async function getPublicProduct(slug: string) {
