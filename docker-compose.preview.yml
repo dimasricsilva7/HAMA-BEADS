@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: footwear-storefront-preview-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: footwear_preview
+      POSTGRES_USER: footwear_preview
+      POSTGRES_PASSWORD: preview_local_only_change_me
+    ports:
+      - "54329:5432"
+    volumes:
+      - footwear_preview_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U footwear_preview -d footwear_preview"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  footwear_preview_pgdata:
