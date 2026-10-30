@@ -46,7 +46,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
             <div className="grid gap-4 md:grid-cols-2">
               {text("store_name", "Nome da loja")}
               {text("store_tagline", "Frase curta")}
-              <MediaInput name="logo_url" label="Logo" defaultValue={s.logo_url} folder="marca" />
+              <MediaInput name="logo_url" label="Logo próprio da loja" defaultValue={s.logo_url} folder="marca" />
+              <p className="text-xs text-slate-500 md:col-span-2">Use a identidade visual da sua operação. O logotipo oficial da Crocs só deve ser publicado com autorização expressa do titular da marca.</p>
               <MediaInput name="hero_banner_url" label="Imagem do banner principal" defaultValue={s.hero_banner_url} folder="banners" />
               <MediaInput name="favicon_url" label="Favicon" defaultValue={s.favicon_url} folder="marca" />
               {text("company_name", "Razão social", "[PREENCHER] — exibida no rodapé")}
