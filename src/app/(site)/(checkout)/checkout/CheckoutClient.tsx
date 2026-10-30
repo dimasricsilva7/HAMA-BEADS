@@ -73,9 +73,11 @@ function Summary({ q, compact = false }: { q: CartQuote; compact?: boolean }) {
     <div className="space-y-2 text-sm">
       {!compact &&
         q.lines.map((l) => (
-          <div key={`${l.kind}-${l.productId}`} className="flex justify-between gap-3">
+          <div key={`${l.kind}-${l.productId}-${l.variantId ?? "default"}`} className="flex justify-between gap-3">
             <span className="text-muted">
               {l.quantity}× {l.name}
+              {l.variantLabel && <span className="ml-1 text-xs font-semibold">{l.variantLabel}</span>}
+              {l.variantOptions.length > 0 && <span className="ml-1 text-xs">{l.variantOptions.map((o) => `${o.name}: ${o.value}`).join(" · ")}</span>}
               {l.kind === "ORDER_BUMP" && <span className="ml-1 rounded bg-accent/15 px-1 text-[11px] font-bold text-accent">adicional</span>}
             </span>
             <span className="shrink-0 tabular-nums">{formatBRL(l.totalCents)}</span>
