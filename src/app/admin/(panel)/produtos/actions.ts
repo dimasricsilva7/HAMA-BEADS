@@ -140,9 +140,9 @@ export async function duplicateProduct(fd: FormData) {
   await withAdminVoid("ADMIN", async (admin) => {
     const src = await db.product.findUniqueOrThrow({ where: { id: str(fd, "id", 40) } });
     const suffix = Date.now().toString(36).slice(-4);
-    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = src;
+    const { id: _id, createdAt: _c, updatedAt: _u, variants: _variants, sourceProductId: _sourceProductId, sourceUrl: _sourceUrl, sourceCollectionId: _sourceCollectionId, sourceSyncedAt: _sourceSyncedAt, ...rest } = src;
     const copy = await db.product.create({
-      data: { ...rest, sourceProductId: null, sourceUrl: null, sourceCollectionId: null, sourceSyncedAt: null, variants: src.variants == null ? Prisma.JsonNull : src.variants as Prisma.InputJsonValue, name: `${src.name} (cópia)`, slug: `${src.slug}-copia-${suffix}`, sku: `${src.sku}-C${suffix.toUpperCase()}`, active: false, components: src.components as Prisma.InputJsonValue, specs: src.specs as Prisma.InputJsonValue, gallery: src.gallery as Prisma.InputJsonValue, crossSellIds: src.crossSellIds as Prisma.InputJsonValue, includedProductIds: src.includedProductIds as Prisma.InputJsonValue },
+      data: { ...rest, sourceProductId: null, sourceUrl: null, sourceCollectionId: null, sourceSyncedAt: null, variants: JSON.parse(JSON.stringify(_variants ?? [])) as Prisma.InputJsonValue, name: `${src.name} (cópia)`, slug: `${src.slug}-copia-${suffix}`, sku: `${src.sku}-C${suffix.toUpperCase()}`, active: false, components: src.components as Prisma.InputJsonValue, specs: src.specs as Prisma.InputJsonValue, gallery: src.gallery as Prisma.InputJsonValue, crossSellIds: src.crossSellIds as Prisma.InputJsonValue, includedProductIds: src.includedProductIds as Prisma.InputJsonValue },
     });
     await audit(admin.id, "product_duplicated", "product", copy.id, { summary: `Produto duplicado de ${src.name}` });
     newId = copy.id;
