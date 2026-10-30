@@ -1,7 +1,7 @@
 import { Badge, Card, Field, PageHeader, inputCls } from "@/components/admin/ui";
 import { CATEGORY_LABEL } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { saveSectionDiscount, removeSectionDiscount } from "./actions";
+import { saveSectionDiscount } from "./actions";
 
 export const metadata = { title: "Descontos" };
 
@@ -31,7 +31,8 @@ export default async function DiscountsPage() {
           const count = countByCategory.get(key as keyof typeof CATEGORY_LABEL) ?? 0;
           const overrides = products.filter((p) => p.category === key);
           return (
-            <Card key={key} title={label} description={`${count} produto(s) ativo(s) nesta seção · ${overrides.length} com desconto individual`}>
+            <Card key={key} title={label}>
+              <p className="mb-3 text-xs text-slate-500">{count} produto(s) ativo(s) nesta seção · {overrides.length} com desconto individual</p>
               <form action={saveSectionDiscount} className="space-y-3">
                 <input type="hidden" name="category" value={key} />
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -54,7 +55,8 @@ export default async function DiscountsPage() {
           );
         })}
       </div>
-      <Card title="Exceções individuais" description="O desconto individual tem prioridade sobre o percentual da seção. Edite o produto para alterar ou remover essa exceção." className="mt-6">
+      <Card title="Exceções individuais" className="mt-6">
+        <p className="mb-3 text-xs text-slate-500">O desconto individual tem prioridade sobre o percentual da seção. Edite o produto para alterar ou remover essa exceção.</p>
         {products.length === 0 ? <p className="text-sm text-slate-500">Nenhum produto com desconto individual.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[540px] text-left text-sm">
