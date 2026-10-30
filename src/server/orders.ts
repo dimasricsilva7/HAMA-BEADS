@@ -460,12 +460,60 @@ async function onPaid(orderId: string) {
     if (counted.count) await db.coupon.update({ where: { id: order.couponId }, data: { usedCount: { increment: 1 } } }).catch(() => {});
   }
 
-  // Estoque (somente produtos com controle de quantidade)
-  for (const item of order.items) {
-    if (item.productId && item.product?.stockQuantity != null) {
-      await db.product.update({ where: { id: item.productId }, data: { stockQuantity: { decrement: item.quantity } } }).catch(() => {});
+  // Estoque total e SKU de tamanho/cor: deduz somente uma vez por pedido pago.
+  await db.$transaction(async (tx) => {
+    const claimed = await tx.order.updateMany({
+      where: { id: order.id, stockDeductedAt: null },
+      data: { stockDeductedAt: new Date() },
+    });
+    if (!claimed.count) return;
+
+    for (const item of order.items) {
+      if (!item.productId) continue;
+      const product = await tx.product.findUnique({
+        where: { id: item.productId },
+        select: { stockQuantity: true, stockStatus: true, variants: true },
+      });
+      if (!product) continue;
+
+      const composition = item.composition && typeof item.composition === "object"
+        ? item.composition as { selectedVariant?: { id?: string } | null }
+        : {};
+      const variantId = composition.selectedVariant?.id ?? null;
+      const variants = Array.isArray(product.variants)
+        ? product.variants as Array<Record<string, unknown>>
+        : [];
+      let nextVariants = variants;
+      let matchedVariant = false;
+
+      if (variantId) {
+        nextVariants = variants.map((variant) => {
+          if (String(variant.id) !== variantId) return variant;
+          matchedVariant = true;
+          const current = Math.max(0, Number(variant.stockQuantity) || 0);
+          const remaining = Math.max(0, current - item.quantity);
+          return { ...variant, stockQuantity: remaining, available: remaining > 0 && variant.available !== false };
+        });
+      }
+
+      const baseStock = product.stockQuantity == null
+        ? null
+        : Math.max(0, product.stockQuantity - item.quantity);
+      const variantStock = matchedVariant
+        ? nextVariants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stockQuantity) || 0), 0)
+        : null;
+      const remainingTotal = baseStock ?? variantStock;
+
+      await tx.product.update({
+        where: { id: item.productId },
+        data: {
+          ...(remainingTotal == null ? {} : { stockQuantity: remainingTotal }),
+          ...(matchedVariant ? { variants: nextVariants as Prisma.InputJsonValue } : {}),
+          ...(remainingTotal != null ? { stockStatus: remainingTotal > 0 ? "IN_STOCK" : "OUT_OF_STOCK" } : {}),
+        },
+      });
     }
-  }
+  });
 
   // Analytics + Meta: Purchase somente aqui, com o valor realmente pago
   const tracked = await db.order.updateMany({ where: { id: order.id, purchaseTrackedAt: null }, data: { purchaseTrackedAt: new Date() } });
