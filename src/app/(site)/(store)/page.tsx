@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { FootwearHome } from "@/components/store/FootwearHome";
+import FootwearHome from "@/components/store/FootwearHome";
 import { getPublicCatalog } from "@/server/catalog";
 import { getSettings } from "@/server/settings";
 
