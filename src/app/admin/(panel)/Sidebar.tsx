@@ -10,6 +10,7 @@ const GROUPS: { title: string; items: { href: string; label: string; owner?: boo
     title: "Visão geral",
     items: [
       { href: "/admin", label: "Dashboard" },
+      { href: "/admin/ao-vivo", label: "Clientes online" },
       { href: "/admin/funil", label: "Funil" },
       { href: "/admin/comportamento", label: "Comportamento" },
       { href: "/admin/pix-pendentes", label: "PIX pendentes" },
@@ -29,6 +30,7 @@ const GROUPS: { title: string; items: { href: string; label: string; owner?: boo
     title: "Catálogo e ofertas",
     items: [
       { href: "/admin/produtos", label: "Produtos" },
+      { href: "/admin/descontos", label: "Descontos" },
       { href: "/admin/order-bumps", label: "Order bumps" },
       { href: "/admin/upsells", label: "Upsells" },
       { href: "/admin/experimentos", label: "Testes A/B" },
@@ -106,7 +108,7 @@ export function Sidebar({ name, email, role }: { name: string; email: string; ro
       </div>
     </div>
   );
-  const brand = <span className="text-base font-extrabold uppercase tracking-tight">Hama Beads</span>;
+  const brand = <span className="text-base font-extrabold uppercase tracking-tight">Loja</span>;
 
   return (
     <>
