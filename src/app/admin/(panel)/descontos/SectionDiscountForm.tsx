@@ -8,12 +8,14 @@ type ProductPreview = { id: string; name: string; priceCents: number; individual
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const localDateValue = (d: Date | null) => d ? new Date(d.getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
 
-export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt, products }: {
+export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt, products, inheritCount, individualCount }: {
   category: string;
   currentPercent: number;
   startsAt: Date | null;
   endsAt: Date | null;
   products: ProductPreview[];
+  inheritCount: number;
+  individualCount: number;
 }) {
   const [percent, setPercent] = useState(String(currentPercent));
   const pct = Math.min(100, Math.max(0, Number.parseInt(percent || "0", 10) || 0));
@@ -45,7 +47,7 @@ export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Prévia antes de salvar</p>
-          <p className="text-xs text-slate-500">{products.filter((p) => p.individualDiscountPercent == null).length} produto(s) herdarão {pct}%</p>
+          <p className="text-xs text-slate-500">{inheritCount} produto(s) herdarão {pct}% · {individualCount} com regra individual</p>
         </div>
         {preview.length === 0 ? <p className="mt-2 text-xs text-slate-500">Nenhum produto ativo nesta seção.</p> : (
           <ul className="mt-2 divide-y divide-slate-200">
@@ -60,7 +62,7 @@ export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt
             ))}
           </ul>
         )}
-        <p className="mt-2 text-[11px] text-slate-500">A prévia usa o preço base. Exceções individuais permanecem; campanhas de preço fixo podem resultar em um preço ainda menor.</p>
+        <p className="mt-2 text-[11px] text-slate-500">Amostra de até 4 produtos. O total de produtos afetados aparece acima. Exceções individuais permanecem; campanhas de preço fixo podem resultar em um preço ainda menor.</p>
       </div>
     </div>
   );
