@@ -30,10 +30,10 @@ const config: Config = {
         card: "1.5rem",
       },
       boxShadow: {
-        soft: "0 1px 2px rgb(23 20 46 / 0.06), 0 8px 24px -8px rgb(23 20 46 / 0.12)",
-        lift: "0 2px 4px rgb(23 20 46 / 0.06), 0 16px 40px -12px rgb(23 20 46 / 0.22)",
-        pixel: "0 4px 0 0 rgb(var(--c-ink) / 1)",
-        "pixel-sm": "0 3px 0 0 rgb(var(--c-ink) / 1)",
+        soft: "0 2px 8px rgb(31 41 55 / 0.06), 0 10px 28px -12px rgb(31 41 55 / 0.14)",
+        lift: "0 8px 28px rgb(31 41 55 / 0.14)",
+        pixel: "0 3px 10px rgb(var(--c-primary) / 0.18)",
+        "pixel-sm": "0 2px 8px rgb(var(--c-primary) / 0.16)",
       },
       maxWidth: { page: "72rem" },
       keyframes: {
