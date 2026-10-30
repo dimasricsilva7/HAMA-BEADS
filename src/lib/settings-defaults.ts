@@ -5,7 +5,7 @@
 export const SETTING_DEFAULTS: Record<string, string> = {
   // Loja
   store_name: "Sua Loja",
-  store_tagline: "Loja independente de calçados e acessórios",
+  store_tagline: "Calçados casuais e acessórios — revenda independente",
   logo_url: "",
   hero_banner_url: "",
   favicon_url: "",
@@ -21,11 +21,11 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   facebook_url: "",
   youtube_url: "",
   // Aparência (tokens do design system — edição limitada)
-  theme_primary: "#9B6650",
-  theme_secondary: "#E8DED1",
-  theme_accent: "#C65B46",
-  theme_ink: "#171717",
-  theme_background: "#FBFAF7",
+  theme_primary: "#84BD00",
+  theme_secondary: "#F2F7E8",
+  theme_accent: "#006DA4",
+  theme_ink: "#444444",
+  theme_background: "#FFFFFF",
   // Layout
   announcement_text: "Loja independente. Não somos a loja oficial da Crocs.",
   header_cta_label: "Ver coleção",
