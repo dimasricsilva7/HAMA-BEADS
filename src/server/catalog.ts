@@ -43,6 +43,20 @@ export function toPublicProduct(
   now = new Date()
 ): PublicProduct {
   const price = effectivePrice(p, overrides, now, sectionDiscountPercent);
+  const variants = asArray<ProductVariant>(p.variants)
+    .filter((v) => v?.id && v?.sku && Number.isInteger(v?.priceCents))
+    .map((v) => {
+      const variantPrice = effectivePrice({
+        ...p,
+        priceCents: v.priceCents,
+        compareAtPriceCents: v.listPriceCents,
+        promoPriceCents: null,
+        promoStartsAt: null,
+        promoEndsAt: null,
+        promoLabel: null,
+      }, overrides, now, sectionDiscountPercent);
+      return { ...v, priceCents: variantPrice.priceCents, listPriceCents: variantPrice.listPriceCents };
+    });
   return {
     id: p.id,
     slug: p.slug,
@@ -63,7 +77,7 @@ export function toPublicProduct(
     components: asArray<ProductComponent>(p.components),
     specs: asArray<ProductSpec>(p.specs).filter((s) => s?.label && s?.value),
     imageUrl: p.imageUrl,
-    variants: asArray<ProductVariant>(p.variants).filter((v) => v?.id && v?.sku && Number.isInteger(v?.priceCents)),
+    variants,
     gallery: asArray<GalleryImage>(p.gallery).filter((g) => g?.url),
     videoUrl: p.videoUrl,
     badge: p.badge,
