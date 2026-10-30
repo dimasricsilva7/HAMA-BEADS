@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { ShoeArtwork } from "@/components/store/ShoeArtwork";
 
 /** Placeholder original para produtos sem foto cadastrada; substitua pela imagem autorizada no admin. */
@@ -23,7 +22,7 @@ export function ProductVisual({
   if (imageUrl) {
     return (
       <div className={`relative overflow-hidden bg-surface ${className}`}>
-        <Image src={imageUrl} alt={name} fill sizes={sizes} priority={priority} className="object-cover" />
+        <img src={imageUrl} alt={name} loading={priority ? "eager" : "lazy"} className="absolute inset-0 h-full w-full object-cover" />
       </div>
     );
   }
