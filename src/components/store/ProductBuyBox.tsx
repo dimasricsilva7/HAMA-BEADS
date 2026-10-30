@@ -13,13 +13,16 @@ type Props = {
 export default function ProductBuyBox({ product, slug }: Props) {
   const cart = useCart();
   const variants = product.variants.filter((v) => v.available && v.stockQuantity > 0);
-  const dimensions = useMemo(() => [...new Set(variants.flatMap((v) => v.options.map((o) => o.name)))], [variants]);
+  const dimensions = useMemo(() => {
+    const options = [...new Set(variants.flatMap((v) => v.options.map((o) => o.name)))];
+    return options.length > 0 ? options : variants.length > 1 ? ["Variação"] : [];
+  }, [variants]);
   const [chosen, setChosen] = useState<Record<string, string>>({});
-  const selected = variants.find((v) => dimensions.every((d) => v.options.some((o) => o.name === d && chosen[d] === o.value))) ?? (dimensions.length === 0 ? variants[0] : undefined);
+  const selected = variants.find((v) => dimensions.every((d) => d === "Variação" ? chosen[d] === v.label : v.options.some((o) => o.name === d && chosen[d] === o.value))) ?? (dimensions.length === 0 ? variants[0] : undefined);
   const price = selected?.priceCents ?? product.priceCents;
   const list = selected?.listPriceCents ?? product.listPriceCents;
   const soldOut = product.variants.length > 0 && variants.length === 0;
-  const values = (name: string) => [...new Set(variants.flatMap((v) => v.options.filter((o) => o.name === name).map((o) => o.value)))];
+  const values = (name: string) => name === "Variação" ? variants.map((v) => v.label) : [...new Set(variants.flatMap((v) => v.options.filter((o) => o.name === name).map((o) => o.value)))];
 
   function add() {
     if (product.variants.length && !selected) return;
