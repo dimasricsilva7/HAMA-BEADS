@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { ShoeArtwork } from "@/components/store/ShoeArtwork";
 
 type MiniProduct = { id:string; name:string; slug:string; sku:string; priceCents:number; listPriceCents:number|null; imageUrl:string|null; badge:string|null; category:string; stockStatus:string; shortDescription:string|null };
 const categoryNames: Record<string,string> = {
@@ -11,18 +12,7 @@ const categoryNames: Record<string,string> = {
 };
 const money = (c:number) => (c/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
-function ShoeIllustration() {
-  return <svg viewBox="0 0 560 360" role="img" aria-label="Ilustração original de um clog" className="h-full w-full drop-shadow-2xl">
-    <defs><linearGradient id="shoe" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#F4F0E9"/><stop offset="1" stopColor="#C7C3BC"/></linearGradient><linearGradient id="sole" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#383838"/><stop offset="1" stopColor="#111"/></linearGradient></defs>
-    <ellipse cx="278" cy="300" rx="220" ry="28" fill="#000" opacity=".3"/>
-    <path d="M70 218 C88 170 120 126 188 91 C234 67 280 76 324 108 L427 179 C464 205 477 240 464 264 C453 284 427 291 393 291 L113 291 C78 291 58 266 70 218Z" fill="url(#sole)" stroke="#080808" strokeWidth="7"/>
-    <path d="M80 206 C97 161 129 121 191 87 C238 62 284 74 328 105 L423 171 C449 190 457 213 446 232 C436 249 415 257 385 257 L122 257 C89 257 69 239 80 206Z" fill="url(#shoe)" stroke="#A8A39A" strokeWidth="6"/>
-    <path d="M100 212 C152 230 236 239 325 233 C372 230 409 219 440 200" fill="none" stroke="#B6B0A7" strokeWidth="5" opacity=".8"/>
-    {Array.from({length:8},(_,i)=><ellipse key={i} cx={157+i*27} cy={151+(i%2)*13} rx="8" ry="13" transform={`rotate(27 ${157+i*27} ${151+(i%2)*13})`} fill="#77736D" opacity=".75"/>)}
-    <path d="M115 167 C83 117 82 91 112 81 C137 74 151 99 151 129" fill="none" stroke="#B3AEA6" strokeWidth="18" strokeLinecap="round"/>
-    <path d="M115 167 C83 117 82 91 112 81 C137 74 151 99 151 129" fill="none" stroke="#E7E3DC" strokeWidth="10" strokeLinecap="round"/>
-  </svg>;
-}
+function ShoeIllustration() { return <ShoeArtwork tone={0} />; }
 
 function ProductCard({p}:{p:MiniProduct}) {
   const discount = p.listPriceCents && p.listPriceCents > p.priceCents ? Math.round((1-p.priceCents/p.listPriceCents)*100) : null;
