@@ -42,11 +42,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
       {tab === "loja" && (
         <Card title="Dados da loja">
           {form(
-            ["store_name", "store_tagline", "logo_url", "favicon_url", "company_name", "company_document", "contact_email", "contact_phone", "whatsapp", "address", "support_hours", "instagram_url", "tiktok_url", "facebook_url", "youtube_url"],
+            ["store_name", "store_tagline", "logo_url", "hero_banner_url", "favicon_url", "company_name", "company_document", "contact_email", "contact_phone", "whatsapp", "address", "support_hours", "instagram_url", "tiktok_url", "facebook_url", "youtube_url"],
             <div className="grid gap-4 md:grid-cols-2">
               {text("store_name", "Nome da loja")}
               {text("store_tagline", "Frase curta")}
               <MediaInput name="logo_url" label="Logo" defaultValue={s.logo_url} folder="marca" />
+              <MediaInput name="hero_banner_url" label="Imagem do banner principal" defaultValue={s.hero_banner_url} folder="banners" />
               <MediaInput name="favicon_url" label="Favicon" defaultValue={s.favicon_url} folder="marca" />
               {text("company_name", "Razão social", "[PREENCHER] — exibida no rodapé")}
               {text("company_document", "CNPJ")}
