@@ -120,8 +120,7 @@ function normalizeProduct(p: VtexProduct, collectionId: string) {
   const listPriceCents = lowestVariant && (lowestVariant.listPriceCents ?? 0) > lowestVariant.priceCents
     ? (lowestVariant.listPriceCents ?? 0)
     : 0;
-  const gallery = [...new Set(items.flatMap((item) => (item.images ?? []).flatMap((img) => img.imageUrl && /^https:\/\//.test(img.imageUrl) ? [img.imageUrl] : [])))].
-    map((url) => ({ url, alt: name }));
+  const gallery = [...new Set(items.flatMap((item) => (item.images ?? []).flatMap((img) => img.imageUrl && /^https:\/\//.test(img.imageUrl) ? [img.imageUrl] : [])))].map((url) => ({ url, alt: name }));
   const linkText = slugify(String(p.linkText ?? name));
   const rawDescription = String(p.description ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   const sourceUrl = p.link?.startsWith("https://") ? p.link : `${CROCS_ORIGIN}/${linkText}/p`;
