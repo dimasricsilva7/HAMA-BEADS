@@ -10,9 +10,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
-  if (process.env.CHECKOUT_PREVIEW_ONLY === "true") {
-    return NextResponse.json({ error: "Checkout em modo de pré-visualização. Nenhum pedido ou pagamento será criado." }, { status: 403 });
-  }
   if (!isSameOrigin(req)) return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
   const ip = getClientIp(req.headers);
   if (!rateLimit(`checkout:${ip}`, 10, 10 * 60_000)) {
@@ -23,8 +20,13 @@ export async function POST(req: NextRequest) {
     const fields = Object.fromEntries(parsed.error.issues.map((i) => [i.path.join("."), i.message]));
     return NextResponse.json({ error: "Confira os dados informados.", fields }, { status: 422 });
   }
-  // Sem gateway configurado não criamos pedidos PIX que nunca poderiam ser pagos (crediário não depende do gateway).
-  if (parsed.data.paymentMethod !== "CREDIARIO" && bravopayMode() === "disabled") {
+  // Crediário é um fluxo de solicitação e análise manual; PIX só aparece com API e webhook configurados.
+  const method = parsed.data.paymentMethod ?? "PIX";
+  if (method === "PIX" && (bravopayMode() !== "live" || !process.env.BRAVOPAY_WEBHOOK_SECRET)) {
+    log.error("checkout", "PIX indisponível: configure BRAVOPAY_API_KEY e BRAVOPAY_WEBHOOK_SECRET.");
+    return NextResponse.json({ error: "PIX temporariamente indisponível. Selecione o crediário ou tente novamente mais tarde." }, { status: 503 });
+  }
+  if (method !== "CREDIARIO" && bravopayMode() === "disabled") {
     log.error("checkout", "BravoPay não configurada (BRAVOPAY_API_KEY ausente)");
     return NextResponse.json({ error: "Pagamentos temporariamente indisponíveis. Tente novamente em alguns minutos." }, { status: 503 });
   }
