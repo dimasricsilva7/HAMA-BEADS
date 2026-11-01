@@ -284,7 +284,7 @@ export async function ensurePix(orderId: string): Promise<Order> {
   const settings = await getSettingsFresh();
   const expiresIn = Math.min(1440, Math.max(5, settingInt(settings, "pix_expiration_minutes", 30))) * 60;
   const main = order.items.find((i) => i.kind === "PRODUCT" || i.kind === "UPSELL") ?? order.items[0];
-  const store = settings.store_name || "Hama Beads";
+  const store = settings.store_name || "Loja independente";
   const description = `${store} ${order.orderNumber} — ${order.items.map((i) => `${i.quantity}x ${i.productName}`).join(", ")}`;
   const snap = order.customerSnapshot as { cpf?: string | null };
 
@@ -293,7 +293,7 @@ export async function ensurePix(orderId: string): Promise<Order> {
   try {
     const charge = await paymentService.createPixPayment({
       amountCents: order.totalCents,
-      idempotencyKey: order.externalReference === order.orderNumber ? `hama-${order.id}` : `hama-${order.id}-${order.externalReference}`,
+      idempotencyKey: order.externalReference === order.orderNumber ? `footwear-${order.id}` : `footwear-${order.id}-${order.externalReference}`,
       externalReference: order.externalReference!,
       description,
       customer: { name: order.customer.name, email: order.customer.email, cpf: snap.cpf ?? order.customer.cpf ?? "", phone: order.customer.phone },
