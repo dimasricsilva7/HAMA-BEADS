@@ -19,6 +19,7 @@ type VtexOffer = {
   IsAvailable?: boolean;
 };
 type VtexItem = {
+  [key: string]: unknown;
   itemId?: string;
   name?: string;
   nameComplete?: string;
@@ -55,20 +56,18 @@ function imageUrl(items: VtexItem[]): string | null {
   return null;
 }
 function itemOptions(item: VtexItem) {
-  if (item.variations && !Array.isArray(item.variations) && typeof item.variations === "object") {
-    return Object.entries(item.variations as Record<string, unknown>).flatMap(([name, raw]) => {
-      const value = Array.isArray(raw) ? raw[0] : raw;
-      return value == null || String(value).trim() === "" ? [] : [{ name, value: String(value) }];
-    });
-  }
-  const names = Array.isArray(item.variations) ? item.variations : [];
+  const names = Array.isArray(item.variations) ? item.variations.map(String) : [];
   const values = Array.isArray(item.variationValues) ? item.variationValues : [];
   const valueMap = item.variationValues && typeof item.variationValues === "object" && !Array.isArray(item.variationValues)
     ? item.variationValues as Record<string, unknown>
     : {};
+  const dynamicVariations = item.variations && !Array.isArray(item.variations) && typeof item.variations === "object"
+    ? item.variations as Record<string, unknown>
+    : {};
   return names.flatMap((name, i) => {
-    const value = values[i] ?? valueMap[String(name)];
-    return value == null || String(value).trim() === "" ? [] : [{ name: String(name), value: String(value) }];
+    const raw = item[name] ?? dynamicVariations[name] ?? values[i] ?? valueMap[name];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return value == null || String(value).trim() === "" ? [] : [{ name, value: String(value) }];
   });
 }
 function referenceSku(item: VtexItem) {
