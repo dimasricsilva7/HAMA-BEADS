@@ -76,11 +76,14 @@ function referenceSku(item: VtexItem) {
 function categoryFor(product: VtexProduct, collectionId: string): ProductCategory {
   if (collectionId === "469") return "JIBBITZ";
   if (collectionId === "597") return "KIDS";
-  const text = [product.productName, product.productTitle, ...(product.categories ?? [])].join(" ").toLowerCase();
-  if (/jibbitz|charm|pin\b|enfeite/.test(text)) return "JIBBITZ";
-  if (/slide|mellow slide/.test(text)) return "SLIDES";
-  if (/sandal|sandália|sandalia|flip|chinelo/.test(text)) return "SANDALS";
-  if (/tennis|tênis|tenis|sneaker|pacer|runner/.test(text)) return "FOOTWEAR";
+  const name = [product.productName, product.productTitle].join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/jibbitz|charm|pin\b|enfeite/.test(name)) return "JIBBITZ";
+  if (/\bclog\b/.test(name)) return "CLOGS";
+  if (/\bslide\b/.test(name)) return "SLIDES";
+  if (/sandal|\bflip\b|chinelo/.test(name)) return "SANDALS";
+  if (/tennis|\btenis\b|sneaker|pacer|runner/.test(name)) return "FOOTWEAR";
+  const taxonomy = (product.categories ?? []).join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/jibbitz|charm|pin\b|enfeite/.test(taxonomy)) return "JIBBITZ";
   return "CLOGS";
 }
 function normalize(product: VtexProduct, collectionId: string) {
