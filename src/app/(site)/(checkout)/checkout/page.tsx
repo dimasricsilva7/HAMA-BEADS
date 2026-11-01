@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage() {
   const s = await getSettingsFresh();
-  const previewOnly = process.env.CHECKOUT_PREVIEW_ONLY === "true";
+  const previewOnly = false;
   return (
     <CheckoutClient
       requireCpf={isOn(s.require_cpf)}
@@ -18,7 +18,7 @@ export default async function CheckoutPage() {
       consentLabel={s.marketing_consent_label}
       previewOnly={previewOnly}
       pix={{
-        enabled: previewOnly ? isOn(s.pix_enabled) : isOn(s.pix_enabled) && bravopayMode() !== "disabled",
+        enabled: isOn(s.pix_enabled) && bravopayMode() === "live" && Boolean(process.env.BRAVOPAY_WEBHOOK_SECRET),
         label: s.pix_method_label || "PIX",
         badge: s.pix_badge ?? "",
         description: s.pix_description ?? "",
