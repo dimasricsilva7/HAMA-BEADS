@@ -24,7 +24,8 @@
     "catalog:sync": "tsx scripts/sync-crocs-catalog.ts",
     "catalog:report": "tsx scripts/catalog-report.ts",
     "catalog:fix-categories": "tsx scripts/fix-crocs-categories.ts",
-    "crediario:enable": "tsx scripts/enable-footwear-crediario.ts"
+    "crediario:enable": "tsx scripts/enable-footwear-crediario.ts",
+    "catalog:tag-black-friday": "tsx scripts/tag-black-friday.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed-footwear.ts"
