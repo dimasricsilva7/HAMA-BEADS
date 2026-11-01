@@ -6,11 +6,11 @@
 // ───────────── Catálogo ─────────────
 
 export const CATEGORY_LABEL = {
-  CLOGS: "Clogs",
+  CLOGS: "Crocs",
   SANDALS: "Sandálias",
   SLIDES: "Slides",
   KIDS: "Infantil",
-  JIBBITZ: "Pins e enfeites",
+  JIBBITZ: "Jibbitz",
   FOOTWEAR: "Calçados",
   BEADS: "Peças (refil)",
   KIT: "Kits",
