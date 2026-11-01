@@ -78,6 +78,7 @@ function Summary({ q, compact = false }: { q: CartQuote; compact?: boolean }) {
               {l.quantity}× {l.name}
               {l.variantLabel && <span className="ml-1 text-xs font-semibold">{l.variantLabel}</span>}
               {l.variantOptions.length > 0 && <span className="ml-1 text-xs">{l.variantOptions.map((o) => `${o.name}: ${o.value}`).join(" · ")}</span>}
+              {l.promotionFreeUnits ? <span className="ml-1 rounded bg-success/10 px-1 text-[11px] font-bold text-success">{l.promotionFreeUnits} grátis</span> : null}
               {l.kind === "ORDER_BUMP" && <span className="ml-1 rounded bg-accent/15 px-1 text-[11px] font-bold text-accent">adicional</span>}
             </span>
             <span className="shrink-0 tabular-nums">{formatBRL(l.totalCents)}</span>
@@ -87,10 +88,16 @@ function Summary({ q, compact = false }: { q: CartQuote; compact?: boolean }) {
         <span className="text-muted">Subtotal</span>
         <span className="tabular-nums">{formatBRL(q.subtotalCents)}</span>
       </div>
-      {q.discountCents > 0 && (
+      {q.promotionDiscountCents > 0 && (
+        <div className="flex justify-between text-success">
+          <span>Compre 8 Jibbitz e Pague 5</span>
+          <span className="tabular-nums">− {formatBRL(q.promotionDiscountCents)}</span>
+        </div>
+      )}
+      {q.discountCents > q.promotionDiscountCents && (
         <div className="flex justify-between text-success">
           <span>Desconto{q.coupon?.code ? ` (${q.coupon.code})` : ""}</span>
-          <span className="tabular-nums">− {formatBRL(q.discountCents)}</span>
+          <span className="tabular-nums">− {formatBRL(q.discountCents - q.promotionDiscountCents)}</span>
         </div>
       )}
       {q.requiresShipping && q.shippingCents === 0 && (
