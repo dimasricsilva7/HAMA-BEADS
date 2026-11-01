@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const KEY = "hb_reserve_at";
+const KEY = "footwear_reserve_at";
 const WINDOW_MS = 15 * 60_000;
 
 /**
