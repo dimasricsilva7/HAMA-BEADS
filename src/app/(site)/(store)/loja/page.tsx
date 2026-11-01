@@ -5,7 +5,21 @@ import { getPublicCatalog } from "@/server/catalog";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Todos os produtos", description: "Explore calçados, sandálias, slides, modelos infantis e acessórios.", alternates: { canonical: "/loja" } };
 
-export default async function StorePage() {
-  const products = await getPublicCatalog();
-  return <FootwearCatalog products={products} />;
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function StorePage({ searchParams }: Props) {
+  const [products, params] = await Promise.all([getPublicCatalog(), searchParams]);
+  const value = (key: string): string => {
+    const item = params[key];
+    return Array.isArray(item) ? item[0] ?? "" : item ?? "";
+  };
+  return (
+    <FootwearCatalog
+      products={products}
+      initialCollection={value("colecao") || "ALL"}
+      initialDeals={value("ofertas") === "1"}
+      minPrice={Number(value("precoDe")) || 0}
+      maxPrice={Number(value("precoAte")) || 0}
+    />
+  );
 }
