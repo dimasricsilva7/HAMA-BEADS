@@ -63,6 +63,8 @@ export type QuoteLine = {
   unitPriceCents: number;
   listPriceCents: number | null;
   totalCents: number;
+  promotionFreeUnits?: number;
+  promotionDiscountCents?: number;
   kind: "PRODUCT" | "ORDER_BUMP" | "CROSS_SELL";
   orderBumpId?: string;
 };
@@ -90,6 +92,7 @@ export type CartQuote = {
   crossSells: PublicProduct[];
   subtotalCents: number;
   discountCents: number;
+  promotionDiscountCents: number;
   shippingCents: number;
   totalCents: number;
   coupon: { code: string; valid: boolean; message: string | null } | null;
