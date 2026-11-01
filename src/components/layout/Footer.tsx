@@ -36,6 +36,8 @@ export function Footer({ s }: { s: Settings }) {
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/loja" className="hover:text-white">Todos os produtos</Link></li>
             <li><Link href="/loja?colecao=596" className="hover:text-white">Adulto</Link></li>
+            <li><Link href="/loja?colecao=597" className="hover:text-white">Infantil</Link></li>
+            <li><Link href="/loja?colecao=469" className="hover:text-white">Jibbitz</Link></li>
             <li><Link href="/loja?colecao=596" className="hover:text-white">Sandálias e slides</Link></li>
             <li><Link href="/#ofertas" className="hover:text-white">Ofertas</Link></li>
             <li><Link href="/acompanhar" className="hover:text-white">Acompanhar pedido</Link></li>
