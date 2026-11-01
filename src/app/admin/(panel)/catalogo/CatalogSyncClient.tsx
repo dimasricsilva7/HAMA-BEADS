@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type Result = { fetched: number; total: number | null; created: number; updated: number; skipped: number; nextFrom: number | null; done: boolean };
+type Result = { fetched: number; total: number | null; variants: number; images: number; created: number; updated: number; skipped: number; nextFrom: number | null; done: boolean };
 type Group = { id: string; title: string; description: string; badge: string };
 
 const GROUPS: Group[] = [
@@ -13,7 +13,7 @@ const GROUPS: Group[] = [
 
 export default function CatalogSyncClient() {
   const [busy, setBusy] = useState<string | null>(null);
-  const [progress, setProgress] = useState<Record<string, { fetched: number; total: number | null; created: number; updated: number; skipped: number; done: boolean; message: string }>>({});
+  const [progress, setProgress] = useState<Record<string, { fetched: number; total: number | null; variants: number; images: number; created: number; updated: number; skipped: number; done: boolean; message: string }>>({});
   const [error, setError] = useState<string | null>(null);
 
   async function sync(id: string) {
@@ -21,9 +21,9 @@ export default function CatalogSyncClient() {
     setBusy(id);
     setError(null);
     let from = 0;
-    let fetched = 0, created = 0, updated = 0, skipped = 0;
+    let fetched = 0, variants = 0, images = 0, created = 0, updated = 0, skipped = 0;
     let total: number | null = null;
-    setProgress((old) => ({ ...old, [id]: { fetched: 0, total: null, created: 0, updated: 0, skipped: 0, done: false, message: "Iniciando sincronização…" } }));
+    setProgress((old) => ({ ...old, [id]: { fetched: 0, total: null, variants: 0, images: 0, created: 0, updated: 0, skipped: 0, done: false, message: "Iniciando sincronização…" } }));
     try {
       while (true) {
         const response = await fetch("/api/admin/catalog/sync", {
@@ -36,6 +36,8 @@ export default function CatalogSyncClient() {
         if (!response.ok) throw new Error(body.error || "Não foi possível importar esta página do catálogo.");
         const page = body as Result;
         fetched += page.fetched;
+        variants += page.variants ?? 0;
+        images += page.images ?? 0;
         created += page.created;
         updated += page.updated;
         skipped += page.skipped;
@@ -43,7 +45,7 @@ export default function CatalogSyncClient() {
         setProgress((old) => ({
           ...old,
           [id]: {
-            fetched, total, created, updated, skipped, done: page.done,
+            fetched, total, variants, images, created, updated, skipped, done: page.done,
             message: page.done ? "Sincronização concluída." : `Importando próximo lote… (${fetched}${total ? ` de ${total}` : ""})`,
           },
         }));
@@ -53,7 +55,7 @@ export default function CatalogSyncClient() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Falha na importação.";
       setError(message);
-      setProgress((old) => ({ ...old, [id]: { fetched, total, created, updated, skipped, done: false, message: "Interrompido. Você pode executar novamente; os produtos já importados serão atualizados sem duplicar." } }));
+      setProgress((old) => ({ ...old, [id]: { fetched, total, variants, images, created, updated, skipped, done: false, message: "Interrompido. Você pode executar novamente; os produtos já importados serão atualizados sem duplicar." } }));
     } finally {
       setBusy(null);
     }
@@ -91,6 +93,8 @@ export default function CatalogSyncClient() {
                   <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
                     <span>Consultados: <b className="text-slate-800">{state.fetched}{state.total ? ` / ${state.total}` : ""}</b></span>
                     <span>Novos: <b className="text-slate-800">{state.created}</b></span>
+                    <span>SKUs / variantes: <b className="text-slate-800">{state.variants}</b></span>
+                    <span>Imagens: <b className="text-slate-800">{state.images}</b></span>
                     <span>Atualizados: <b className="text-slate-800">{state.updated}</b></span>
                     <span>Ignorados: <b className="text-slate-800">{state.skipped}</b></span>
                   </div>
