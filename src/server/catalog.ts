@@ -99,7 +99,7 @@ export const isSellable = (p: Pick<Product, "active" | "priceCents" | "stockStat
 
 export async function getPublicCatalog(assignments?: Assignment[]) {
   const [products, list, rules] = await Promise.all([
-    getActiveProducts(),
+    getActiveProducts().catch(() => []),
     assignments ? Promise.resolve(assignments) : currentAssignments(),
     db.sectionDiscount.findMany({ where: { active: true } }).catch(() => []),
   ]);
