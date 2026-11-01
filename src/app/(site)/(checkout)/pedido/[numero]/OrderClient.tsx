@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { PixelArt, PixelIcon } from "@/components/ui/PixelArt";
+import { CheckoutIcon } from "@/components/checkout/CheckoutIcon";
 import { Price } from "@/components/ui/Price";
 import { gaEvent, metaEvent, track } from "@/lib/client/tracking";
 import { ORDER_STATUS_LABEL, isAwaitingStatus, isCrediarioPending, isPaidStatus } from "@/lib/domain";
@@ -82,7 +82,7 @@ function UpsellOffer({ order, token, upsell }: { order: PublicOrder; token: stri
       </div>
       <div className="grid gap-4 p-5 sm:grid-cols-[140px_1fr]">
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#EFE8FF]">
-          {upsell.imageUrl ? <Image src={upsell.imageUrl} alt={upsell.productName} fill sizes="140px" className="object-cover" /> : <PixelArt sprite="rocket" className="absolute left-[15%] top-[15%] h-[70%] w-[70%]" />}
+          {upsell.imageUrl ? <Image src={upsell.imageUrl} alt={upsell.productName} fill sizes="140px" className="object-cover" /> : <CheckoutIcon name="wallet" className="absolute left-[38%] top-[38%] h-10 w-10 text-[#84BD00]" />}
         </div>
         <div>
           <h2 id="upsell-title" className="font-display text-2xl font-extrabold">{upsell.title}</h2>
@@ -144,7 +144,7 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
   // Purchase no navegador somente quando o servidor confirma o pagamento (mesmo event_id da CAPI)
   useEffect(() => {
     if (!paid || !order.metaEventId) return;
-    const key = `hb_purchase_${order.orderNumber}`;
+    const key = `footwear_purchase_${order.orderNumber}`;
     try {
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, "1");
@@ -233,7 +233,7 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
       {/* Crediário: pedido registrado, aguardando análise do protocolo */}
       {credPending && (
         <section className="card p-5 text-center" aria-labelledby="cred-title">
-          <PixelArt sprite="heart" className="mx-auto w-14" />
+          <CheckoutIcon name="check-circle" className="mx-auto h-14 w-14 text-[#6da900]" />
           <p id="cred-title" className="mt-3 font-extrabold">{order.crediario?.methodLabel ?? "Crediário"}{order.crediario?.installmentLabel ? ` · ${order.crediario.installmentLabel}` : ""}</p>
           {crediarioTexts.successMessage && <p className="mt-2 text-muted">{crediarioTexts.successMessage}</p>}
           {crediarioTexts.infoMessage && <p className="mt-3 rounded-xl bg-surface px-4 py-3 text-sm">{crediarioTexts.infoMessage}</p>}
@@ -322,7 +322,7 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
       {/* Pago */}
       {paid && (
         <section className="card p-5 text-center">
-          <PixelArt sprite="star" className="mx-auto w-16" />
+          <CheckoutIcon name="check-circle" className="mx-auto h-16 w-16 text-[#6da900]" />
           <p className="mt-3 text-muted">
             Recebemos o pagamento de <b className="text-ink">{formatBRL(order.totalCents)}</b>. {order.requiresShipping ? "Agora vamos preparar o seu pedido." : ""}
           </p>
@@ -334,7 +334,7 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
       {paid && order.digital.length > 0 && (
         <section className="card p-5" aria-labelledby="digital-title">
           <h2 id="digital-title" className="flex items-center gap-2 text-lg font-extrabold">
-            <PixelIcon name="download" className="h-5 w-5 text-primary" /> Conteúdo digital disponível
+            <CheckoutIcon name="download" className="h-5 w-5 text-primary" /> Conteúdo digital disponível
           </h2>
           <ul className="mt-3 space-y-2">
             {order.digital.map((d) => (
