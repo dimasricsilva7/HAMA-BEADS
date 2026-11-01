@@ -8,11 +8,10 @@ import { Logo } from "./Logo";
 
 const NAV = [
   { href: "/loja", label: "Todos os produtos" },
-  { href: "/#clogs", label: "Clogs" },
-  { href: "/#sandalias", label: "Sandálias e slides" },
-  { href: "/#infantil", label: "Infantil" },
-  { href: "/#acessorios", label: "Acessórios" },
-  { href: "/#ofertas", label: "Ofertas" },
+  { href: "/loja?colecao=596", label: "Adulto" },
+  { href: "/loja?colecao=597", label: "Infantil" },
+  { href: "/loja?colecao=469", label: "Jibbitz" },
+  { href: "/#ofertas", label: "Ofertas Black" },
   { href: "/acompanhar", label: "Acompanhar pedido" },
 ];
 
