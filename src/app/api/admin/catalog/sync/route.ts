@@ -166,6 +166,7 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
     description: x.description,
     priceCents: x.priceCents,
     compareAtPriceCents: x.compareAtPriceCents,
+    badge: x.compareAtPriceCents ? "BLACK FRIDAY" : existing?.badge ?? null,
     individualDiscountPercent: existing?.individualDiscountPercent ?? null,
     imageUrl: x.imageUrl,
     gallery: x.gallery,
