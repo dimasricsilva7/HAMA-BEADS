@@ -200,6 +200,8 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
                   components: p.components,
                   specs: p.specs,
                   selectedVariant: l.variantId ? { id: l.variantId, sku: l.variantSku, label: l.variantLabel, options: l.variantOptions } : null,
+                  promotionFreeUnits: l.promotionFreeUnits ?? 0,
+                  promotionDiscountCents: l.promotionDiscountCents ?? 0,
                   beadCount: p.beadCount,
                   colorCount: p.colorCount,
                   pegboardCount: p.pegboardCount,
