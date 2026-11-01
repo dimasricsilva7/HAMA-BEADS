@@ -226,7 +226,7 @@ export function OrderClient({ initial, token, qrSvg, upsell, whatsappUrl, storeN
         {awaiting && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Falta pouco, {order.customerFirstName}!</h1>}
         {paid && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Pagamento confirmado! 🎉</h1>}
         {credPending && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">{crediarioTexts.successTitle}</h1>}
-        {canRenew && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Seu kit ainda está te esperando, {order.customerFirstName}!</h1>}
+        {canRenew && <h1 className="mt-1 font-display text-3xl font-extrabold sm:text-4xl">Seu pedido ainda pode ser concluído, {order.customerFirstName}!</h1>}
         {!awaiting && !paid && !canRenew && !credPending && <h1 className="mt-1 font-display text-3xl font-extrabold">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</h1>}
       </div>
 
