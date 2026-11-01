@@ -4,6 +4,16 @@ Branch de desenvolvimento: feat/footwear-storefront.
 
 Esta branch adapta a base técnica para uma loja independente de calçados e acessórios. A direção visual usa verde vibrante, branco, grafite e azul de apoio, com identidade própria. A loja não representa canal oficial da Crocs; marcas, logotipos e fotografias de terceiros só devem ser exibidos com autorização.
 
+## Importação inicial do catálogo
+
+No primeiro build de produção com o PostgreSQL conectado, o comando da Vercel é temporariamente configurado para executar:
+
+```bash
+npm run db:migrate && npm run catalog:sync && npm run build:local
+```
+
+A rotina importa as coleções Adulto, Infantil e Jibbitz em páginas, faz upsert por ID de origem e registra variantes e URLs das imagens. Após a sincronização inicial, o comando de build deve voltar para `npm run build` (Prisma Generate + migrations + Next.js).
+
 ## Vercel — projeto isolado
 
 - Projeto: `footwear-storefront`
