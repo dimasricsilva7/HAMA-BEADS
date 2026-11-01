@@ -6,9 +6,9 @@ type Result = { fetched: number; total: number | null; created: number; updated:
 type Group = { id: string; title: string; description: string; badge: string };
 
 const GROUPS: Group[] = [
-  { id: "596", title: "Adulto", description: "Coleção Adulto vinculada à campanha Black Friday.", badge: "Calçados adulto" },
-  { id: "597", title: "Infantil", description: "Esquenta BF Kids — calçados infantis e juvenis.", badge: "Infantil e juvenil" },
-  { id: "469", title: "Jibbitz", description: "Acessórios e enfeites Jibbitz da campanha Leve 8 pague 5.", badge: "Pins e acessórios" },
+  { id: "596", title: "Adulto", description: "Coleção Adulto · catálogo VTEX consultado: 211 produtos.", badge: "Calçados adulto" },
+  { id: "597", title: "Infantil", description: "Esquenta BF Kids · catálogo VTEX consultado: 123 produtos.", badge: "Infantil e juvenil" },
+  { id: "469", title: "Jibbitz", description: "Coleção Jibbitz · catálogo VTEX consultado: 1.755 produtos.", badge: "Pins e acessórios" },
 ];
 
 export default function CatalogSyncClient() {
@@ -63,7 +63,7 @@ export default function CatalogSyncClient() {
     <div className="space-y-5">
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         <p className="font-bold">Importação manual do catálogo</p>
-        <p className="mt-1">Cada sincronização importa 50 produtos por lote, pagina até o fim da coleção e atualiza os itens pelo ID de origem. As URLs originais das imagens são armazenadas no catálogo; não copiamos arquivos para o storage.</p>
+        <p className="mt-1">Os totais são consultados na API VTEX e podem variar. A consulta feita em 1/11/2026 retornou 211 itens Adulto, 123 Infantil e 1.755 Jibbitz. A importação percorre a coleção paginada e atualiza os itens pelo ID de origem. As URLs originais das imagens são armazenadas no catálogo; não copiamos arquivos para o storage.</p>
         <p className="mt-2 text-xs">Use imagens, descrições, logotipos e dados comerciais de terceiros apenas com autorização/licença. Esta interface deve identificar claramente sua operação como loja independente, não como canal oficial da Crocs.</p>
       </div>
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</div>}
