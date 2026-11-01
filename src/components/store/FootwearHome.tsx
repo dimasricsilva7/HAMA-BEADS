@@ -36,8 +36,8 @@ function ProductCard({ p }: { p: MiniProduct }) {
     <article className="group min-w-0 overflow-hidden rounded-2xl border border-[#e7e7e7] bg-white transition hover:-translate-y-1 hover:shadow-lg">
       <Link href={`/produto/${p.slug}`} className="relative block aspect-square overflow-hidden bg-[#f5f5f5]">
         {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width: 1100px) 20vw, (min-width: 640px) 33vw, 72vw" className="object-contain p-2 transition duration-300 group-hover:scale-[1.04]" /> : <div className="grid h-full place-items-center text-sm font-semibold text-[#777]">Imagem indisponível</div>}
-        {p.badge && <span className="absolute left-3 top-3 rounded-md bg-[#b51e53] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">{p.badge}</span>}{discount !== null && <span className="absolute right-3 top-3 rounded-md bg-[#84BD00] px-2.5 py-1 text-[11px] font-extrabold text-[#1b1b1b]">-{discount}%</span>}
-        {p.badge && <span className="absolute right-3 top-3 rounded-md bg-[#333] px-2.5 py-1 text-[10px] font-bold text-white">{p.badge}</span>}
+        {p.badge && <span className="absolute left-3 top-3 rounded-md bg-[#b51e53] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">{p.badge}</span>}
+        {discount !== null && <span className="absolute right-3 top-3 rounded-md bg-[#84BD00] px-2.5 py-1 text-[11px] font-extrabold text-[#1b1b1b]">-{discount}%</span>}
       </Link>
       <div className="p-3 sm:p-4">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#777]">{p.brandName || "Crocs"}</p>
