@@ -17,10 +17,12 @@ type MiniProduct = {
   sourceCollectionId: string | null;
   stockStatus: string;
   shortDescription: string | null;
+  brandName: string | null;
+  variants: { options: { name: string; value: string }[] }[];
 };
 
 const CATEGORY: Record<string, string> = {
-  CLOGS: "Clogs", SANDALS: "Sandálias", SLIDES: "Slides", KIDS: "Infantil",
+  CLOGS: "Crocs", SANDALS: "Sandálias", SLIDES: "Slides", KIDS: "Infantil",
   JIBBITZ: "Jibbitz", FOOTWEAR: "Calçados", ACCESSORY: "Acessórios", OTHER: "Outros",
 };
 const money = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -29,16 +31,17 @@ const percentOff = (p: MiniProduct) => p.listPriceCents && p.listPriceCents > p.
 
 function ProductCard({ p }: { p: MiniProduct }) {
   const discount = percentOff(p);
+  const colors = [...new Set(p.variants.flatMap(v => v.options.filter(o => /^(cor|color|colour)$/i.test(o.name)).map(o => o.value)))];
   return (
     <article className="group min-w-0 overflow-hidden rounded-2xl border border-[#e7e7e7] bg-white transition hover:-translate-y-1 hover:shadow-lg">
       <Link href={`/produto/${p.slug}`} className="relative block aspect-square overflow-hidden bg-[#f5f5f5]">
-        {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width: 1100px) 20vw, (min-width: 640px) 33vw, 72vw" className="object-cover transition duration-300 group-hover:scale-[1.04]" /> : <div className="grid h-full place-items-center text-sm font-semibold text-[#777]">Imagem indisponível</div>}
-        {discount !== null && <span className="absolute left-3 top-3 rounded-md bg-[#84BD00] px-2.5 py-1 text-[11px] font-extrabold text-[#1b1b1b]">-{discount}%</span>}
+        {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width: 1100px) 20vw, (min-width: 640px) 33vw, 72vw" className="object-contain p-2 transition duration-300 group-hover:scale-[1.04]" /> : <div className="grid h-full place-items-center text-sm font-semibold text-[#777]">Imagem indisponível</div>}
+        {p.badge && <span className="absolute left-3 top-3 rounded-md bg-[#b51e53] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">{p.badge}</span>}{discount !== null && <span className="absolute right-3 top-3 rounded-md bg-[#84BD00] px-2.5 py-1 text-[11px] font-extrabold text-[#1b1b1b]">-{discount}%</span>}
         {p.badge && <span className="absolute right-3 top-3 rounded-md bg-[#333] px-2.5 py-1 text-[10px] font-bold text-white">{p.badge}</span>}
       </Link>
       <div className="p-3 sm:p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#777]">{CATEGORY[p.category] ?? "Calçados"}</p>
-        <Link href={`/produto/${p.slug}`} className="mt-1 block min-h-10 text-sm font-bold leading-5 text-[#252525] hover:underline">{p.name}</Link>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#777]">{p.brandName || "Crocs"}</p>
+        <Link href={`/produto/${p.slug}`} className="mt-1 block min-h-10 text-sm font-bold leading-5 text-[#252525] hover:underline">{p.name}</Link>{colors.length > 0 && <div className="mt-2 flex items-center gap-1">{colors.slice(0,6).map(color => <span key={color} title={color} className="h-3 w-3 rounded-full border border-black/10" style={{backgroundColor: color.toLowerCase().includes("black") || color.toLowerCase().includes("preto") ? "#171717" : color.toLowerCase().includes("white") || color.toLowerCase().includes("branco") ? "#f7f4e9" : color.toLowerCase().includes("pink") || color.toLowerCase().includes("rosa") ? "#e88da9" : color.toLowerCase().includes("blue") || color.toLowerCase().includes("azul") ? "#2874b8" : color.toLowerCase().includes("green") || color.toLowerCase().includes("verde") ? "#6a8d43" : "#c8c8c8"}}/>)}{colors.length > 6 && <span className="text-[10px] text-[#777]">+{colors.length-6}</span>}</div>}
         <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="text-lg font-extrabold text-[#222]">{money(p.priceCents)}</span>
           {p.listPriceCents && p.listPriceCents > p.priceCents && <span className="text-xs text-[#888] line-through">{money(p.listPriceCents)}</span>}
