@@ -50,6 +50,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
   const colorDimension = dimensions.find((name) => normalizeOption(name) === "color");
   const otherDimensions = dimensions.filter((name) => name !== sizeDimension && name !== colorDimension);
   const [chosen, setChosen] = useState<Record<string, string>>({});
+  const [quantity, setQuantity] = useState(1);
   const selected = variants.find((variant) => dimensions.every((dimension) =>
     Boolean(chosen[dimension]) && variant.options.some((option) => option.name === dimension && option.value === chosen[dimension])
   )) ?? (dimensions.length === 0 ? variants[0] : undefined);
@@ -72,7 +73,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
       priceCents: price,
       category: product.category,
       variantId: selected?.id ?? null,
-    }, { element: `pdp_${slug}` });
+    }, { element: `pdp_${slug}`, quantity });
   }
 
   return (
@@ -130,6 +131,16 @@ export default function ProductBuyBox({ product, slug }: Props) {
         </label>
       ))}
 
+      {!soldOut && (
+        <div className="mt-5 flex items-center gap-3">
+          <div className="inline-flex min-h-12 items-center border border-[#dedede]" role="group" aria-label="Quantidade">
+            <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label="Diminuir quantidade" className="h-12 w-11 text-lg disabled:opacity-35">−</button>
+            <span className="w-9 text-center text-sm font-bold tabular-nums" aria-live="polite">{quantity}</span>
+            <button type="button" onClick={() => setQuantity((value) => Math.min(10, value + 1))} disabled={quantity >= 10} aria-label="Aumentar quantidade" className="h-12 w-11 text-lg disabled:opacity-35">+</button>
+          </div>
+          <span className="text-xs text-[#777]">Quantidade</span>
+        </div>
+      )}
       {selected ? <p className="mt-4 text-xs text-[#666]">SKU: {selected.sku} · {selected.stockQuantity} disponível(is)</p>
         : product.variants.length > 0 ? <p className="mt-4 text-xs font-semibold text-[#b56a00]">Selecione todas as opções para continuar.</p> : null}
 
