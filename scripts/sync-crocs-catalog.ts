@@ -175,7 +175,7 @@ async function saveProduct(product: VtexProduct, collectionId: string, sortOrder
   if (!item || item.priceCents <= 0) return "skipped" as const;
   const existing = await db.product.findUnique({
     where: { sourceProductId: item.productId },
-    select: { active: true, individualDiscountPercent: true },
+    select: { active: true, individualDiscountPercent: true, badge: true },
   });
   const data = {
     name: item.name,
