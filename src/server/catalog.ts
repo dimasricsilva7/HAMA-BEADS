@@ -63,6 +63,7 @@ export function toPublicProduct(
     sku: p.sku,
     name: p.name,
     brandName: p.sourceProductId ? "Crocs" : null,
+    sourceCollectionId: p.sourceCollectionId,
     category: p.category,
     fulfillment: p.fulfillment,
     shortDescription: p.shortDescription,
