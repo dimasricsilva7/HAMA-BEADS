@@ -7,8 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { QtyStepper } from "@/components/cart/CartDrawer";
 import { ProductVisual } from "@/components/ui/ProductVisual";
-import { LedBoard } from "@/components/ui/LedBoard";
-import { PixelIcon } from "@/components/ui/PixelArt";
+import { CheckoutIcon } from "@/components/checkout/CheckoutIcon";
 import { gaEvent, getClientContext, metaEvent, newEventId, randomId, track, trackOnce } from "@/lib/client/tracking";
 import { formatBRL } from "@/utils/format";
 import { maskCep, maskCpf, maskPhone, onlyDigits, UF_LIST } from "@/utils/validators";
@@ -35,9 +34,9 @@ type Form = {
   state: string;
 };
 const EMPTY: Form = { name: "", email: "", phone: "", cpf: "", cep: "", street: "", number: "", complement: "", district: "", city: "", state: "" };
-const FORM_KEY = "hb_checkout_form";
-const TOKEN_KEY = "hb_checkout_token";
-const LEAD_KEY = "hb_lead_key";
+const FORM_KEY = "footwear_checkout_form";
+const TOKEN_KEY = "footwear_checkout_token";
+const LEAD_KEY = "footwear_lead_key";
 
 /** Chave do lead deste carrinho (persiste entre abas; renovada após gerar o pedido). */
 function leadKey(): string {
@@ -529,9 +528,9 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
                   className="mt-1 h-6 w-6 shrink-0 accent-[rgb(var(--c-success))]"
                   data-cta={`order_bump_${b.id}`}
                 />
-                {(b.imageUrl || /led/i.test(b.productName)) && (
+                {b.imageUrl && (
                   <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-                    {b.imageUrl ? <Image src={b.imageUrl} alt={b.productName} fill sizes="64px" className="object-cover" /> : <LedBoard className="h-full w-full" sprite="star" label={false} sizes="64px" />}
+                    <Image src={b.imageUrl} alt={b.productName} fill sizes="64px" className="object-cover" />
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
@@ -593,7 +592,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
             {pix.enabled && (
               <button type="button" role="radio" aria-checked={method === "PIX"} onClick={() => setMethod("PIX")} data-cta="method_pix" className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition ${method === "PIX" ? "border-primary bg-primary/[0.05]" : "border-line hover:border-ink/25"}`}>
                 <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${method === "PIX" ? "border-primary" : "border-line"}`}>{method === "PIX" && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}</span>
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-success/10 text-success"><PixelIcon name="pix" className="h-6 w-6" /></span>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-success/10 text-success"><CheckoutIcon name="pix" className="h-6 w-6" /></span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2 font-extrabold">{pix.label}{pix.badge && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">{pix.badge}</span>}</span>
                   {pix.description && <span className="block text-[13px] text-muted">{pix.description}</span>}
@@ -603,7 +602,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
             {crediario.enabled && (
               <button type="button" role="radio" aria-checked={method === "CREDIARIO"} onClick={() => { setMethod("CREDIARIO"); if (!credStarted.current) { credStarted.current = true; trackOnce("crediario_started", "crediario_started", { valueCents: q.totalCents }); } }} data-cta="method_crediario" className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition ${method === "CREDIARIO" ? "border-primary bg-primary/[0.05]" : "border-line hover:border-ink/25"}`}>
                 <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${method === "CREDIARIO" ? "border-primary" : "border-line"}`}>{method === "CREDIARIO" && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}</span>
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><PixelIcon name="gift" className="h-6 w-6" /></span>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><CheckoutIcon name="wallet" className="h-6 w-6" /></span>
                 <span className="min-w-0 flex-1">
                   <span className="block font-extrabold">{crediario.methodLabel}</span>
                   {crediario.methodSubtitle && <span className="block text-[13px] text-muted">{crediario.methodSubtitle}</span>}
@@ -646,7 +645,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
             {previewOnly ? "Prévia do checkout · pagamentos desativados" : submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? `${crediario.buttonLabel} · ${formatBRL(q.totalCents)}` : `${pix.button} · ${formatBRL(q.totalCents)}`}
           </button>
           <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-muted">
-            <PixelIcon name="lock" className="h-3.5 w-3.5 text-success" /> Ambiente seguro · seus dados são protegidos
+            <CheckoutIcon name="lock" className="h-4 w-4 text-success" /> Ambiente seguro · seus dados são protegidos
           </p>
           <p className="mt-1 text-center text-xs text-muted">
             Ao continuar, você concorda com os <Link href="/termos" className="underline">Termos</Link> e a <Link href="/politica-de-privacidade" className="underline">Política de Privacidade</Link>.
