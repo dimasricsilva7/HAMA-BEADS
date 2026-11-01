@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-export type CheckoutIconName = "shield-check" | "lock" | "truck" | "pix" | "wallet" | "check-circle";
+export type CheckoutIconName = "shield-check" | "lock" | "truck" | "pix" | "wallet" | "check-circle" | "download";
 
 const common: SVGProps<SVGSVGElement> = {
   viewBox: "0 0 24 24",
@@ -52,6 +52,11 @@ export function CheckoutIcon({
       {name === "check-circle" && <>
         <circle cx="12" cy="12" r="9" />
         <path d="m8 12 2.5 2.5L16 9" />
+      </>}
+      {name === "download" && <>
+        <path d="M12 3v12" />
+        <path d="m7 10 5 5 5-5" />
+        <path d="M5 20h14" />
       </>}
     </svg>
   );
