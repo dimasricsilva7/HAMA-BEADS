@@ -122,6 +122,9 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
 
   // Forma de pagamento: PIX (gateway) ou Crediário (protocolo próprio, análise manual)
   const method = input.paymentMethod ?? "PIX";
+  if (method === "PIX" && !process.env.BRAVOPAY_WEBHOOK_SECRET) {
+    throw new CheckoutError("PIX temporariamente indisponível. Selecione o crediário ou tente novamente mais tarde.", 503);
+  }
   if (method === "CREDIARIO" && !isOn(settings.crediario_enabled)) throw new CheckoutError("O crediário está indisponível no momento.", 503);
   const cfg = crediarioConfig(settings);
   let crediarioRow: Omit<Prisma.CrediarioDataUncheckedCreateInput, "orderId"> | null = null;
@@ -280,6 +283,9 @@ export async function createCheckoutOrder(input: CheckoutInput, meta: RequestMet
 export async function ensurePix(orderId: string): Promise<Order> {
   const order = await db.order.findUniqueOrThrow({ where: { id: orderId }, include: { customer: true, items: true } });
   if (order.pixCopyPaste || order.status !== "PENDING") return order;
+  if (!process.env.BRAVOPAY_WEBHOOK_SECRET) {
+    throw new CheckoutError("PIX temporariamente indisponível: webhook de confirmação não configurado.", 503);
+  }
 
   const settings = await getSettingsFresh();
   const expiresIn = Math.min(1440, Math.max(5, settingInt(settings, "pix_expiration_minutes", 30))) * 60;
@@ -601,6 +607,9 @@ export async function updateCrediarioStatus(orderId: string, next: CrediarioStat
  * para que scanners de link dos provedores de e-mail não gerem cobranças).
  */
 export async function renewPix(orderId: string): Promise<Order> {
+  if (!process.env.BRAVOPAY_WEBHOOK_SECRET) {
+    throw new CheckoutError("PIX temporariamente indisponível: webhook de confirmação não configurado.", 503);
+  }
   let order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
   const isAwaiting = (o: Order) => o.status === "PENDING" || o.status === "PIX_GENERATED";
   if (isAwaiting(order) && order.pixCopyPaste) {
