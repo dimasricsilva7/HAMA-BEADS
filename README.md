@@ -81,3 +81,5 @@ Fotos, títulos, descrições, preços, avaliações, estoque e políticas comer
 
 
 <!-- catalog-report-trigger -->
+
+<!-- category-fix-trigger -->
