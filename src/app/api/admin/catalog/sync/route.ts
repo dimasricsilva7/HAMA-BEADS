@@ -6,7 +6,7 @@ import { isSameOrigin } from "@/lib/request";
 import { log } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const CROCS_ORIGIN = "https://www.crocs.com.br";
 const PAGE_SIZE = 50;
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
     const resourcesHeader = response.headers.get("resources") ?? "";
     const totalPart = resourcesHeader.split("/").at(-1) ?? "";
     const total = /^\d+$/.test(totalPart) ? Number(totalPart) : null;
-    let created = 0, updated = 0, skipped = 0;
+    let created = 0, updated = 0, skipped = 0;\n    const variants = products.reduce((sum, p) => sum + (p.items?.length ?? 0), 0);\n    const images = products.reduce((sum, p) => sum + (p.items ?? []).reduce((n, item) => n + (item.images?.length ?? 0), 0), 0);
     for (let i = 0; i < products.length; i += 5) {
       const chunk = products.slice(i, i + 5);
       const outcomes = await Promise.all(chunk.map((p, j) => saveOne(p, collectionId, from + i + j)));
