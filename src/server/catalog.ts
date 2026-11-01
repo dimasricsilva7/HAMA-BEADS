@@ -13,7 +13,7 @@ const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 /** Produtos ativos (cache invalidado pela tag "catalog" em qualquer edição no admin). */
 export const getActiveProducts = unstable_cache(
   async () => db.product.findMany({ where: { active: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
-  ["active-products"],
+  ["active-products-v3-crocs-20261101"],
   { tags: ["catalog"], revalidate: 300 }
 );
 
