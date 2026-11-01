@@ -18,6 +18,7 @@ export type PublicProduct = {
   sku: string;
   name: string;
   brandName: string | null;
+  sourceCollectionId: string | null;
   category: "CLOGS" | "SANDALS" | "SLIDES" | "KIDS" | "JIBBITZ" | "FOOTWEAR" | "KIT" | "BEADS" | "PEGBOARD" | "TWEEZERS" | "DIGITAL_MODELS" | "ACCESSORY" | "TOOL" | "OTHER";
   fulfillment: "PHYSICAL" | "DIGITAL" | "HYBRID";
   shortDescription: string | null;
