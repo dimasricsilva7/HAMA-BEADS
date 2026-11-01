@@ -83,3 +83,15 @@ Fotos, títulos, descrições, preços, avaliações, estoque e políticas comer
 <!-- catalog-report-trigger -->
 
 <!-- category-fix-trigger -->
+
+
+## Revisão visual e checkout independente
+
+- Checkout usa ícones vetoriais SVG próprios, sem ícones pixelados do projeto anterior.
+- Crediário por protocolo fica habilitado via configuração inicial do banco; pedidos ficam pendentes de análise manual e armazenam protocolo/validade/CPF-last3 criptografados.
+- PIX só aparece quando `BRAVOPAY_API_KEY` está em modo live e `BRAVOPAY_WEBHOOK_SECRET` da nova URL está configurado.
+- PDP usa galeria interativa e miniaturas, seleção de cor por variante, seleção de tamanho em botões e controle de quantidade.
+- Catálogo mostra 20 itens por página, com cor, marca, desconto e etiqueta Black Friday.
+- A loja é independente; nome/favicons/links do Hama Beads não devem ser apresentados na experiência do cliente.
+
+<!-- footwear-checkout-product-detail-finalization -->
