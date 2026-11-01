@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { ProductCategory } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -226,6 +227,7 @@ export async function POST(req: NextRequest) {
         else skipped++;
       }
     }
+    revalidateTag("catalog");
     return NextResponse.json({
       collectionId,
       from,
