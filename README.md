@@ -78,3 +78,6 @@ O script de build deste projeto executa prisma migrate deploy. Configure um banc
 Não publicamos nem executamos cobranças nesta branch. Depois de configurar banco, variáveis privadas, frete, dados legais da empresa, gateway e catálogo real, rode npm run typecheck, npm run lint, npm test e npm run build.
 
 Fotos, títulos, descrições, preços, avaliações, estoque e políticas comerciais devem representar a loja que efetivamente venderá os produtos. Use apenas ativos que você possui ou está autorizado a utilizar.
+
+
+<!-- catalog-report-trigger -->
