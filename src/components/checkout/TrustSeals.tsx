@@ -1,11 +1,11 @@
-import { PixelIcon } from "@/components/ui/PixelArt";
+import { CheckoutIcon, type CheckoutIconName } from "@/components/checkout/CheckoutIcon";
 
 /** Selos de confiança do checkout: compra segura, dados protegidos, entrega e pagamento. */
 export function TrustSeals({ freeShipping, cnpj, companyName }: { freeShipping: boolean; cnpj: string | null; companyName: string | null }) {
-  const seals: { icon: string; title: string; sub: string }[] = [
-    { icon: "shield", title: "Compra segura", sub: "Conexão criptografada (SSL)" },
-    { icon: "lock", title: "Dados protegidos", sub: "Usados só para o seu pedido" },
-    { icon: freeShipping ? "truck" : "pix", title: freeShipping ? "Frete grátis" : "PIX", sub: freeShipping ? "Chega em 3 a 5 dias úteis" : "Confirmação na hora" },
+  const seals: { icon: CheckoutIconName; title: string; sub: string }[] = [
+    { icon: "shield-check", title: "Compra segura", sub: "Ambiente protegido" },
+    { icon: "lock", title: "Dados protegidos", sub: "Uso restrito ao pedido" },
+    { icon: "truck", title: freeShipping ? "Frete grátis" : "Entrega", sub: freeShipping ? "Condição aplicada ao pedido" : "Prazo calculado no checkout" },
   ];
   return (
     <div className="rounded-2xl border border-line bg-surface p-3">
@@ -13,7 +13,7 @@ export function TrustSeals({ freeShipping, cnpj, companyName }: { freeShipping: 
         {seals.map((s) => (
           <li key={s.title} className="flex flex-col items-center gap-1 px-1">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-success/10 text-success">
-              <PixelIcon name={s.icon} className="h-4 w-4" />
+              <CheckoutIcon name={s.icon} className="h-5 w-5" />
             </span>
             <span className="text-[12px] font-extrabold leading-tight text-ink">{s.title}</span>
             <span className="hidden text-[11px] leading-tight text-muted sm:block">{s.sub}</span>
