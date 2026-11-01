@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useCart } from "./CartProvider";
 import { ProductVisual } from "@/components/ui/ProductVisual";
-import { PixelIcon } from "@/components/ui/PixelArt";
+import { CheckoutIcon } from "@/components/checkout/CheckoutIcon";
 import { formatBRL } from "@/utils/format";
 import { trackOnce } from "@/lib/client/tracking";
 
@@ -139,7 +139,7 @@ export function CartDrawer() {
           <footer className="border-t border-line bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
             {q.requiresShipping && q.shippingCents === 0 && (
               <p className="mb-2 flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-1.5 text-[13px] font-bold text-success">
-                <PixelIcon name="truck" className="h-4 w-4" /> Frete grátis conforme as condições da loja
+                <CheckoutIcon name="truck" className="h-4 w-4" /> Frete grátis conforme as condições da loja
               </p>
             )}
             <div className="flex items-center justify-between">
@@ -147,14 +147,14 @@ export function CartDrawer() {
               <span className="font-display text-xl font-extrabold tabular-nums">{formatBRL(q.totalCents)}</span>
             </div>
             <Link href="/checkout" onClick={cart.closeDrawer} data-cta="drawer_checkout" className={`btn-primary mt-3 flex w-full items-center justify-center gap-2 ${cart.loading ? "opacity-80" : ""}`}>
-              <PixelIcon name="lock" className="h-4 w-4" /> Finalizar compra · {formatBRL(q.totalCents)}
+              <CheckoutIcon name="lock" className="h-4 w-4" /> Finalizar compra · {formatBRL(q.totalCents)}
             </Link>
             <button onClick={cart.closeDrawer} className="btn-ghost mt-1 w-full">
               Continuar escolhendo
             </button>
             <p className="mt-2 flex items-center justify-center gap-3 text-center text-[11px] font-semibold text-muted">
-              <span className="flex items-center gap-1"><PixelIcon name="shield" className="h-3.5 w-3.5 text-success" /> Compra segura</span>
-              <span className="flex items-center gap-1"><PixelIcon name="pix" className="h-3.5 w-3.5 text-success" /> PIX na hora</span>
+              <span className="flex items-center gap-1"><CheckoutIcon name="shield-check" className="h-3.5 w-3.5 text-success" /> Compra segura</span>
+              <span className="flex items-center gap-1"><CheckoutIcon name="wallet" className="h-3.5 w-3.5 text-success" /> Formas de pagamento</span>
             </p>
           </footer>
         )}
