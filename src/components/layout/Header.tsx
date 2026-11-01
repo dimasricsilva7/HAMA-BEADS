@@ -50,7 +50,7 @@ export function Header({ storeName, logoUrl, ctaLabel, announcement }: { storeNa
               </Link>
             ))}
           </nav>
-          <Link href="/loja" data-cta="header_cta" className="hidden min-h-[44px] items-center rounded-xl bg-primary px-4 text-sm font-extrabold uppercase text-white shadow-pixel-sm active:translate-y-[2px] active:shadow-none sm:inline-flex">
+          <Link href="/loja" data-cta="header_cta" className="hidden min-h-[44px] items-center rounded-xl bg-primary px-4 text-sm font-extrabold uppercase text-white shadow-sm active:translate-y-[2px] active:shadow-none sm:inline-flex">
             {ctaLabel}
           </Link>
           <button onClick={cart.openDrawer} className="relative grid h-11 w-11 place-items-center rounded-full hover:bg-ink/5" aria-label={`Carrinho, ${cart.count} ${cart.count === 1 ? "item" : "itens"}`}>
