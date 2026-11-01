@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CookiePreferencesLink } from "@/components/providers/CookieBanner";
 import type { Settings } from "@/server/settings";
 import { Logo } from "./Logo";
-import { PixelIcon } from "@/components/ui/PixelArt";
+import { CheckoutIcon } from "@/components/checkout/CheckoutIcon";
 
 export function whatsappLink(number: string, text?: string) {
   const digits = number.replace(/\D/g, "");
@@ -28,15 +28,15 @@ export function Footer({ s }: { s: Settings }) {
           <Logo name={s.store_name} logoUrl={s.logo_url || null} />
           {s.store_tagline && <p className="mt-3 max-w-xs text-sm text-white/70">{s.store_tagline}</p>}
           <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold">
-            <PixelIcon name="pix" className="h-4 w-4 text-success" /> Pagamento via PIX
+            <CheckoutIcon name="shield-check" className="h-4 w-4 text-success" /> Compra segura e atendimento da loja
           </p>
         </div>
         <nav aria-label="Loja">
           <p className="eyebrow text-white">Loja</p>
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/loja" className="hover:text-white">Todos os produtos</Link></li>
-            <li><Link href="/#clogs" className="hover:text-white">Clogs</Link></li>
-            <li><Link href="/#sandalias" className="hover:text-white">Sandálias e slides</Link></li>
+            <li><Link href="/loja?colecao=596" className="hover:text-white">Adulto</Link></li>
+            <li><Link href="/loja?colecao=596" className="hover:text-white">Sandálias e slides</Link></li>
             <li><Link href="/#ofertas" className="hover:text-white">Ofertas</Link></li>
             <li><Link href="/acompanhar" className="hover:text-white">Acompanhar pedido</Link></li>
           </ul>
