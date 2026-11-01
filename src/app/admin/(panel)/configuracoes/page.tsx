@@ -42,7 +42,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
       {tab === "loja" && (
         <Card title="Dados da loja">
           {form(
-            ["store_name", "store_tagline", "logo_url", "hero_banner_url", "favicon_url", "company_name", "company_document", "contact_email", "contact_phone", "whatsapp", "address", "support_hours", "instagram_url", "tiktok_url", "facebook_url", "youtube_url"],
+            ["store_name", "store_tagline", "logo_url", "hero_banner_url", "adult_banner_url", "kids_banner_url", "jibbitz_banner_url", "favicon_url", "company_name", "company_document", "contact_email", "contact_phone", "whatsapp", "address", "support_hours", "instagram_url", "tiktok_url", "facebook_url", "youtube_url"],
             <div className="grid gap-4 md:grid-cols-2">
               {text("store_name", "Nome da loja")}
               {text("store_tagline", "Frase curta")}
@@ -50,7 +50,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
                 <input type="url" name="logo_url" inputMode="url" placeholder="https://exemplo.com/logo.png" defaultValue={s.logo_url} className={inputCls} />
               </Field>
               <p className="text-xs text-slate-500 md:col-span-2">Use a identidade visual da sua operação. O logotipo oficial da Crocs só deve ser publicado com autorização expressa do titular da marca.</p>
-              <MediaInput name="hero_banner_url" label="Imagem do banner principal" defaultValue={s.hero_banner_url} folder="banners" />
+              <MediaInput name="hero_banner_url" label="Banner principal da campanha" defaultValue={s.hero_banner_url} folder="banners" />
+              <MediaInput name="adult_banner_url" label="Banner da coleção Adulto" defaultValue={s.adult_banner_url} folder="banners" />
+              <MediaInput name="kids_banner_url" label="Banner da coleção Infantil" defaultValue={s.kids_banner_url} folder="banners" />
+              <MediaInput name="jibbitz_banner_url" label="Banner da coleção Jibbitz" defaultValue={s.jibbitz_banner_url} folder="banners" />
               <MediaInput name="favicon_url" label="Favicon" defaultValue={s.favicon_url} folder="marca" />
               {text("company_name", "Razão social", "[PREENCHER] — exibida no rodapé")}
               {text("company_document", "CNPJ")}
