@@ -16,7 +16,7 @@ type CartCtx = CartState & {
   drawerOpen: boolean;
   count: number;
   lastAdded: string | null;
-  add: (p: ProductRef, opts?: { source?: "cross_sell"; open?: boolean; element?: string }) => void;
+  add: (p: ProductRef, opts?: { source?: "cross_sell"; open?: boolean; element?: string; quantity?: number }) => void;
   setQuantity: (productId: string, quantity: number, variantId?: string | null) => void;
   remove: (productId: string, variantId?: string | null) => void;
   toggleBump: (bumpId: string, on: boolean) => void;
@@ -108,8 +108,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const variantId = p.variantId ?? null;
       const existing = s.items.find((i) => i.productId === p.id && (i.variantId ?? null) === variantId);
       const items = existing
-        ? s.items.map((i) => (i.productId === p.id && (i.variantId ?? null) === variantId ? { ...i, quantity: Math.min(10, i.quantity + 1) } : i))
-        : [...s.items, { productId: p.id, variantId, quantity: 1, source: opts.source ?? null }];
+        ? s.items.map((i) => (i.productId === p.id && (i.variantId ?? null) === variantId ? { ...i, quantity: Math.min(10, i.quantity + (opts.quantity ?? 1)) } : i))
+        : [...s.items, { productId: p.id, variantId, quantity: Math.min(10, Math.max(1, opts.quantity ?? 1)), source: opts.source ?? null }];
       return { ...s, items };
     });
     setLastAdded(p.id);
@@ -117,7 +117,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const params = { content_ids: [p.sku], content_name: p.name, content_type: "product", value: p.priceCents / 100, currency: "BRL" };
     metaEvent("AddToCart", params, { mirror: true, internal: { name: opts.source === "cross_sell" ? "cross_sell_add" : "add_to_cart", productId: p.id, valueCents: p.priceCents, element: opts.element ?? null } });
     if (opts.source === "cross_sell") track("add_to_cart", { productId: p.id, valueCents: p.priceCents, element: opts.element ?? "cross_sell" });
-    gaEvent("add_to_cart", { currency: "BRL", value: p.priceCents / 100, items: [{ item_id: p.sku, item_name: p.name, price: p.priceCents / 100, quantity: 1, item_category: p.category }] });
+    gaEvent("add_to_cart", { currency: "BRL", value: p.priceCents / 100, items: [{ item_id: p.sku, item_name: p.name, price: p.priceCents / 100, quantity: Math.min(10, Math.max(1, opts.quantity ?? 1)), item_category: p.category }] });
     if (opts.open !== false) setDrawerOpen(true);
   }, []);
 
