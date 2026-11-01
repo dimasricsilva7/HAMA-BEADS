@@ -4,6 +4,11 @@ const db = new PrismaClient();
 
 async function main() {
   const values: Record<string, string> = {
+    store_name: "Crocs Shop Independente",
+    store_tagline: "Revenda independente de produtos da marca Crocs.",
+    announcement_text: "Loja independente — produtos da marca Crocs vendidos por revendedor independente.",
+    seo_title: "Crocs Shop Independente — Calçados e Jibbitz",
+    seo_description: "Explore modelos, cores e tamanhos da marca Crocs em uma loja independente. Consulte disponibilidade, condições de venda e atendimento.",
     crediario_enabled: "true",
     crediario_method_label: "Crediário",
     crediario_method_subtitle: "Em até {parcelas}x · com seu protocolo",
