@@ -52,7 +52,7 @@ function ProductCard({ p }: { p: MiniProduct }) {
 }
 
 function ProductRail({ products }: { products: MiniProduct[] }) {
-  if (!products.length) return <div className="rounded-xl border border-dashed border-[#ddd] px-5 py-12 text-center text-sm text-[#777]">Os produtos desta vitrine aparecerão após a sincronização do catálogo.</div>;
+  if (!products.length) return <div className="rounded-xl border border-dashed border-[#ddd] px-5 py-12 text-center text-sm text-[#777]">Nenhum produto disponível nesta seleção no momento.</div>;
   return <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">{products.map(p => <ProductCard key={p.id} p={p}/>)}</div>;
 }
 
@@ -74,7 +74,7 @@ function Section({ id, eyebrow, title, description, products, href = "/loja", ct
   );
 }
 
-export default function FootwearHome({ products, storeName, heroImageUrl }: { products: MiniProduct[]; storeName: string; heroImageUrl?: string | null }) {
+export default function FootwearHome({ products, storeName, heroImageUrl, adultBannerUrl, kidsBannerUrl, jibbitzBannerUrl }: { products: MiniProduct[]; storeName: string; heroImageUrl?: string | null; adultBannerUrl?: string | null; kidsBannerUrl?: string | null; jibbitzBannerUrl?: string | null }) {
   const [search, setSearch] = useState("");
   const filtered = useMemo(() => products.filter(p => `${p.name} ${CATEGORY[p.category] ?? ""}`.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))), [products, search]);
   const adult = filtered.filter(p => p.sourceCollectionId === "596");
@@ -87,26 +87,47 @@ export default function FootwearHome({ products, storeName, heroImageUrl }: { pr
     { label: "R$ 300 a R$ 399", max: 39900, min: 30000 },
   ];
   const categories = [
-    { id: "596", title: "Adulto", description: "Clogs, sandálias, slides e modelos para adultos", href: "/loja?colecao=596" },
-    { id: "597", title: "Infantil", description: "Modelos infantis e juvenis", href: "/loja?colecao=597" },
-    { id: "469", title: "Jibbitz", description: "Pins, charms e acessórios para personalizar", href: "/loja?colecao=469" },
+    { id: "596", title: "Adulto", description: "Clogs, sandálias, slides e modelos para adultos", href: "/loja?colecao=596", imageUrl: adultBannerUrl || adult[0]?.imageUrl },
+    { id: "597", title: "Infantil", description: "Modelos infantis e juvenis", href: "/loja?colecao=597", imageUrl: kidsBannerUrl || kids[0]?.imageUrl },
+    { id: "469", title: "Jibbitz", description: "Pins, charms e acessórios para personalizar", href: "/loja?colecao=469", imageUrl: jibbitzBannerUrl || jibbitz[0]?.imageUrl },
   ];
   return (
     <main className="min-h-screen bg-white text-[#242424]">
-      <div className="mx-auto max-w-[1440px] px-4 pt-5 sm:px-7 lg:px-10">
+      <div className="mx-auto max-w-[1440px] px-4 pt-5 sm:px-7 lg:px-10" aria-label={`${storeName} — loja independente`}>
         <nav aria-label="Coleções principais" className="grid grid-cols-3 gap-2 sm:gap-4">
           {categories.map(c => (
-            <Link key={c.id} href={c.href} className="group rounded-xl border border-[#e5e5e5] bg-white px-3 py-4 text-center transition hover:border-[#84BD00] hover:bg-[#f7faef] sm:py-5">
-              <span className="block text-sm font-extrabold sm:text-lg">{c.title}</span>
-              <span className="mt-1 hidden text-xs text-[#737373] sm:block">{c.description}</span>
-              <span className="mt-2 inline-block text-[10px] font-bold uppercase tracking-wider text-[#5d8500]">Comprar agora</span>
+            <Link key={c.id} href={c.href} className="group relative isolate flex min-h-[112px] overflow-hidden rounded-xl bg-[#10180a] px-3 py-4 text-left transition hover:-translate-y-0.5 sm:min-h-[150px] sm:px-5 sm:py-5">
+              {c.imageUrl && <Image src={c.imageUrl} alt="" fill sizes="(min-width: 640px) 33vw, 33vw" className="object-cover transition duration-500 group-hover:scale-105" />}
+              <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/5" />
+              <span className="relative mt-auto block text-white">
+                <span className="block text-sm font-extrabold sm:text-xl">{c.title}</span>
+                <span className="mt-1 hidden text-xs text-white/80 sm:block">{c.description}</span>
+                <span className="mt-2 inline-block text-[10px] font-bold uppercase tracking-wider text-[#b7e35b]">Comprar agora →</span>
+              </span>
             </Link>
           ))}
         </nav>
-        {heroImageUrl && (
-          <Link href="/loja" className="relative mt-5 block aspect-[16/5] min-h-[120px] overflow-hidden rounded-2xl bg-[#f3f3f3]">
-            <Image src={heroImageUrl} alt="Banner principal da loja" fill priority sizes="100vw" className="object-cover"/>
+        {heroImageUrl ? (
+          <Link href="/loja" className="relative mt-5 block aspect-[16/5] min-h-[160px] overflow-hidden rounded-2xl bg-[#071007]">
+            <Image src={heroImageUrl} alt="Banner principal da campanha da loja" fill priority sizes="100vw" className="object-cover"/>
           </Link>
+        ) : (
+          <section className="relative mt-5 grid min-h-[230px] overflow-hidden rounded-2xl bg-[#050b06] text-white sm:min-h-[300px] sm:grid-cols-[1.05fr_.95fr]">
+            <div className="relative z-10 flex flex-col items-start justify-center px-6 py-8 sm:px-10 lg:px-14">
+              <p className="text-[10px] font-extrabold uppercase tracking-[.24em] text-[#a6d83c]">Seleção da temporada</p>
+              <h1 className="mt-3 max-w-xl text-3xl font-black leading-[1.03] tracking-tight sm:text-5xl">Encontre seu próximo favorito.</h1>
+              <p className="mt-3 max-w-md text-sm leading-6 text-white/75">Explore calçados, modelos infantis e acessórios para personalizar seu estilo.</p>
+              <Link href="/loja" className="mt-5 inline-flex min-h-11 items-center rounded-lg bg-[#84BD00] px-5 text-xs font-extrabold uppercase tracking-wide text-[#132000] transition hover:bg-[#a6d83c]">Ver coleção</Link>
+              <p className="mt-4 text-[10px] text-white/55">Loja independente · consulte disponibilidade e condições de venda</p>
+            </div>
+            <div className="relative grid min-h-[180px] grid-cols-3 items-center gap-1 px-3 pb-5 sm:min-h-0 sm:pr-7 sm:pt-5">
+              {adult.slice(0,3).map((p,i) => (
+                <Link key={p.id} href={`/produto/${p.slug}`} className={`relative aspect-[3/4] overflow-hidden rounded-xl bg-white/5 ${i===1 ? "mt-8" : ""}`}>
+                  {p.imageUrl && <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width: 640px) 16vw, 28vw" className="object-contain p-1 sm:p-2"/>}
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
       </div>
 
