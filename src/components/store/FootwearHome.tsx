@@ -93,10 +93,6 @@ export default function FootwearHome({ products, storeName, heroImageUrl }: { pr
   ];
   return (
     <main className="min-h-screen bg-white text-[#242424]">
-      <div className="bg-[#222] px-4 py-2 text-center text-[10px] font-bold uppercase tracking-[.14em] text-white sm:text-xs">
-        {storeName} · Loja independente de calçados e acessórios
-      </div>
-
       <div className="mx-auto max-w-[1440px] px-4 pt-5 sm:px-7 lg:px-10">
         <nav aria-label="Coleções principais" className="grid grid-cols-3 gap-2 sm:gap-4">
           {categories.map(c => (
