@@ -10,17 +10,27 @@ import type { PublicProduct } from "@/types/catalog";
 
 type SortMode = "featured" | "price_asc" | "price_desc" | "name";
 
-export default function FootwearCatalog({ products }: { products: PublicProduct[] }) {
+export default function FootwearCatalog({ products, initialCollection = "ALL", initialDeals = false, minPrice = 0, maxPrice = 0 }: {
+  products: PublicProduct[];
+  initialCollection?: string;
+  initialDeals?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("ALL");
   const [sort, setSort] = useState<SortMode>("featured");
-  const [onlyDeals, setOnlyDeals] = useState(false);
+  const [onlyDeals, setOnlyDeals] = useState(initialDeals);
+  const [collection, setCollection] = useState(initialCollection);
 
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("pt-BR");
     return products
       .filter((p) => category === "ALL" || p.category === category)
+      .filter((p) => collection === "ALL" || p.sourceCollectionId === collection)
+      .filter((p) => minPrice <= 0 || p.priceCents >= minPrice)
+      .filter((p) => maxPrice <= 0 || p.priceCents <= maxPrice)
       .filter((p) => !onlyDeals || (p.listPriceCents != null && p.listPriceCents > p.priceCents))
       .filter((p) => !needle || `${p.name} ${p.shortDescription ?? ""} ${CATEGORY_LABEL[p.category]}`.toLocaleLowerCase("pt-BR").includes(needle))
       .sort((a, b) => {
@@ -29,13 +39,13 @@ export default function FootwearCatalog({ products }: { products: PublicProduct[
         if (sort === "name") return a.name.localeCompare(b.name, "pt-BR");
         return Number(b.featured) - Number(a.featured) || a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "pt-BR");
       });
-  }, [products, query, category, sort, onlyDeals]);
+  }, [products, query, category, collection, sort, onlyDeals, minPrice, maxPrice]);
 
   return (
     <div className="container-page py-8 sm:py-12">
       <nav aria-label="Breadcrumb" className="text-xs text-muted"><Link href="/" className="hover:underline">Início</Link> / <span className="text-ink">Todos os produtos</span></nav>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div><p className="eyebrow text-primary">Explore a coleção</p><h1 className="h-section mt-1">Todos os produtos</h1><p className="mt-2 text-sm text-muted">Encontre o modelo certo para acompanhar sua rotina.</p></div>
+        <div><p className="eyebrow text-primary">Explore a coleção</p><h1 className="h-section mt-1">Todos os produtos</h1><p className="mt-2 text-sm text-muted">Explore Adulto, Infantil e Jibbitz, com filtros por coleção e faixa de preço.</p></div>
         <p className="text-xs text-muted">{visible.length} produto(s) encontrado(s)</p>
       </div>
 
@@ -50,6 +60,15 @@ export default function FootwearCatalog({ products }: { products: PublicProduct[
             <select value={category} onChange={(e) => setCategory(e.target.value)} className="input">
               <option value="ALL">Todas as categorias</option>
               {categories.map((key) => <option key={key} value={key}>{CATEGORY_LABEL[key]}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="label">Coleção</span>
+            <select value={collection} onChange={(e) => setCollection(e.target.value)} className="input">
+              <option value="ALL">Todas</option>
+              <option value="596">Adulto</option>
+              <option value="597">Infantil</option>
+              <option value="469">Jibbitz</option>
             </select>
           </label>
           <label className="block">
@@ -72,7 +91,7 @@ export default function FootwearCatalog({ products }: { products: PublicProduct[
         <div className="mt-8 rounded-2xl border border-dashed border-line bg-surface px-5 py-12 text-center">
           <p className="font-bold">Nenhum produto encontrado</p>
           <p className="mt-1 text-sm text-muted">Tente alterar os filtros ou a busca.</p>
-          <button type="button" onClick={() => { setQuery(""); setCategory("ALL"); setSort("featured"); setOnlyDeals(false); }} className="btn-secondary mt-4">Limpar filtros</button>
+          <button type="button" onClick={() => { setQuery(""); setCategory("ALL"); setCollection("ALL"); setSort("featured"); setOnlyDeals(false); }} className="btn-secondary mt-4">Limpar filtros</button>
         </div>
       ) : (
         <ul className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
