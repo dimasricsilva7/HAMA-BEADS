@@ -186,17 +186,42 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
     .slice(0, 4)
     .map((p) => toPublicProduct(p, overrides, sectionPercent.get(p.category) ?? null, now));
 
-  // ───── Cupom ─────
+  // ───── Campanha Jibbitz: a cada 8 unidades, as 3 mais baratas ficam grátis ─────
+  const jibbitzUnits = lines
+    .map((line, index) => ({ index, line }))
+    .filter(({ line }) => line.category === "JIBBITZ" && line.kind !== "ORDER_BUMP" && line.fulfillment !== "DIGITAL");
+  const jibbitzQuantity = jibbitzUnits.reduce((sum, x) => sum + x.line.quantity, 0);
+  let promotionDiscount = 0;
+  if (jibbitzQuantity >= 8) {
+    let freeUnitsRemaining = Math.floor(jibbitzQuantity / 8) * 3;
+    const freeByLine = new Map<number, number>();
+    const cheapestFirst = [...jibbitzUnits].sort((a, b) => a.line.unitPriceCents - b.line.unitPriceCents);
+    for (const { index, line } of cheapestFirst) {
+      if (freeUnitsRemaining <= 0) break;
+      const freeUnits = Math.min(line.quantity, freeUnitsRemaining);
+      freeByLine.set(index, freeUnits);
+      freeUnitsRemaining -= freeUnits;
+      promotionDiscount += freeUnits * line.unitPriceCents;
+    }
+    for (const [index, freeUnits] of freeByLine) {
+      lines[index] = { ...lines[index], promotionFreeUnits: freeUnits, promotionDiscountCents: freeUnits * lines[index].unitPriceCents };
+    }
+  }
+
+  // ───── Cupom: não acumula com a campanha automática Jibbitz ─────
   const priced = lines.map((l) => ({ productId: l.productId, unitPriceCents: l.unitPriceCents, quantity: l.quantity }));
   let couponState: CartQuote["coupon"] = null;
-  let discount = 0;
+  let discount = promotionDiscount;
   let couponRow: Coupon | null = null;
   if (input.couponCode?.trim()) {
     const check = await findValidCoupon(input.couponCode);
     const code = input.couponCode.trim().toUpperCase();
-    if (check.coupon) {
-      discount = couponDiscount(priced, { type: check.coupon.type, value: check.coupon.value, minSubtotalCents: check.coupon.minSubtotalCents, productIds: ids(check.coupon.productIds) });
-      if (discount > 0) {
+    if (check.coupon && promotionDiscount > 0) {
+      couponState = { code, valid: false, message: "Este cupom não acumula com a promoção Compre 8 Jibbitz e Pague 5." };
+    } else if (check.coupon) {
+      const couponValue = couponDiscount(priced, { type: check.coupon.type, value: check.coupon.value, minSubtotalCents: check.coupon.minSubtotalCents, productIds: ids(check.coupon.productIds) });
+      if (couponValue > 0) {
+        discount += couponValue;
         couponRow = check.coupon;
         couponState = { code, valid: true, message: null };
       } else {
@@ -221,6 +246,7 @@ export async function quoteCart(input: QuoteInput): Promise<FullQuote> {
     bumps,
     crossSells,
     ...totals,
+    promotionDiscountCents: promotionDiscount,
     coupon: couponState,
     requiresShipping,
     removed,
@@ -239,6 +265,7 @@ export function publicQuote(q: FullQuote): CartQuote {
     crossSells: q.crossSells,
     subtotalCents: q.subtotalCents,
     discountCents: q.discountCents,
+    promotionDiscountCents: q.promotionDiscountCents,
     shippingCents: q.shippingCents,
     totalCents: q.totalCents,
     coupon: q.coupon,
