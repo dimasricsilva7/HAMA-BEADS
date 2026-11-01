@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ViewTracker } from "@/components/landing/client";
@@ -7,7 +6,7 @@ import ProductBuyBox from "@/components/store/ProductBuyBox";
 import ProductGallery from "@/components/store/ProductGallery";
 import { Price } from "@/components/ui/Price";
 import { ProductVisual } from "@/components/ui/ProductVisual";
-import { CATEGORY_LABEL, FULFILLMENT_LABEL } from "@/lib/domain";
+import { FULFILLMENT_LABEL } from "@/lib/domain";
 import { siteUrl } from "@/lib/env";
 import { getPublicCatalog, getPublicProduct } from "@/server/catalog";
 import { getSettings } from "@/server/settings";
