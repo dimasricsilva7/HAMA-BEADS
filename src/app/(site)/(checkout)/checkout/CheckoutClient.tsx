@@ -368,9 +368,9 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
     return (
       <div className="container-page max-w-lg py-20 text-center">
         <h1 className="h-section">Seu carrinho está vazio</h1>
-        <p className="lead mt-3">Escolha um kit para começar a criar.</p>
-        <Link href="/#kits" className="btn-primary mt-8">
-          Escolher meu kit
+        <p className="lead mt-3">Escolha um produto para continuar sua compra.</p>
+        <Link href="/loja" className="btn-primary mt-8">
+          Ver produtos
         </Link>
       </div>
     );
