@@ -29,7 +29,7 @@ type CartCtx = CartState & {
 };
 
 const Ctx = createContext<CartCtx | null>(null);
-const KEY = "hb_cart";
+const KEY = "footwear_cart";
 const EMPTY: CartState = { items: [], bumpIds: [], couponCode: null };
 
 function load(): CartState {
