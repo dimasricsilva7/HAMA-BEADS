@@ -664,7 +664,7 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
             {previewOnly ? "Prévia do checkout · pagamentos desativados" : submitting ? (method === "CREDIARIO" ? "Registrando pedido…" : "Gerando PIX…") : method === "CREDIARIO" ? crediario.buttonLabel : pix.button}
           </button>
           <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-muted">
-            <PixelIcon name="lock" className="h-3.5 w-3.5 text-success" /> Ambiente seguro · dados protegidos
+            <CheckoutIcon name="lock" className="h-4 w-4 text-success" /> Ambiente seguro · dados protegidos
           </p>
           <p className="mt-1 text-center text-xs text-muted">
             Ao continuar, você concorda com os <Link href="/termos" className="underline">Termos</Link> e a <Link href="/politica-de-privacidade" className="underline">Política de Privacidade</Link>.
