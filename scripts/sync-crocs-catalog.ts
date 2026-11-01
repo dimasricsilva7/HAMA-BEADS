@@ -187,6 +187,7 @@ async function saveProduct(product: VtexProduct, collectionId: string, sortOrder
     description: item.description,
     priceCents: item.priceCents,
     compareAtPriceCents: item.compareAtPriceCents,
+    badge: item.compareAtPriceCents ? "BLACK FRIDAY" : existing?.badge ?? null,
     individualDiscountPercent: existing?.individualDiscountPercent ?? null,
     imageUrl: item.imageUrl,
     gallery: item.gallery as Prisma.InputJsonValue,
