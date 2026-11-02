@@ -1,12 +1,7 @@
-import { PixelArt } from "@/components/ui/PixelArt";
-
-/** Carregando: visível (nunca parece página em branco) enquanto o servidor monta a página. */
 export default function Loading() {
-  return (
-    <div className="container-page flex min-h-[100svh] flex-col items-center justify-center py-16 text-center" aria-busy="true" aria-live="polite">
-      <PixelArt sprite="heart" className="w-16 animate-pulse" />
-      <p className="mt-4 font-display text-xl font-extrabold">Separando as continhas…</p>
-      <p className="mt-1 text-sm text-muted">Só um instante.</p>
-    </div>
-  );
+  return <div className="flex min-h-[65vh] flex-col items-center justify-center px-4 py-16 text-center" aria-busy="true" aria-live="polite">
+    <span className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#e6e6e6] border-t-[#84bd45]" aria-hidden="true" />
+    <p className="mt-5 text-base font-semibold text-[#333]">Carregando a loja...</p>
+    <p className="mt-1 text-sm text-[#777]">Só mais um instante.</p>
+  </div>;
 }

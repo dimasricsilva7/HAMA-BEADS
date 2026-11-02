@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ProductVisual } from "@/components/ui/ProductVisual";
 import { Price } from "@/components/ui/Price";
 import { ViewTracker } from "@/components/landing/client";
 import { CATEGORY_LABEL } from "@/lib/domain";
 import type { PublicProduct } from "@/types/catalog";
+import { FavoriteButton, FAVORITES_STORAGE_KEY } from "@/components/store/FavoriteButton";
 
 type SortMode = "featured" | "price_asc" | "price_desc" | "name";
 const PAGE_SIZE = 20;
@@ -27,19 +28,40 @@ function productColors(product: PublicProduct) {
     .map((option) => option.value)))];
 }
 
-export default function FootwearCatalog({ products, initialCollection = "ALL", initialDeals = false, minPrice = 0, maxPrice = 0 }: {
+export default function FootwearCatalog({ products, initialCollection = "ALL", initialDeals = false, minPrice = 0, maxPrice = 0, initialQuery = "", initialCategory = "ALL", initialFavoritesOnly = false }: {
   products: PublicProduct[];
   initialCollection?: string;
   initialDeals?: boolean;
   minPrice?: number;
   maxPrice?: number;
+  initialQuery?: string;
+  initialCategory?: string;
+  initialFavoritesOnly?: boolean;
 }) {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("ALL");
+  const [query, setQuery] = useState(initialQuery);
+  const [category, setCategory] = useState(initialCategory);
+  const [onlyFavorites, setOnlyFavorites] = useState(initialFavoritesOnly);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [sort, setSort] = useState<SortMode>("featured");
   const [onlyDeals, setOnlyDeals] = useState(initialDeals);
   const [collection, setCollection] = useState(initialCollection);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const syncFavorites = () => {
+      try {
+        const raw: unknown = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) ?? "[]");
+        setFavoriteIds(Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string") : []);
+      } catch { setFavoriteIds([]); }
+    };
+    syncFavorites();
+    window.addEventListener("footwear:favorites-updated", syncFavorites);
+    window.addEventListener("storage", syncFavorites);
+    return () => {
+      window.removeEventListener("footwear:favorites-updated", syncFavorites);
+      window.removeEventListener("storage", syncFavorites);
+    };
+  }, []);
 
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
   const visible = useMemo(() => {
@@ -50,6 +72,7 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
       .filter((p) => minPrice <= 0 || p.priceCents >= minPrice)
       .filter((p) => maxPrice <= 0 || p.priceCents <= maxPrice)
       .filter((p) => !onlyDeals || (p.listPriceCents != null && p.listPriceCents > p.priceCents))
+      .filter((p) => !onlyFavorites || favoriteIds.includes(p.id))
       .filter((p) => !needle || `${p.name} ${p.shortDescription ?? ""} ${p.brandName ?? "Crocs"} ${CATEGORY_LABEL[p.category]}`.toLocaleLowerCase("pt-BR").includes(needle))
       .sort((a, b) => {
         if (sort === "price_asc") return a.priceCents - b.priceCents;
@@ -57,7 +80,7 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
         if (sort === "name") return a.name.localeCompare(b.name, "pt-BR");
         return Number(b.featured) - Number(a.featured) || a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "pt-BR");
       });
-  }, [products, query, category, collection, sort, onlyDeals, minPrice, maxPrice]);
+  }, [products, query, category, collection, sort, onlyDeals, onlyFavorites, favoriteIds, minPrice, maxPrice]);
 
   const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -77,8 +100,8 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#659900]">Coleção Crocs</p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#111]">Todos os produtos</h1>
-          <p className="mt-2 text-sm text-[#666]">Modelos, cores e tamanhos disponíveis nesta loja independente.</p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#111]">{onlyFavorites ? "Meus favoritos" : "Todos os produtos"}</h1>
+          <p className="mt-2 text-sm text-[#666]">{onlyFavorites ? "Os produtos que você marcou para rever depois." : "Modelos, cores e tamanhos disponíveis nesta loja independente."}</p>
         </div>
         <p className="text-xs text-[#777]">{visible.length.toLocaleString("pt-BR")} produto(s) · 20 por página</p>
       </div>
@@ -119,7 +142,7 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
         <div className="mt-8 border border-dashed border-[#ddd] px-5 py-12 text-center">
           <p className="font-bold">Nenhum produto encontrado</p>
           <p className="mt-1 text-sm text-[#777]">Tente alterar os filtros ou a busca.</p>
-          <button type="button" onClick={() => { setQuery(""); setCategory("ALL"); setCollection("ALL"); setSort("featured"); setOnlyDeals(false); setPage(1); }} className="mt-4 min-h-10 border border-[#ddd] px-5 text-sm font-bold">Limpar filtros</button>
+          <button type="button" onClick={() => { setQuery(""); setCategory("ALL"); setCollection("ALL"); setSort("featured"); setOnlyDeals(false); setOnlyFavorites(false); setPage(1); }} className="mt-4 min-h-10 border border-[#ddd] px-5 text-sm font-bold">Limpar filtros</button>
         </div>
       ) : (
         <ul className="mt-6 grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-5 xl:grid-cols-5">
@@ -130,11 +153,14 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
               <li key={p.id}>
                 <ViewTracker event="product_view" productId={p.id} valueCents={p.priceCents} element="footwear_catalog" className="h-full">
                   <article className="group flex h-full flex-col bg-white">
+                    <div className="relative">
                     <Link href={`/produto/${p.slug}`} className="relative block border border-[#f0f0f0] bg-[#f7f6f2]">
                       <ProductVisual imageUrl={p.imageUrl} name={p.name} category={p.category} index={index} className="aspect-square" sizes="(min-width: 1280px) 20vw, 50vw" />
                       {p.badge && <span className="absolute left-2 top-2 bg-[#b51e53] px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white">{p.badge}</span>}
                       {discount != null && <span className="absolute right-2 top-2 border border-[#6ea900] bg-white px-2 py-1 text-[10px] font-extrabold text-[#5f9400]">-{discount}%</span>}
                     </Link>
+                      <FavoriteButton productId={p.id} className="absolute left-3 top-3" />
+                    </div>
                     <div className="flex flex-1 flex-col pt-3">
                       <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#777]">{p.brandName || "Crocs"}</p>
                       <Link href={`/produto/${p.slug}`} className="mt-1 min-h-10 text-sm font-bold leading-5 text-[#171717] hover:underline">{p.name}</Link>

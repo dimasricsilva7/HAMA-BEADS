@@ -9,6 +9,7 @@ import { ProductVisual } from "@/components/ui/ProductVisual";
 import { FULFILLMENT_LABEL } from "@/lib/domain";
 import { siteUrl } from "@/lib/env";
 import { getPublicCatalog, getPublicProduct } from "@/server/catalog";
+import { db } from "@/lib/db";
 import { getSettings } from "@/server/settings";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,10 @@ export default async function ProductPage({ params }: Props) {
   const slug = (await params).slug;
   const [p, catalog, settings] = await Promise.all([getPublicProduct(slug), getPublicCatalog(), getSettings()]);
   if (!p) notFound();
+  const reviewStats = await db.review.aggregate({ where: { productId: p.id, approved: true }, _avg: { rating: true }, _count: { _all: true } }).catch(() => null);
+  const reviewCount = reviewStats?._count._all ?? 0;
+  const averageRating = reviewStats?._avg.rating ?? 0;
+  const reviews = reviewCount > 0 ? await db.review.findMany({ where: { productId: p.id, approved: true }, orderBy: [{ featured: "desc" }, { reviewedAt: "desc" }, { createdAt: "desc" }], take: 6, select: { id: true, name: true, text: true, rating: true, reviewedAt: true } }).catch(() => []) : [];
   const soldOut = p.stockStatus === "OUT_OF_STOCK" || (p.variants.length > 0 && !p.variants.some((v) => v.available && v.stockQuantity > 0));
   const images = [
     ...(p.imageUrl ? [{ url: p.imageUrl, alt: p.name }] : []),
@@ -50,6 +55,7 @@ export default async function ProductPage({ params }: Props) {
     sku: p.sku,
     brand: { "@type": "Brand", name: p.brandName || settings.store_name },
     image: images.map((x) => x.url),
+    ...(reviewCount > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: averageRating.toFixed(1), reviewCount } } : {}),
     offers: {
       "@type": "Offer",
       url: `${baseUrl}/produto/${p.slug}`,
@@ -65,10 +71,10 @@ export default async function ProductPage({ params }: Props) {
         <Link href="/" className="hover:underline">Início</Link> / <Link href="/loja" className="hover:underline">Loja</Link> / <span className="text-ink">{p.name}</span>
       </nav>
       <ViewTracker event="product_view" productId={p.id} valueCents={p.priceCents} element="product_page" meta={{ sku: p.sku, name: p.name, priceCents: p.priceCents, category: p.category }}>
-        <div className="mt-5 grid gap-8 lg:grid-cols-2 lg:gap-12">
+        <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,.92fr)] lg:gap-10">
           <div>
             {images.length ? (
-              <ProductGallery images={images} name={p.name} />
+              <ProductGallery images={images} name={p.name} productId={p.id} />
             ) : (
               <ProductVisual name={p.name} category={p.category} index={p.sortOrder} className="aspect-square rounded-sm" priority />
             )}
@@ -78,6 +84,7 @@ export default async function ProductPage({ params }: Props) {
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6d9f00]">{p.brandName || "Crocs"} · {FULFILLMENT_LABEL[p.fulfillment]}</p>
             <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[#111] sm:text-4xl">{p.name}</h1>
+            {reviewCount > 0 && <div className="mt-2 flex items-center gap-2 text-sm" aria-label={`Avaliação média ${averageRating.toFixed(1)} de 5 com ${reviewCount} avaliações`}><span className="tracking-[2px] text-[#f0ad00]" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => index < Math.round(averageRating) ? "★" : "☆").join("")}</span><span className="text-[#666]">({reviewCount})</span><a href="#avaliacoes" className="text-xs font-semibold text-[#555] underline underline-offset-2">Ver avaliações</a></div>}
             {p.badge && <span className="mt-3 inline-flex bg-[#b91f55] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">{p.badge}</span>}
             {p.shortDescription && <p className="lead mt-4">{p.shortDescription}</p>}
 
@@ -110,6 +117,33 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
       </ViewTracker>
+
+      {reviews.length > 0 && (
+        <section id="avaliacoes" className="mt-14 border-t border-[#e8e8e8] pt-9">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-extrabold text-[#222]">Avaliações de clientes</h2>
+              <p className="mt-1 text-sm text-[#666]">Opiniões publicadas e aprovadas pela equipe da loja.</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-extrabold text-[#222]">{averageRating.toFixed(1)} <span className="text-[#f0ad00]">★</span></p>
+              <p className="text-xs text-[#666]">{reviewCount} avaliação(ões)</p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {reviews.map((review) => (
+              <article key={review.id} className="border border-[#e8e8e8] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-extrabold text-[#222]">{review.name}</p>
+                  <span className="text-sm tracking-[2px] text-[#f0ad00]" aria-label={`${review.rating} de 5 estrelas`}>{"★".repeat(Math.max(0, Math.min(5, review.rating)))}</span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-[#555]">{review.text}</p>
+                {review.reviewedAt && <p className="mt-3 text-[11px] text-[#888]">{review.reviewedAt.toLocaleDateString("pt-BR")}</p>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {related.length > 0 && (
         <section className="mt-16">

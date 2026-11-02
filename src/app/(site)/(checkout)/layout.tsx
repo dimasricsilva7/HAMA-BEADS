@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/Logo";
-import { PixelIcon } from "@/components/ui/PixelArt";
+import { CheckoutIcon } from "@/components/checkout/CheckoutIcon";
 import { getSettings } from "@/server/settings";
 
 export default async function CheckoutLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +13,7 @@ export default async function CheckoutLayout({ children }: { children: React.Rea
             <Logo name={s.store_name} logoUrl={s.logo_url || null} />
           </Link>
           <p className="flex items-center gap-1.5 text-xs font-bold text-success sm:text-sm">
-            <PixelIcon name="shield" className="h-4 w-4" /> Compra segura
+            <CheckoutIcon name="shield-check" className="h-4 w-4" /> Compra segura
           </p>
         </div>
       </header>

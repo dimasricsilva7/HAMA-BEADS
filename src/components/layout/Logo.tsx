@@ -1,20 +1,13 @@
-export function Logo({ name, logoUrl, className = "" }: { name: string; logoUrl?: string | null; className?: string }) {
-  if (logoUrl) {
-    return (
-      <span className={`relative block h-9 w-36 ${className}`}>
-        <img src={logoUrl} alt={name} loading="eager" className="absolute inset-0 h-full w-full object-contain object-left" />
-      </span>
-    );
-  }
-  return (
-    <span className={`flex items-center gap-2.5 ${className}`}>
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-white">
-        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M3.5 14.5c2.3.3 4.1-.4 5.6-1.8l2.1-2c1.3-1.2 2.3-1.4 3.8-.6l4.6 2.6c1.1.6 1.5 1.8 1 2.9-.4 1-1.3 1.7-2.5 1.7H7.2c-2 0-3.3-.8-3.7-2.8Z"/>
-          <path d="M4.5 18h14.2M12 8.5l1.3-2.2"/>
-        </svg>
-      </span>
-      <span className="font-display text-base font-extrabold leading-none tracking-tight text-ink sm:text-lg">{name}</span>
+export function Logo({ name, className = "" }: { name: string; logoUrl?: string | null; className?: string }) {
+  const legacyName = /hama|beads|pegboard|contas|pixel/i.test(name);
+  const displayName = legacyName ? "Calçados & Acessórios" : (name.trim() || "Calçados & Acessórios");
+  return <span className={`flex items-center gap-2.5 ${className}`}>
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#84bd45] text-white">
+      <svg viewBox="0 0 32 32" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 19c3 .3 5.1-.6 7.1-2.4l3.1-3c1.4-1.3 3-1.4 4.7-.4l6.2 3.6c1.6.9 1.9 2.5 1.1 4-.7 1.2-1.9 1.8-3.5 1.8H10c-2.5 0-4.1-1-5-3.6Z" />
+        <path d="M8 24.5h16M14.7 12.8l1.4-3" />
+      </svg>
     </span>
-  );
+    <span className="font-sans text-[15px] font-extrabold leading-none tracking-tight text-[#202020] sm:text-[17px]">{displayName}</span>
+  </span>;
 }

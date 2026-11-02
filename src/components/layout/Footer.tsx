@@ -13,6 +13,8 @@ export function whatsappLink(number: string, text?: string) {
 
 export function Footer({ s }: { s: Settings }) {
   const wa = s.whatsapp ? whatsappLink(s.whatsapp) : null;
+  const storeName = /hama|beads|pegboard|contas|pixel/i.test(s.store_name || "") ? "Calçados & Acessórios" : (s.store_name || "Calçados & Acessórios");
+  const storeTagline = /hama|beads|pegboard|contas|pixel/i.test(s.store_tagline || "") ? "Calçados, modelos e acessórios para diferentes momentos." : s.store_tagline;
   const socials = [
     ["Instagram", s.instagram_url],
     ["TikTok", s.tiktok_url],
@@ -25,8 +27,8 @@ export function Footer({ s }: { s: Settings }) {
     <footer className="mt-auto bg-ink pb-28 pt-12 text-white/80 lg:pb-12">
       <div className="container-page grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div className="text-white">
-          <Logo name={s.store_name} logoUrl={s.logo_url || null} />
-          {s.store_tagline && <p className="mt-3 max-w-xs text-sm text-white/70">{s.store_tagline}</p>}
+          <Logo name={storeName} logoUrl={null} />
+          {storeTagline && <p className="mt-3 max-w-xs text-sm text-white/70">{storeTagline}</p>}
           <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold">
             <CheckoutIcon name="shield-check" className="h-4 w-4 text-success" /> Compra segura e atendimento da loja
           </p>
@@ -69,7 +71,7 @@ export function Footer({ s }: { s: Settings }) {
       <div className="container-page mt-10 border-t border-white/10 pt-6 text-xs text-white/50">
         {s.footer_text && <p className="mb-2">{s.footer_text}</p>}
         <p className="mb-2 text-white/60">Loja independente, sem afiliação ou representação oficial da Crocs. Crocs® e demais marcas pertencem aos respectivos titulares.</p>
-        <p>© {new Date().getFullYear()} {s.company_name || s.store_name}{s.company_document ? ` · CNPJ ${s.company_document}` : ""}{s.address ? ` · ${s.address}` : ""}</p>
+        <p>© {new Date().getFullYear()} {s.company_name || storeName}{s.company_document ? ` · CNPJ ${s.company_document}` : ""}{s.address ? ` · ${s.address}` : ""}</p>
       </div>
     </footer>
   );

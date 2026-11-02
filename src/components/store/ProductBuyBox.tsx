@@ -77,7 +77,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
   }
 
   return (
-    <div className="mt-6 border border-[#e4e4e4] bg-white p-5 sm:p-6">
+    <div className="mt-5 bg-white">
       <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
         {list && list > price && <span className="text-sm text-[#777] line-through">{(list / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>}
         <Price priceCents={price} listPriceCents={list} size="lg" />
@@ -87,7 +87,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
       {colorDimension && (
         <section className="mt-6" aria-label="Escolha da cor">
           <div className="mb-3 flex items-center gap-2 text-sm"><b>Cor:</b><span className="text-[#555]">{chosen[colorDimension] || "Selecione"}</span></div>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
             {values(colorDimension).map((value) => {
               const variant = colorVariant(value);
               const active = chosen[colorDimension] === value;
@@ -107,8 +107,8 @@ export default function ProductBuyBox({ product, slug }: Props) {
 
       {sizeDimension && (
         <section className="mt-6" aria-label="Escolha do tamanho">
-          <div className="mb-3 flex items-center justify-between gap-3 text-sm"><span><b>{sizeDimension}:</b> <span className="text-[#555]">{chosen[sizeDimension] || "Selecione"}</span></span><span className="text-xs font-semibold text-[#555]">Tabela de medidas</span></div>
-          <div className="grid grid-cols-5 gap-2 sm:grid-cols-6">
+          <div className="mb-3 flex items-center justify-between gap-3 text-sm"><span><b>{sizeDimension}:</b> <span className="text-[#555]">{chosen[sizeDimension] || "Selecione"}</span></span><span className="text-xs font-semibold text-[#555]">Guia de tamanhos</span></div>
+          <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
             {values(sizeDimension).map((value) => {
               const active = chosen[sizeDimension] === value;
               const enabled = availableOption(sizeDimension, value);

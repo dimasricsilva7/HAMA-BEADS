@@ -20,6 +20,9 @@ export default async function StorePage({ searchParams }: Props) {
       initialDeals={value("ofertas") === "1"}
       minPrice={Number(value("precoDe")) || 0}
       maxPrice={Number(value("precoAte")) || 0}
+      initialQuery={value("q")}
+      initialCategory={value("categoria") || "ALL"}
+      initialFavoritesOnly={value("favoritos") === "1"}
     />
   );
 }
