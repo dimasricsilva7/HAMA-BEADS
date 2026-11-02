@@ -28,7 +28,7 @@ export function Header({ storeName, logoUrl, ctaLabel, announcement }: { storeNa
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const promoText = announcement && !/loja independente|não somos a loja oficial/i.test(announcement)
+  const promoText = announcement && !/(loja independente|não somos a loja oficial|hama|beads|pegboard|contas|pixel|separando\s+continhas)/i.test(announcement)
     ? announcement : "BLACK NOVEMBER · Explore as ofertas disponíveis na loja";
 
   useEffect(() => setOpen(false), [pathname]);
@@ -50,7 +50,7 @@ export function Header({ storeName, logoUrl, ctaLabel, announcement }: { storeNa
         <button onClick={() => setOpen(true)} className="-ml-2 grid h-11 w-11 place-items-center rounded-full lg:hidden" aria-label="Abrir menu" aria-expanded={open}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         </button>
-        <Link href="/" className="mr-auto shrink-0 lg:mr-5" aria-label={`${storeName} — início`}><Logo name={storeName} logoUrl={logoUrl} /></Link>
+        <Link href="/" className="mr-auto shrink-0 lg:mr-5" aria-label={`${storeName} — início`}><Logo name={storeName} logoUrl={null} /></Link>
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex" aria-label="Principal">
           {NAV.map((item) => <Link key={item.href} href={item.href} className={`whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-bold transition hover:bg-[#f4f4f4] ${item.emphasis ? "text-[#4e8e28]" : "text-[#1d1d1d]"}`}>{item.label}</Link>)}
         </nav>

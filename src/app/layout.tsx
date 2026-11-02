@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const images = ["/og"];
   return {
     metadataBase: new URL(siteUrl()),
-    title: { default: title, template: `%s | ${s.store_name}` },
+    title: { default: title, template: `%s | ${storeName}` },
     description,
     applicationName: storeName,
     alternates: { canonical: "/" },

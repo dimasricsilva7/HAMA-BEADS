@@ -9,6 +9,7 @@ import { CATEGORY_LABEL } from "@/lib/domain";
 import type { PublicProduct } from "@/types/catalog";
 import { FavoriteButton, FAVORITES_STORAGE_KEY } from "@/components/store/FavoriteButton";
 import { CampaignTag } from "@/components/store/CampaignTag";
+import { QuickAddButton } from "@/components/store/QuickAddButton";
 import { crocsColorBackground } from "@/lib/crocs-colors";
 
 type SortMode = "featured" | "price_asc" | "price_desc" | "name";
@@ -20,10 +21,13 @@ function isBlackFriday(product: PublicProduct) {
     (product.badge?.toLowerCase().includes("black") ?? false);
 }
 function discountPercent(product: PublicProduct) {
+  if (product.individualDiscountPercent != null && product.individualDiscountPercent > 0) {
+    return Math.round(product.individualDiscountPercent);
+  }
   if (product.listPriceCents && product.listPriceCents > product.priceCents) {
     return Math.round((1 - product.priceCents / product.listPriceCents) * 100);
   }
-  return product.individualDiscountPercent;
+  return null;
 }
 function productColors(product: PublicProduct) {
   return product.category === "JIBBITZ" ? [] : product.colorFamily;
@@ -249,9 +253,7 @@ export default function FootwearCatalog({
                         <Price priceCents={product.priceCents} listPriceCents={product.listPriceCents} size="sm"
                           className="flex-col items-start gap-0 [&>span:first-child]:text-sm [&>span:last-child]:text-[#4f9825]" />
                       </div>
-                      <Link href={`/produto/${product.slug}`} className="mt-3 flex min-h-10 w-full items-center justify-center rounded-full bg-[#222] px-3 text-[10px] font-extrabold uppercase tracking-wide text-white transition hover:bg-[#84BD00] hover:text-[#172000]">
-                        Adicionar ao carrinho
-                      </Link>
+                      <QuickAddButton product={product} className="mt-3" />
                     </div>
                   </article>
                 </ViewTracker>

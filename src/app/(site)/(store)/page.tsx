@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 
 export default async function StorefrontPage() {
   const [products, settings] = await Promise.all([getPublicCatalog(), getSettings()]);
-  return <FootwearHome products={products} storeName={settings.store_name || "Calçados & Acessórios"} heroImageUrl={settings.hero_banner_url || null} />;
+  return <FootwearHome products={products} storeName={settings.store_name || "Calçados & Acessórios"} heroImageUrl={null} />;
 }

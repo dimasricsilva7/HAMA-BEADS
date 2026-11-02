@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRef } from "react";
 import { FavoriteButton } from "@/components/store/FavoriteButton";
 import { CampaignTag } from "@/components/store/CampaignTag";
+import { QuickAddButton } from "@/components/store/QuickAddButton";
 import { crocsColorBackground } from "@/lib/crocs-colors";
-import type { ProductColorFamilyItem } from "@/types/catalog";
+import type { ProductColorFamilyItem, ProductVariant } from "@/types/catalog";
 
 type MiniProduct = {
   id: string; name: string; slug: string; sku: string; priceCents: number; listPriceCents: number | null;
@@ -14,13 +15,15 @@ type MiniProduct = {
   sourceCollectionId: string | null; sourceCollectionIds: string[]; stockStatus: string;
   shortDescription: string | null; brandName: string | null; featured: boolean;
   homeBlackFriday: boolean; homeFeaturedOffer: boolean; colorFamily: ProductColorFamilyItem[];
-  variants: { options: { name: string; value: string }[] }[];
+  variants: ProductVariant[];
 };
 
 const money = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const discount = (p: MiniProduct) => p.listPriceCents && p.listPriceCents > p.priceCents
-  ? Math.round((1 - p.priceCents / p.listPriceCents) * 100)
-  : p.individualDiscountPercent;
+const discount = (p: MiniProduct) => p.individualDiscountPercent != null && p.individualDiscountPercent > 0
+  ? Math.round(p.individualDiscountPercent)
+  : p.listPriceCents && p.listPriceCents > p.priceCents
+    ? Math.round((1 - p.priceCents / p.listPriceCents) * 100)
+    : null;
 const sourceIn = (p: MiniProduct, ...ids: string[]) => ids.some((id) => p.sourceCollectionIds.includes(id) || p.sourceCollectionId === id);
 const isBlackFriday = (p: MiniProduct) => p.homeBlackFriday || sourceIn(p, "595", "596", "599") || (p.badge?.toLowerCase().includes("black") ?? false);
 
@@ -43,7 +46,7 @@ function ProductCard({ product }: { product: MiniProduct }) {
       {bf ? <div className="mt-3 h-2.5" /> : <div className="mt-4 h-1" />}
       {colors.length > 0 && (
         <div className="mt-1 flex min-h-5 flex-wrap items-center gap-1.5" aria-label={`${colors.length} cores disponíveis`}>
-          {colors.map((color) => <span key={color.id} title={color.value} aria-label={color.value}
+          {colors.map((color) => <Link key={color.id} href={`/produto/${color.slug}`} title={color.value} aria-label={`Cor ${color.value}`}
             className="h-[13px] w-[13px] shrink-0 rounded-full border border-black/15"
             style={{ background: crocsColorBackground(color.value) }} />)}
         </div>
@@ -58,9 +61,7 @@ function ProductCard({ product }: { product: MiniProduct }) {
           <span className="block text-[21px] font-extrabold leading-6 text-[#4f9825]">{money(product.priceCents)}</span>
         </span>
       </Link>
-      <Link href={`/produto/${product.slug}`} className="mt-3 flex min-h-10 items-center justify-center rounded-full bg-[#222] px-3 text-[10px] font-extrabold uppercase tracking-wide text-white transition hover:bg-[#84bd45] hover:text-[#17230d]">
-        Adicionar ao carrinho
-      </Link>
+      <QuickAddButton product={product} />
     </article>
   );
 }
@@ -117,7 +118,7 @@ export default function FootwearHome({ products, storeName, heroImageUrl }: {
   const adult = products.filter((p) => sourceIn(p, "111", "146"));
   const kids = products.filter((p) => sourceIn(p, "173") || p.category === "KIDS");
   const jibbitz = products.filter((p) => sourceIn(p, "215") || p.category === "JIBBITZ");
-  const sale = products.filter((p) => p.homeBlackFriday || sourceIn(p, "595", "596", "599"))
+  const sale = products.filter((p) => p.homeBlackFriday)
     .sort((a,b) => (discount(b) ?? 0) - (discount(a) ?? 0));
   const featuredOffers = products.filter((p) => p.homeFeaturedOffer);
   const bestSellers = products.filter((p) => p.featured);

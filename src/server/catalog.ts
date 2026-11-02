@@ -116,8 +116,11 @@ export async function getPublicCatalog(assignments?: Assignment[]) {
       .filter((r) => (!r.startsAt || r.startsAt <= now) && (!r.endsAt || r.endsAt > now))
       .map((r) => [r.category, r.percent])
   );
+  // Hide the previous bead-craft catalog from the public footwear storefront.
+  // Records remain available in Admin; no old Hama Beads products leak into the Crocs catalog.
+  const legacyCraftCategories = new Set(["BEADS", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "KIT"]);
   const publicProducts = products
-    .filter((p) => p.priceCents > 0)
+    .filter((p) => p.priceCents > 0 && !legacyCraftCategories.has(p.category))
     .map((p) => toPublicProduct(p, overrides, discountByCategory.get(p.category) ?? null, now));
 
   // A VTEX style can have separate master products for each color. Group them
