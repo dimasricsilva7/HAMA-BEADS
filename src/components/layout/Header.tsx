@@ -7,13 +7,13 @@ import { useCart } from "@/components/cart/CartProvider";
 import { Logo } from "./Logo";
 
 const NAV = [
-  { href: "/loja?colecao=596", label: "Adulto" },
-  { href: "/loja?categoria=CLOGS", label: "Clogs" },
-  { href: "/loja?categoria=SLIDES", label: "Sandálias e slides" },
-  { href: "/loja?colecao=597", label: "Kids" },
-  { href: "/loja?colecao=469", label: "Jibbitz" },
-  { href: "/loja?categoria=ACCESSORY", label: "Acessórios" },
-  { href: "/loja?ofertas=1", label: "Black Friday", emphasis: true },
+  { href: "/loja?colecao=111", label: "Feminino" },
+  { href: "/loja?colecao=146", label: "Masculino" },
+  { href: "/loja?colecao=173", label: "Kids" },
+  { href: "/loja?colecao=225", label: "Crocs At Work" },
+  { href: "/loja?colecao=215", label: "Jibbitz" },
+  { href: "/loja?colecao=1792513037", label: "Bolsas e Acessórios" },
+  { href: "/loja?colecao=595,596,599", label: "BLACK FRIDAY", emphasis: true },
 ];
 
 function SearchForm({ mobile = false }: { mobile?: boolean }) {

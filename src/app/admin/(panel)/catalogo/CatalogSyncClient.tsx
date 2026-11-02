@@ -2,89 +2,140 @@
 
 import { useState } from "react";
 
-type Result = { fetched: number; total: number | null; variants: number; images: number; created: number; updated: number; skipped: number; nextFrom: number | null; done: boolean };
-type Group = { id: string; title: string; description: string; badge: string };
+type Result = {
+  fetched: number; total: number | null; variants: number; images: number;
+  created: number; updated: number; skipped: number; nextFrom: number | null; done: boolean;
+};
+type Group = { id: string; title: string; description: string; badge: string; type: "category" | "campaign" };
+type Progress = {
+  fetched: number; total: number | null; variants: number; images: number;
+  created: number; updated: number; skipped: number; done: boolean; message: string;
+};
 
 const GROUPS: Group[] = [
-  { id: "596", title: "Adulto", description: "Coleção Adulto · catálogo VTEX consultado: 211 produtos.", badge: "Calçados adulto" },
-  { id: "597", title: "Infantil", description: "Esquenta BF Kids · catálogo VTEX consultado: 123 produtos.", badge: "Infantil e juvenil" },
-  { id: "469", title: "Jibbitz", description: "Coleção Jibbitz · catálogo VTEX consultado: 1.755 produtos.", badge: "Pins e acessórios" },
+  { id: "111", title: "Feminino", description: "Clogs, sandálias, chinelos e outros modelos da categoria Feminino.", badge: "Categoria oficial", type: "category" },
+  { id: "146", title: "Masculino", description: "Modelos, tamanhos e cores da categoria Masculino.", badge: "Categoria oficial", type: "category" },
+  { id: "173", title: "Kids", description: "Modelos infantis e juvenis, com suas cores e tamanhos.", badge: "Categoria oficial", type: "category" },
+  { id: "215", title: "Jibbitz", description: "Charms, personagens, temas e packs da coleção completa.", badge: "Categoria oficial", type: "category" },
+  { id: "225", title: "Crocs At Work", description: "Modelos e itens da coleção profissional.", badge: "Categoria oficial", type: "category" },
+  { id: "1792513037", title: "Bolsas e Acessórios", description: "Bolsas, acessórios, chaveiros e itens relacionados.", badge: "Categoria oficial", type: "category" },
+  { id: "595", title: "Esquenta Black Friday", description: "Itens que integram a campanha Esquenta BF.", badge: "Campanha", type: "campaign" },
+  { id: "596", title: "Ofertas Black Adulto", description: "Produtos marcados na campanha Ofertas Black adulto.", badge: "Campanha", type: "campaign" },
+  { id: "599", title: "Ofertas Black", description: "Produtos marcados na campanha geral Ofertas Black.", badge: "Campanha", type: "campaign" },
 ];
+
+const emptyProgress = (): Progress => ({
+  fetched: 0, total: null, variants: 0, images: 0, created: 0, updated: 0, skipped: 0, done: false, message: "Aguardando importação.",
+});
 
 export default function CatalogSyncClient() {
   const [busy, setBusy] = useState<string | null>(null);
-  const [progress, setProgress] = useState<Record<string, { fetched: number; total: number | null; variants: number; images: number; created: number; updated: number; skipped: number; done: boolean; message: string }>>({});
+  const [progress, setProgress] = useState<Record<string, Progress>>({});
   const [error, setError] = useState<string | null>(null);
+
+  async function importGroup(id: string) {
+    let from = 0;
+    const totals = { fetched: 0, total: null as number | null, variants: 0, images: 0, created: 0, updated: 0, skipped: 0 };
+    setProgress((old) => ({ ...old, [id]: { ...emptyProgress(), message: "Iniciando sincronização..." } }));
+
+    while (true) {
+      const response = await fetch("/api/admin/catalog/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ collectionId: id, from }),
+        cache: "no-store",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `Falha ao importar a coleção ${id}.`);
+      const page = body as Result;
+      totals.fetched += page.fetched;
+      totals.variants += page.variants ?? 0;
+      totals.images += page.images ?? 0;
+      totals.created += page.created;
+      totals.updated += page.updated;
+      totals.skipped += page.skipped;
+      totals.total = page.total ?? totals.total;
+      setProgress((old) => ({
+        ...old,
+        [id]: {
+          ...totals,
+          done: page.done,
+          message: page.done
+            ? "Sincronização concluída."
+            : `Importando próximo lote... (${totals.fetched}${totals.total ? ` de ${totals.total}` : ""})`,
+        },
+      }));
+      if (page.done || page.nextFrom == null) break;
+      from = page.nextFrom;
+    }
+  }
 
   async function sync(id: string) {
     if (busy) return;
     setBusy(id);
     setError(null);
-    let from = 0;
-    let fetched = 0, variants = 0, images = 0, created = 0, updated = 0, skipped = 0;
-    let total: number | null = null;
-    setProgress((old) => ({ ...old, [id]: { fetched: 0, total: null, variants: 0, images: 0, created: 0, updated: 0, skipped: 0, done: false, message: "Iniciando sincronização…" } }));
     try {
-      while (true) {
-        const response = await fetch("/api/admin/catalog/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ collectionId: id, from }),
-          cache: "no-store",
-        });
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "Não foi possível importar esta página do catálogo.");
-        const page = body as Result;
-        fetched += page.fetched;
-        variants += page.variants ?? 0;
-        images += page.images ?? 0;
-        created += page.created;
-        updated += page.updated;
-        skipped += page.skipped;
-        total = page.total ?? total;
-        setProgress((old) => ({
-          ...old,
-          [id]: {
-            fetched, total, variants, images, created, updated, skipped, done: page.done,
-            message: page.done ? "Sincronização concluída." : `Importando próximo lote… (${fetched}${total ? ` de ${total}` : ""})`,
-          },
-        }));
-        if (page.done || page.nextFrom == null) break;
-        from = page.nextFrom;
-      }
+      await importGroup(id);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Falha na importação.";
       setError(message);
-      setProgress((old) => ({ ...old, [id]: { fetched, total, variants, images, created, updated, skipped, done: false, message: "Interrompido. Você pode executar novamente; os produtos já importados serão atualizados sem duplicar." } }));
+      setProgress((old) => ({
+        ...old,
+        [id]: { ...(old[id] ?? emptyProgress()), done: false, message: "Interrompido. Execute novamente para retomar; os itens já importados não serão duplicados." },
+      }));
     } finally {
       setBusy(null);
     }
   }
 
+  async function syncAll() {
+    if (busy) return;
+    setBusy("all");
+    setError(null);
+    try {
+      for (const group of GROUPS) {
+        await importGroup(group.id);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha na importação completa.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const totalProducts = Object.values(progress).reduce((sum, row) => sum + row.fetched, 0);
+  const totalCreated = Object.values(progress).reduce((sum, row) => sum + row.created, 0);
+  const totalUpdated = Object.values(progress).reduce((sum, row) => sum + row.updated, 0);
+
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-        <p className="font-bold">Importação manual do catálogo</p>
-        <p className="mt-1">Os totais são consultados na API VTEX e podem variar. A consulta feita em 1/11/2026 retornou 211 itens Adulto, 123 Infantil e 1.755 Jibbitz. A importação percorre a coleção paginada e atualiza os itens pelo ID de origem. As URLs originais das imagens são armazenadas no catálogo; não copiamos arquivos para o storage.</p>
-        <p className="mt-2 text-xs">Use imagens, descrições, logotipos e dados comerciais de terceiros apenas com autorização/licença. Esta interface deve identificar claramente sua operação como loja independente, não como canal oficial da Crocs.</p>
-      </div>
+      <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+        <p className="font-bold">Catálogo completo por categoria oficial</p>
+        <p className="mt-1">A importação agora consulta as categorias reais da VTEX: Feminino, Masculino, Kids, Jibbitz, Crocs At Work e Bolsas e Acessórios. As campanhas Black Friday são sincronizadas separadamente, sem substituir a categoria principal do produto.</p>
+        <p className="mt-2 text-xs">Produtos que pertencem a mais de uma categoria mantêm todos os vínculos; a atualização por ID de origem evita duplicação. O catálogo pode demorar enquanto a coleção Jibbitz, que é maior, é percorrida.</p>
+        <button type="button" onClick={syncAll} disabled={Boolean(busy)}
+          className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-[#1d2b17] px-5 text-sm font-extrabold text-white disabled:opacity-50">
+          {busy === "all" ? "Importando catálogo completo..." : "Importar catálogo completo"}
+        </button>
+        {Object.keys(progress).length > 0 && (
+          <p className="mt-3 text-xs font-semibold">Nesta execução: {totalProducts.toLocaleString("pt-BR")} produtos consultados · {totalCreated.toLocaleString("pt-BR")} novos · {totalUpdated.toLocaleString("pt-BR")} atualizados.</p>
+        )}
+      </section>
+
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</div>}
-      <div className="grid gap-4 lg:grid-cols-3">
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {GROUPS.map((group) => {
           const state = progress[group.id];
-          const percent = state?.total ? Math.min(100, Math.round(state.fetched / state.total * 100)) : state?.done ? 100 : 0;
+          const percent = state?.total ? Math.min(100, Math.round((state.fetched / state.total) * 100)) : state?.done ? 100 : 0;
           return (
             <section key={group.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{group.badge}</p>
-              <h2 className="mt-2 text-xl font-extrabold text-slate-900">{group.title}</h2>
-              <p className="mt-2 min-h-10 text-sm text-slate-600">{group.description}</p>
-              <button
-                type="button"
-                onClick={() => sync(group.id)}
-                disabled={Boolean(busy)}
-                className="mt-5 min-h-11 w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-              >
-                {busy === group.id ? "Sincronizando…" : state?.done ? "Sincronizar novamente" : "Importar coleção"}
+              <h2 className="mt-2 text-lg font-extrabold text-slate-900">{group.title}</h2>
+              <p className="mt-2 min-h-12 text-sm text-slate-600">{group.description}</p>
+              <button type="button" onClick={() => sync(group.id)} disabled={Boolean(busy)}
+                className="mt-4 min-h-11 w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+                {busy === group.id ? "Sincronizando..." : state?.done ? "Sincronizar novamente" : "Importar coleção"}
               </button>
               {state && (
                 <div className="mt-4 space-y-2">
@@ -100,12 +151,12 @@ export default function CatalogSyncClient() {
                   </div>
                 </div>
               )}
-              <p className="mt-4 text-[11px] text-slate-400">ID da coleção: {group.id}</p>
+              <p className="mt-4 text-[11px] text-slate-400">ID VTEX: {group.id} · {group.type === "category" ? "Categoria" : "Campanha"}</p>
             </section>
           );
         })}
       </div>
-      <p className="text-xs text-slate-500">A sincronização é iniciada pelo administrador. Ela não remove produtos que deixaram de aparecer na origem e não altera pedidos antigos. Revise preço, estoque e permissão de uso das imagens antes de ativar o catálogo no site.</p>
+      <p className="text-xs text-slate-500">A sincronização é iniciada pelo administrador. Ela não remove produtos ausentes na origem nem altera pedidos antigos. Revise preço, estoque e autorização de uso dos materiais antes de ativar um produto.</p>
     </div>
   );
 }

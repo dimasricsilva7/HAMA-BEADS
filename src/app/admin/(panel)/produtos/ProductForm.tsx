@@ -75,7 +75,9 @@ export function ProductForm({ product }: { product: Product | null; all?: { id: 
           <Card title="Estoque e publicação">
             <div className="space-y-3">
               {check("active", "Produto ativo na loja", p?.active ?? false)}
-              {check("featured", "Destacar na página inicial", p?.featured ?? false)}
+              {check("featured", "Selecionar para Mais vendidos", p?.featured ?? false)}
+              {check("homeBlackFriday", "Exibir em Ofertas Black Friday", p?.homeBlackFriday ?? false)}
+              {check("homeFeaturedOffer", "Exibir em Ofertas em destaque", p?.homeFeaturedOffer ?? false)}
               <Field label="Selo do produto"><input name="badge" defaultValue={p?.badge ?? ""} placeholder="Ex.: Lançamento, Oferta" className={inputCls} /></Field>
               <Field label="Ordem na vitrine"><input name="sortOrder" type="number" defaultValue={p?.sortOrder ?? 0} className={inputCls} /></Field>
               <Field label="Disponibilidade">

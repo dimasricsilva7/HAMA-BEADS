@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ViewTracker } from "@/components/landing/client";
 import ProductBuyBox from "@/components/store/ProductBuyBox";
 import ProductGallery from "@/components/store/ProductGallery";
+import { CampaignTag } from "@/components/store/CampaignTag";
 import { Price } from "@/components/ui/Price";
 import { ProductVisual } from "@/components/ui/ProductVisual";
 import { FULFILLMENT_LABEL } from "@/lib/domain";
@@ -39,6 +40,8 @@ export default async function ProductPage({ params }: Props) {
   const reviewStats = await db.review.aggregate({ where: { productId: p.id, approved: true }, _avg: { rating: true }, _count: { _all: true } }).catch(() => null);
   const reviewCount = reviewStats?._count._all ?? 0;
   const averageRating = reviewStats?._avg.rating ?? 0;
+  const isBlackFriday = p.homeBlackFriday || p.sourceCollectionIds.some((id) => ["595", "596", "599"].includes(id)) || (p.badge?.toLowerCase().includes("black") ?? false);
+  const discountPercent = p.listPriceCents && p.listPriceCents > p.priceCents ? Math.round((1 - p.priceCents / p.listPriceCents) * 100) : p.individualDiscountPercent;
   const reviews = reviewCount > 0 ? await db.review.findMany({ where: { productId: p.id, approved: true }, orderBy: [{ featured: "desc" }, { reviewedAt: "desc" }, { createdAt: "desc" }], take: 6, select: { id: true, name: true, text: true, rating: true, reviewedAt: true } }).catch(() => []) : [];
   const soldOut = p.stockStatus === "OUT_OF_STOCK" || (p.variants.length > 0 && !p.variants.some((v) => v.available && v.stockQuantity > 0));
   const images = [
@@ -85,12 +88,12 @@ export default async function ProductPage({ params }: Props) {
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6d9f00]">{p.brandName || "Crocs"} · {FULFILLMENT_LABEL[p.fulfillment]}</p>
             <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[#111] sm:text-4xl">{p.name}</h1>
             {reviewCount > 0 && <div className="mt-2 flex items-center gap-2 text-sm" aria-label={`Avaliação média ${averageRating.toFixed(1)} de 5 com ${reviewCount} avaliações`}><span className="tracking-[2px] text-[#f0ad00]" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => index < Math.round(averageRating) ? "★" : "☆").join("")}</span><span className="text-[#666]">({reviewCount})</span><a href="#avaliacoes" className="text-xs font-semibold text-[#555] underline underline-offset-2">Ver avaliações</a></div>}
-            {p.badge && <span className="mt-3 inline-flex bg-[#b91f55] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">{p.badge}</span>}
+            {isBlackFriday && <div className="mt-3"><CampaignTag discountPercent={discountPercent} /></div>}
             {p.shortDescription && <p className="lead mt-4">{p.shortDescription}</p>}
 
             {p.promoLabel && <p className="mt-1 text-xs font-bold uppercase text-accent">{p.promoLabel}</p>}
             <ProductBuyBox
-              product={{ id: p.id, name: p.name, sku: p.sku, category: p.category, priceCents: p.priceCents, listPriceCents: p.listPriceCents, variants: p.variants, stockStatus: p.stockStatus }}
+              product={{ id: p.id, name: p.name, sku: p.sku, category: p.category, priceCents: p.priceCents, listPriceCents: p.listPriceCents, variants: p.variants, stockStatus: p.stockStatus, colorFamily: p.colorFamily }}
               slug={p.slug}
             />
 

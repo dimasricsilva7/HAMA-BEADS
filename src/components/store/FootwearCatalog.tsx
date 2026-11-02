@@ -8,27 +8,37 @@ import { ViewTracker } from "@/components/landing/client";
 import { CATEGORY_LABEL } from "@/lib/domain";
 import type { PublicProduct } from "@/types/catalog";
 import { FavoriteButton, FAVORITES_STORAGE_KEY } from "@/components/store/FavoriteButton";
+import { CampaignTag } from "@/components/store/CampaignTag";
+import { crocsColorBackground } from "@/lib/crocs-colors";
 
 type SortMode = "featured" | "price_asc" | "price_desc" | "name";
 const PAGE_SIZE = 20;
-const colorMap: [RegExp, string][] = [
-  [/white|branco|off white|cream|ivory/, "#f7f4e9"], [/black|preto/, "#171717"],
-  [/blue|azul|navy|teal/, "#2874b8"], [/pink|rosa/, "#e88da9"], [/red|vermelho/, "#c33a42"],
-  [/green|verde|olive/, "#6a8d43"], [/yellow|amarelo|gold/, "#e6c64f"],
-  [/purple|roxo|lilac|lavender/, "#9b80b9"], [/brown|marrom/, "#8c5a3c"],
-  [/grey|gray|cinza|slate/, "#888b8e"], [/beige|bege|sand|areia|khaki/, "#c8b994"],
-];
-function colorHex(value: string) {
-  const name = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  return colorMap.find(([pattern]) => pattern.test(name))?.[1] ?? "#c8c8c8";
+
+function isBlackFriday(product: PublicProduct) {
+  return product.homeBlackFriday ||
+    product.sourceCollectionIds.some((id) => ["595", "596", "599"].includes(id)) ||
+    (product.badge?.toLowerCase().includes("black") ?? false);
+}
+function discountPercent(product: PublicProduct) {
+  if (product.listPriceCents && product.listPriceCents > product.priceCents) {
+    return Math.round((1 - product.priceCents / product.listPriceCents) * 100);
+  }
+  return product.individualDiscountPercent;
 }
 function productColors(product: PublicProduct) {
-  return [...new Set(product.variants.flatMap((variant) => variant.options
-    .filter((option) => /^(cor|color|colour)$/i.test(option.name))
-    .map((option) => option.value)))];
+  return product.category === "JIBBITZ" ? [] : product.colorFamily;
 }
 
-export default function FootwearCatalog({ products, initialCollection = "ALL", initialDeals = false, minPrice = 0, maxPrice = 0, initialQuery = "", initialCategory = "ALL", initialFavoritesOnly = false }: {
+export default function FootwearCatalog({
+  products,
+  initialCollection = "ALL",
+  initialDeals = false,
+  minPrice = 0,
+  maxPrice = 0,
+  initialQuery = "",
+  initialCategory = "ALL",
+  initialFavoritesOnly = false,
+}: {
   products: PublicProduct[];
   initialCollection?: string;
   initialDeals?: boolean;
@@ -52,7 +62,9 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
       try {
         const raw: unknown = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) ?? "[]");
         setFavoriteIds(Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string") : []);
-      } catch { setFavoriteIds([]); }
+      } catch {
+        setFavoriteIds([]);
+      }
     };
     syncFavorites();
     window.addEventListener("footwear:favorites-updated", syncFavorites);
@@ -63,17 +75,21 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
     };
   }, []);
 
-  const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
+  const categories = useMemo(() => [...new Set(products.map((product) => product.category))], [products]);
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("pt-BR");
+    const collectionIds = collection.split(",").filter(Boolean);
     return products
-      .filter((p) => category === "ALL" || p.category === category)
-      .filter((p) => collection === "ALL" || p.sourceCollectionId === collection)
-      .filter((p) => minPrice <= 0 || p.priceCents >= minPrice)
-      .filter((p) => maxPrice <= 0 || p.priceCents <= maxPrice)
-      .filter((p) => !onlyDeals || (p.listPriceCents != null && p.listPriceCents > p.priceCents))
-      .filter((p) => !onlyFavorites || favoriteIds.includes(p.id))
-      .filter((p) => !needle || `${p.name} ${p.shortDescription ?? ""} ${p.brandName ?? "Crocs"} ${CATEGORY_LABEL[p.category]}`.toLocaleLowerCase("pt-BR").includes(needle))
+      .filter((product) => category === "ALL" || product.category === category)
+      .filter((product) => collection === "ALL" || collectionIds.some((id) =>
+        product.sourceCollectionIds.includes(id) || product.sourceCollectionId === id
+      ))
+      .filter((product) => minPrice <= 0 || product.priceCents >= minPrice)
+      .filter((product) => maxPrice <= 0 || product.priceCents <= maxPrice)
+      .filter((product) => !onlyDeals || (product.listPriceCents != null && product.listPriceCents > product.priceCents))
+      .filter((product) => !onlyFavorites || favoriteIds.includes(product.id))
+      .filter((product) => !needle || `${product.name} ${product.shortDescription ?? ""} ${product.brandName ?? "Crocs"} ${CATEGORY_LABEL[product.category]}`
+        .toLocaleLowerCase("pt-BR").includes(needle))
       .sort((a, b) => {
         if (sort === "price_asc") return a.priceCents - b.priceCents;
         if (sort === "price_desc") return b.priceCents - a.priceCents;
@@ -89,89 +105,153 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
     const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
     return start + index;
   });
+
   const changePage = (next: number) => {
     setPage(Math.min(totalPages, Math.max(1, next)));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const clearFilters = () => {
+    setQuery("");
+    setCategory("ALL");
+    setCollection("ALL");
+    setSort("featured");
+    setOnlyDeals(false);
+    setOnlyFavorites(false);
+    setPage(1);
+  };
+
+  const collectionLabel: Record<string, string> = {
+    "111": "Feminino",
+    "146": "Masculino",
+    "173": "Kids",
+    "215": "Jibbitz",
+    "225": "Crocs At Work",
+    "1792513037": "Bolsas e Acessórios",
+    "111,146": "Adulto",
+    "595,596,599": "Black Friday",
+  };
+  const title = onlyFavorites ? "Meus favoritos" : collectionLabel[collection] || (initialDeals ? "Ofertas Black Friday" : "Todos os produtos");
+
   return (
     <div className="container-page py-6 sm:py-8">
-      <nav aria-label="Breadcrumb" className="text-xs text-[#777]"><Link href="/" className="hover:underline">Início</Link> / <span className="text-[#222]">Todos os produtos</span></nav>
+      <nav aria-label="Breadcrumb" className="text-xs text-[#777]">
+        <Link href="/" className="hover:underline">Início</Link> / <span className="text-[#222]">{title}</span>
+      </nav>
+
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#659900]">Coleção Crocs</p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#111]">{onlyFavorites ? "Meus favoritos" : "Todos os produtos"}</h1>
-          <p className="mt-2 text-sm text-[#666]">{onlyFavorites ? "Os produtos que você marcou para rever depois." : "Modelos, cores e tamanhos disponíveis nesta loja independente."}</p>
+          <p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#659900]">Catálogo Crocs</p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#111]">{title}</h1>
+          <p className="mt-2 text-sm text-[#666]">
+            {onlyFavorites ? "Os produtos que você marcou para rever depois." : "Modelos, cores e tamanhos disponíveis nesta loja independente."}
+          </p>
         </div>
-        <p className="text-xs text-[#777]">{visible.length.toLocaleString("pt-BR")} produto(s) · 20 por página</p>
+        <p className="text-xs text-[#777]">{visible.length.toLocaleString("pt-BR")} produto(s) · {PAGE_SIZE} por página</p>
       </div>
 
       <section aria-label="Filtros de produtos" className="mt-5 border-y border-[#e5e5e5] py-4">
         <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Buscar</span>
-            <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Nome, modelo ou descrição" className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm outline-none focus:border-[#8abd00]" />
+            <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+              placeholder="Nome, modelo ou descrição"
+              className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm outline-none focus:border-[#8abd00]" />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Categoria</span>
-            <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
+            <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }}
+              className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
               <option value="ALL">Todas as categorias</option>
               {categories.map((key) => <option key={key} value={key}>{CATEGORY_LABEL[key]}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Coleção</span>
-            <select value={collection} onChange={(e) => { setCollection(e.target.value); setPage(1); }} className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
-              <option value="ALL">Todas</option><option value="596">Adulto</option><option value="597">Infantil</option><option value="469">Jibbitz</option>
+            <select value={collection} onChange={(event) => { setCollection(event.target.value); setPage(1); }}
+              className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
+              <option value="ALL">Todas</option>
+              <option value="111,146">Adulto</option>
+              <option value="111">Feminino</option>
+              <option value="146">Masculino</option>
+              <option value="173">Kids</option>
+              <option value="215">Jibbitz</option>
+              <option value="225">Crocs At Work</option>
+              <option value="1792513037">Bolsas e Acessórios</option>
+              <option value="595,596,599">Black Friday</option>
             </select>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Ordenar por</span>
-            <select value={sort} onChange={(e) => { setSort(e.target.value as SortMode); setPage(1); }} className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
-              <option value="featured">Destaques</option><option value="price_asc">Menor preço</option><option value="price_desc">Maior preço</option><option value="name">Nome</option>
+            <select value={sort} onChange={(event) => { setSort(event.target.value as SortMode); setPage(1); }}
+              className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
+              <option value="featured">Mais vendidos</option>
+              <option value="price_asc">Menor preço</option>
+              <option value="price_desc">Maior preço</option>
+              <option value="name">Nome</option>
             </select>
           </label>
         </div>
-        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#333]">
-          <input type="checkbox" checked={onlyDeals} onChange={(e) => { setOnlyDeals(e.target.checked); setPage(1); }} className="h-4 w-4 accent-[#84BD00]" />
-          Mostrar somente produtos em oferta
-        </label>
+        <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#333]">
+            <input type="checkbox" checked={onlyDeals} onChange={(event) => { setOnlyDeals(event.target.checked); setPage(1); }} className="h-4 w-4 accent-[#84BD00]" />
+            Mostrar somente produtos em oferta
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#333]">
+            <input type="checkbox" checked={onlyFavorites} onChange={(event) => { setOnlyFavorites(event.target.checked); setPage(1); }} className="h-4 w-4 accent-[#84BD00]" />
+            Somente favoritos
+          </label>
+          <button type="button" onClick={clearFilters} className="text-xs font-semibold text-[#555] underline underline-offset-2">Limpar filtros</button>
+        </div>
       </section>
 
       {pageProducts.length === 0 ? (
         <div className="mt-8 border border-dashed border-[#ddd] px-5 py-12 text-center">
           <p className="font-bold">Nenhum produto encontrado</p>
           <p className="mt-1 text-sm text-[#777]">Tente alterar os filtros ou a busca.</p>
-          <button type="button" onClick={() => { setQuery(""); setCategory("ALL"); setCollection("ALL"); setSort("featured"); setOnlyDeals(false); setOnlyFavorites(false); setPage(1); }} className="mt-4 min-h-10 border border-[#ddd] px-5 text-sm font-bold">Limpar filtros</button>
+          <button type="button" onClick={clearFilters} className="mt-4 min-h-10 border border-[#ddd] px-5 text-sm font-bold">Limpar filtros</button>
         </div>
       ) : (
         <ul className="mt-6 grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-5 xl:grid-cols-5">
-          {pageProducts.map((p, index) => {
-            const discount = p.listPriceCents && p.listPriceCents > p.priceCents ? Math.round((1 - p.priceCents / p.listPriceCents) * 100) : null;
-            const colors = productColors(p);
+          {pageProducts.map((product, index) => {
+            const discount = discountPercent(product);
+            const colors = productColors(product);
+            const blackFriday = isBlackFriday(product);
             return (
-              <li key={p.id}>
-                <ViewTracker event="product_view" productId={p.id} valueCents={p.priceCents} element="footwear_catalog" className="h-full">
+              <li key={product.id}>
+                <ViewTracker event="product_view" productId={product.id} valueCents={product.priceCents} element="footwear_catalog" className="h-full">
                   <article className="group flex h-full flex-col bg-white">
                     <div className="relative">
-                    <Link href={`/produto/${p.slug}`} className="relative block border border-[#f0f0f0] bg-[#f7f6f2]">
-                      <ProductVisual imageUrl={p.imageUrl} name={p.name} category={p.category} index={index} className="aspect-square" sizes="(min-width: 1280px) 20vw, 50vw" />
-                      {p.badge && <span className="absolute left-2 top-2 bg-[#b51e53] px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white">{p.badge}</span>}
-                      {discount != null && <span className="absolute right-2 top-2 border border-[#6ea900] bg-white px-2 py-1 text-[10px] font-extrabold text-[#5f9400]">-{discount}%</span>}
-                    </Link>
-                      <FavoriteButton productId={p.id} className="absolute left-3 top-3" />
+                      <Link href={`/produto/${product.slug}`} className="relative block overflow-hidden rounded-[10px] border border-[#f0f0f0] bg-[#f7f6f2]">
+                        <ProductVisual imageUrl={product.imageUrl} name={product.name} category={product.category} index={index}
+                          className="aspect-square" sizes="(min-width:1280px) 20vw,50vw" />
+                        {blackFriday && <span className="absolute bottom-2 left-2"><CampaignTag discountPercent={discount} /></span>}
+                        {!blackFriday && product.badge && <span className="absolute bottom-2 left-2 rounded-full bg-[#ededed] px-2.5 py-1 text-[9px] font-bold text-[#222]">{product.badge}</span>}
+                      </Link>
+                      <FavoriteButton productId={product.id} className="absolute left-3 top-3" />
                     </div>
                     <div className="flex flex-1 flex-col pt-3">
-                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#777]">{p.brandName || "Crocs"}</p>
-                      <Link href={`/produto/${p.slug}`} className="mt-1 min-h-10 text-sm font-bold leading-5 text-[#171717] hover:underline">{p.name}</Link>
-                      {colors.length > 0 && (
-                        <div className="mt-2 flex items-center gap-1.5" aria-label={`${colors.length} cores disponíveis`}>
-                          {colors.slice(0, 7).map((color) => <span key={color} title={color} className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: colorHex(color) }} />)}
-                          {colors.length > 7 && <span className="text-[10px] font-semibold text-[#777]">+{colors.length - 7}</span>}
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#777]">{product.brandName || "Crocs"}</p>
+                      <Link href={`/produto/${product.slug}`} className="mt-1 min-h-10 text-sm font-bold leading-5 text-[#171717] hover:underline">{product.name}</Link>
+                      {product.category === "JIBBITZ" ? (
+                        <p className="mt-2 min-h-5 text-[10px] font-semibold uppercase tracking-wide text-[#777]">Personagens e temas</p>
+                      ) : colors.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label={`${colors.length} cores oficiais disponíveis`}>
+                          {colors.map((color) => (
+                            <Link key={color.id} href={`/produto/${color.slug}`} title={color.value} aria-label={`Cor ${color.value}`}
+                              className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-black/15 bg-white">
+                              <span className="h-3 w-3 rounded-full" style={{ background: crocsColorBackground(color.value) }} />
+                            </Link>
+                          ))}
                         </div>
-                      )}
-                      <div className="mt-auto pt-3"><Price priceCents={p.priceCents} listPriceCents={p.listPriceCents} size="sm" /></div>
-                      <Link href={`/produto/${p.slug}`} className="mt-3 flex min-h-10 w-full items-center justify-center bg-[#222] px-3 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-[#84BD00] hover:text-[#172000]">Escolher tamanho/cor</Link>
+                      ) : <div className="mt-2 min-h-5" />}
+                      <div className="mt-auto pt-3">
+                        <Price priceCents={product.priceCents} listPriceCents={product.listPriceCents} size="sm"
+                          className="flex-col items-start gap-0 [&>span:first-child]:text-sm [&>span:last-child]:text-[#4f9825]" />
+                      </div>
+                      <Link href={`/produto/${product.slug}`} className="mt-3 flex min-h-10 w-full items-center justify-center rounded-full bg-[#222] px-3 text-[10px] font-extrabold uppercase tracking-wide text-white transition hover:bg-[#84BD00] hover:text-[#172000]">
+                        Adicionar ao carrinho
+                      </Link>
                     </div>
                   </article>
                 </ViewTracker>
@@ -183,10 +263,16 @@ export default function FootwearCatalog({ products, initialCollection = "ALL", i
 
       {totalPages > 1 && (
         <nav aria-label="Paginação do catálogo" className="mt-10 flex flex-wrap items-center justify-center gap-2 border-t border-[#e6e6e6] pt-6">
-          <button type="button" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)} className="min-h-10 border border-[#ddd] px-4 text-sm font-semibold disabled:opacity-35">Anterior</button>
-          {pageNumbers.map((number) => <button key={number} type="button" aria-current={currentPage === number ? "page" : undefined} onClick={() => changePage(number)} className={`h-10 min-w-10 border px-3 text-sm font-bold ${currentPage === number ? "border-[#222] bg-[#222] text-white" : "border-[#ddd] bg-white text-[#333]"}`}>{number}</button>)}
-          <button type="button" disabled={currentPage === totalPages} onClick={() => changePage(currentPage + 1)} className="min-h-10 border border-[#ddd] px-4 text-sm font-semibold disabled:opacity-35">Próxima</button>
-          <span className="w-full text-center text-xs text-[#777]">Página {currentPage} de {totalPages}</span>
+          <button type="button" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}
+            className="min-h-10 border border-[#ddd] px-4 text-sm font-semibold disabled:opacity-35">Anterior</button>
+          {pageNumbers.map((number) => (
+            <button key={number} type="button" onClick={() => changePage(number)} aria-current={currentPage === number ? "page" : undefined}
+              className={`grid h-10 min-w-10 place-items-center border px-3 text-sm font-bold ${currentPage === number ? "border-[#222] bg-[#222] text-white" : "border-[#ddd] bg-white text-[#333]"}`}>
+              {number}
+            </button>
+          ))}
+          <button type="button" disabled={currentPage === totalPages} onClick={() => changePage(currentPage + 1)}
+            className="min-h-10 border border-[#ddd] px-4 text-sm font-semibold disabled:opacity-35">Próxima</button>
         </nav>
       )}
     </div>

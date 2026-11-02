@@ -140,12 +140,15 @@ model Product {
   sourceProductId     String?         @unique
   sourceUrl           String?
   sourceCollectionId  String?
+  sourceCollectionIds Json            @default("[]")
   sourceSyncedAt      DateTime?
   /// Galeria: [{ url, alt }]
   gallery             Json            @default("[]")
   videoUrl            String?
   badge               String?
   featured            Boolean         @default(false)
+  homeBlackFriday     Boolean         @default(false)
+  homeFeaturedOffer   Boolean         @default(false)
   active              Boolean         @default(true)
   sortOrder           Int             @default(0)
   stockStatus         StockStatus     @default(IN_STOCK)

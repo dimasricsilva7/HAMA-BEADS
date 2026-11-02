@@ -6,14 +6,15 @@ import { db } from "@/lib/db";
 import { assignAll, priceOverrides, type Assignment, type ExperimentDef, type ExperimentVariant } from "@/lib/experiments";
 import { effectivePrice } from "@/lib/pricing";
 import type { GalleryImage, ProductComponent, ProductSpec } from "@/lib/domain";
-import type { ProductVariant, PublicProduct } from "@/types/catalog";
+import type { ProductVariant, PublicProduct, ProductColorFamilyItem } from "@/types/catalog";
+import { productColorOptions } from "@/lib/crocs-colors";
 
 const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
 /** Produtos ativos (cache invalidado pela tag "catalog" em qualquer edição no admin). */
 export const getActiveProducts = unstable_cache(
   async () => db.product.findMany({ where: { active: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
-  ["active-products-v3-crocs-20261101"],
+  ["active-products-v4-crocs-full-catalog-20261102"],
   { tags: ["catalog"], revalidate: 300 }
 );
 
@@ -64,12 +65,14 @@ export function toPublicProduct(
     name: p.name,
     brandName: p.sourceProductId ? "Crocs" : null,
     sourceCollectionId: p.sourceCollectionId,
+    sourceCollectionIds: [...new Set([...asArray<string>(p.sourceCollectionIds), ...(p.sourceCollectionId ? [p.sourceCollectionId] : [])])],
     category: p.category,
     fulfillment: p.fulfillment,
     shortDescription: p.shortDescription,
     description: p.description,
     priceCents: price.priceCents,
     listPriceCents: price.listPriceCents,
+    individualDiscountPercent: p.individualDiscountPercent,
     promoLabel: price.promoLabel,
     promoEndsAt: price.promoEndsAt,
     beadCount: p.beadCount,
@@ -84,6 +87,9 @@ export function toPublicProduct(
     videoUrl: p.videoUrl,
     badge: p.badge,
     featured: p.featured,
+    homeBlackFriday: p.homeBlackFriday,
+    homeFeaturedOffer: p.homeFeaturedOffer,
+    colorFamily: [],
     stockStatus: p.stockStatus,
     crossSellIds: asArray<string>(p.crossSellIds),
     includedProductIds: asArray<string>(p.includedProductIds),
@@ -110,9 +116,40 @@ export async function getPublicCatalog(assignments?: Assignment[]) {
       .filter((r) => (!r.startsAt || r.startsAt <= now) && (!r.endsAt || r.endsAt > now))
       .map((r) => [r.category, r.percent])
   );
-  return products
+  const publicProducts = products
     .filter((p) => p.priceCents > 0)
     .map((p) => toPublicProduct(p, overrides, discountByCategory.get(p.category) ?? null, now));
+
+  // A VTEX style can have separate master products for each color. Group them
+  // by normalized model name so cards and the PDP can expose the complete color family.
+  const familyMap = new Map<string, ProductColorFamilyItem[]>();
+  for (const product of publicProducts) {
+    if (product.category === "JIBBITZ") continue;
+    const familyKey = `${product.category}:${product.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim()}`;
+    const family = familyMap.get(familyKey) ?? [];
+    const colors = productColorOptions(product.variants);
+    for (const value of colors) {
+      const key = value.toLocaleLowerCase("pt-BR");
+      if (family.some((item) => item.value.toLocaleLowerCase("pt-BR") === key)) continue;
+      family.push({
+        id: product.id,
+        slug: product.slug,
+        value: value || "Ver cor",
+        imageUrl: product.imageUrl,
+        priceCents: product.priceCents,
+        listPriceCents: product.listPriceCents,
+        available: product.stockStatus !== "OUT_OF_STOCK",
+      });
+    }
+    familyMap.set(familyKey, family);
+  }
+
+  return publicProducts.map((product) => {
+    if (product.category === "JIBBITZ") return product;
+    const familyKey = `${product.category}:${product.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim()}`;
+    const colors = familyMap.get(familyKey) ?? [];
+    return { ...product, colorFamily: colors };
+  });
 }
 
 export async function getPublicProduct(slug: string) {

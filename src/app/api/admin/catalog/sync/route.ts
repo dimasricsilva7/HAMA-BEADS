@@ -11,7 +11,10 @@ export const maxDuration = 60;
 
 const CROCS_ORIGIN = "https://www.crocs.com.br";
 const PAGE_SIZE = 50;
-const COLLECTIONS = new Set(["596", "597", "469"]);
+const COLLECTIONS = new Set(["111", "146", "173", "215", "225", "1792513037", "595", "596", "599"]);
+const CATEGORY_COLLECTIONS = new Set(["111", "146", "173", "215", "225", "1792513037"]);
+const BLACK_FRIDAY_COLLECTIONS = new Set(["595", "596", "599"]);
+const LEGACY_WRONG_COLLECTIONS = new Set(["469", "596", "597"]);
 
 type VtexOffer = {
   Price?: number;
@@ -77,8 +80,9 @@ function referenceSku(item: VtexItem) {
   return "";
 }
 function productCategory(p: VtexProduct, collectionId: string): ProductCategory {
-  if (collectionId === "469") return "JIBBITZ";
-  if (collectionId === "597") return "KIDS";
+  if (collectionId === "215") return "JIBBITZ";
+  if (collectionId === "173") return "KIDS";
+  if (collectionId === "1792513037") return "ACCESSORY";
   const name = [p.productName, p.productTitle].join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (/jibbitz|charm|pin\b|enfeite/.test(name)) return "JIBBITZ";
   if (/\bclog\b/.test(name)) return "CLOGS";
@@ -154,8 +158,18 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
   if (x.priceCents <= 0) return "skipped" as const;
   const existing = await db.product.findUnique({
     where: { sourceProductId: x.productId },
-    select: { id: true, active: true, individualDiscountPercent: true, badge: true },
+    select: { id: true, active: true, individualDiscountPercent: true, badge: true, sourceCollectionId: true, sourceCollectionIds: true },
   });
+  const storedMemberships = Array.isArray(existing?.sourceCollectionIds)
+    ? existing.sourceCollectionIds.filter((value): value is string => typeof value === "string")
+    : [];
+  const legacyMemberships = existing?.sourceCollectionId && !LEGACY_WRONG_COLLECTIONS.has(existing.sourceCollectionId)
+    ? [existing.sourceCollectionId]
+    : [];
+  const memberships = [...new Set([...storedMemberships, ...legacyMemberships].filter((id) => !LEGACY_WRONG_COLLECTIONS.has(id)).concat(collectionId))];
+  const primaryCategoryId = CATEGORY_COLLECTIONS.has(collectionId)
+    ? collectionId
+    : memberships.find((id) => CATEGORY_COLLECTIONS.has(id)) ?? null;
   const data = {
     name: x.name,
     slug: x.slug,
@@ -166,7 +180,7 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
     description: x.description,
     priceCents: x.priceCents,
     compareAtPriceCents: x.compareAtPriceCents,
-    badge: x.compareAtPriceCents ? "BLACK FRIDAY" : existing?.badge ?? null,
+    badge: BLACK_FRIDAY_COLLECTIONS.has(collectionId) ? "BLACK FRIDAY" : existing?.badge ?? null,
     individualDiscountPercent: existing?.individualDiscountPercent ?? null,
     imageUrl: x.imageUrl,
     gallery: x.gallery,
@@ -175,7 +189,8 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
     stockStatus: x.stockStatus,
     active: existing?.active ?? true,
     sourceUrl: x.sourceUrl,
-    sourceCollectionId: collectionId,
+    sourceCollectionId: primaryCategoryId,
+    sourceCollectionIds: memberships,
     sourceSyncedAt: new Date(),
     sortOrder,
   };
@@ -194,24 +209,29 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null) as { collectionId?: unknown; from?: unknown } | null;
   const collectionId = String(body?.collectionId ?? "");
   const from = Number(body?.from ?? 0);
-  if (!COLLECTIONS.has(collectionId) || !Number.isInteger(from) || from < 0 || from % PAGE_SIZE !== 0 || from > 5000) {
+  if (!COLLECTIONS.has(collectionId) || !Number.isInteger(from) || from < 0 || from % PAGE_SIZE !== 0 || from > 20000) {
     return NextResponse.json({ error: "Coleção ou página inválida." }, { status: 400 });
   }
 
   const url = new URL("/api/catalog_system/pub/products/search", CROCS_ORIGIN);
-  url.searchParams.set("fq", `productClusterIds:${collectionId}`);
+  url.searchParams.set("fq", CATEGORY_COLLECTIONS.has(collectionId) ? `C:/${collectionId}/` : `productClusterIds:${collectionId}`);
   url.searchParams.set("_from", String(from));
   url.searchParams.set("_to", String(from + PAGE_SIZE - 1));
 
   try {
-    const response = await fetch(url, {
-      headers: { Accept: "application/json", "User-Agent": "FootwearCatalogSync/1.0" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!response.ok) {
-      log.error("catalog-sync", "Crocs VTEX retornou erro", { status: response.status, collectionId, from });
-      return NextResponse.json({ error: `Catálogo de origem respondeu com status ${response.status}.` }, { status: 502 });
+    let response: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      response = await fetch(url, {
+        headers: { Accept: "application/json", "User-Agent": "FootwearCatalogSync/2.0" },
+        cache: "no-store",
+        signal: AbortSignal.timeout(18_000),
+      });
+      if (response.ok || (response.status < 500 && response.status !== 429)) break;
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+    if (!response?.ok) {
+      log.error("catalog-sync", "Crocs VTEX retornou erro", { status: response?.status, collectionId, from });
+      return NextResponse.json({ error: `Catálogo de origem respondeu com status ${response?.status ?? "desconhecido"} após novas tentativas.` }, { status: 502 });
     }
     const products = await response.json() as VtexProduct[];
     if (!Array.isArray(products)) return NextResponse.json({ error: "Formato inesperado do catálogo de origem." }, { status: 502 });

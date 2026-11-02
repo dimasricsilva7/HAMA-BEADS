@@ -37,10 +37,14 @@ export function Footer({ s }: { s: Settings }) {
           <p className="eyebrow text-white">Loja</p>
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/loja" className="hover:text-white">Todos os produtos</Link></li>
-            <li><Link href="/loja?colecao=596" className="hover:text-white">Adulto</Link></li>
-            <li><Link href="/loja?colecao=597" className="hover:text-white">Infantil</Link></li>
-            <li><Link href="/loja?colecao=469" className="hover:text-white">Jibbitz</Link></li>
-            <li><Link href="/loja?colecao=596" className="hover:text-white">Sandálias e slides</Link></li>
+            <li><Link href="/loja?colecao=111,146" className="hover:text-white">Adulto</Link></li>
+            <li><Link href="/loja?colecao=111" className="hover:text-white">Feminino</Link></li>
+            <li><Link href="/loja?colecao=146" className="hover:text-white">Masculino</Link></li>
+            <li><Link href="/loja?colecao=173" className="hover:text-white">Kids</Link></li>
+            <li><Link href="/loja?colecao=225" className="hover:text-white">Crocs At Work</Link></li>
+            <li><Link href="/loja?colecao=215" className="hover:text-white">Jibbitz</Link></li>
+            <li><Link href="/loja?colecao=1792513037" className="hover:text-white">Bolsas e Acessórios</Link></li>
+            <li><Link href="/loja?colecao=595,596,599" className="hover:text-white">Black Friday</Link></li>
             <li><Link href="/#ofertas" className="hover:text-white">Ofertas</Link></li>
             <li><Link href="/acompanhar" className="hover:text-white">Acompanhar pedido</Link></li>
           </ul>

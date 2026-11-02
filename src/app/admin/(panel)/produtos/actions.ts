@@ -90,6 +90,8 @@ function parseProduct(fd: FormData) {
     videoUrl: url("videoUrl"),
     badge: optStr(fd, "badge", 40),
     featured: bool(fd, "featured"),
+    homeBlackFriday: bool(fd, "homeBlackFriday"),
+    homeFeaturedOffer: bool(fd, "homeFeaturedOffer"),
     active,
     sortOrder: int(fd, "sortOrder", 0),
     stockStatus: STOCK.includes(stockStatus) ? stockStatus : "IN_STOCK",

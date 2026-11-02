@@ -12,6 +12,16 @@ export type ProductVariant = {
   available: boolean;
 };
 
+export type ProductColorFamilyItem = {
+  id: string;
+  slug: string;
+  value: string;
+  imageUrl: string | null;
+  priceCents: number;
+  listPriceCents: number | null;
+  available: boolean;
+};
+
 export type PublicProduct = {
   id: string;
   slug: string;
@@ -19,12 +29,14 @@ export type PublicProduct = {
   name: string;
   brandName: string | null;
   sourceCollectionId: string | null;
+  sourceCollectionIds: string[];
   category: "CLOGS" | "SANDALS" | "SLIDES" | "KIDS" | "JIBBITZ" | "FOOTWEAR" | "KIT" | "BEADS" | "PEGBOARD" | "TWEEZERS" | "DIGITAL_MODELS" | "ACCESSORY" | "TOOL" | "OTHER";
   fulfillment: "PHYSICAL" | "DIGITAL" | "HYBRID";
   shortDescription: string | null;
   description: string | null;
   priceCents: number;
   listPriceCents: number | null;
+  individualDiscountPercent: number | null;
   promoLabel: string | null;
   promoEndsAt: string | null;
   beadCount: number | null;
@@ -39,6 +51,9 @@ export type PublicProduct = {
   videoUrl: string | null;
   badge: string | null;
   featured: boolean;
+  homeBlackFriday: boolean;
+  homeFeaturedOffer: boolean;
+  colorFamily: ProductColorFamilyItem[];
   stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "PREORDER";
   crossSellIds: string[];
   includedProductIds: string[];
