@@ -14,7 +14,8 @@ export function whatsappLink(number: string, text?: string) {
 export function Footer({ s }: { s: Settings }) {
   const wa = s.whatsapp ? whatsappLink(s.whatsapp) : null;
   const storeName = /hama|beads|pegboard|contas|pixel/i.test(s.store_name || "") ? "Calçados & Acessórios" : (s.store_name || "Calçados & Acessórios");
-  const storeTagline = /hama|beads|pegboard|contas|pixel/i.test(s.store_tagline || "") ? "Calçados, modelos e acessórios para diferentes momentos." : s.store_tagline;
+  const storeTagline = /hama|beads|pegboard|contas|pixel|separando\\s+continhas/i.test(s.store_tagline || "") ? "Calçados, modelos e acessórios para diferentes momentos." : s.store_tagline;
+  const footerText = /hama|beads|pegboard|contas|pixel|separando\\s+continhas/i.test(s.footer_text || "") ? null : s.footer_text;
   const socials = [
     ["Instagram", s.instagram_url],
     ["TikTok", s.tiktok_url],
@@ -73,7 +74,7 @@ export function Footer({ s }: { s: Settings }) {
         )}
       </div>
       <div className="container-page mt-10 border-t border-white/10 pt-6 text-xs text-white/50">
-        {s.footer_text && <p className="mb-2">{s.footer_text}</p>}
+        {footerText && <p className="mb-2">{footerText}</p>}
         <p className="mb-2 text-white/60">Loja independente, sem afiliação ou representação oficial da Crocs. Crocs® e demais marcas pertencem aos respectivos titulares.</p>
         <p>© {new Date().getFullYear()} {s.company_name || storeName}{s.company_document ? ` · CNPJ ${s.company_document}` : ""}{s.address ? ` · ${s.address}` : ""}</p>
       </div>
