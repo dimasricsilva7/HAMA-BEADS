@@ -20,7 +20,7 @@ const GROUPS: { title: string; fields: CopyField[] }[] = [
     title: "Banner principal e Ofertas Black",
     fields: [
       { key: "home_hero_eyebrow", label: "Texto pequeno do banner" },
-      { key: "home_hero_title", label: "Título principal", hint: "Use uma quebra de linha para separar as linhas." },
+      { key: "home_hero_title", label: "Título principal", type: "textarea", hint: "Use uma quebra de linha para separar as linhas." },
       { key: "home_hero_description", label: "Descrição do banner", type: "textarea" },
       { key: "home_hero_cta_label", label: "Texto do botão" },
       { key: "home_black_title", label: "Título da seção Ofertas Black" },
