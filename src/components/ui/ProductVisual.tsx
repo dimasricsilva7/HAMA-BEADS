@@ -1,4 +1,5 @@
 import { ShoeArtwork } from "@/components/store/ShoeArtwork";
+import { resizeVtexImage } from "@/lib/vtex-image";
 
 /** Placeholder original para produtos sem foto cadastrada; substitua pela imagem autorizada no admin. */
 export function ProductVisual({
@@ -22,7 +23,7 @@ export function ProductVisual({
   if (imageUrl) {
     return (
       <div className={`relative overflow-hidden bg-surface ${className}`}>
-        <img src={imageUrl} alt={name} data-sizes={sizes} loading={priority ? "eager" : "lazy"} className="absolute inset-0 h-full w-full object-contain p-2" />
+        <img src={resizeVtexImage(imageUrl, 640)} alt={name} data-sizes={sizes} loading={priority ? "eager" : "lazy"} className="absolute inset-0 h-full w-full object-contain p-2" />
       </div>
     );
   }
