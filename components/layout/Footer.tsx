@@ -1,0 +1,83 @@
+import Link from "next/link";
+import { CookiePreferencesLink } from "@/components/providers/CookieBanner";
+import type { Settings } from "@/server/settings";
+import { Logo } from "./Logo";
+import { CheckoutIcon } from "@/components/checkout/CheckoutIcon";
+
+export function whatsappLink(number: string, text?: string) {
+  const digits = number.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const full = digits.startsWith("55") ? digits : `55${digits}`;
+  return `https://wa.me/${full}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+}
+
+export function Footer({ s }: { s: Settings }) {
+  const wa = s.whatsapp ? whatsappLink(s.whatsapp) : null;
+  const storeName = /hama|beads|pegboard|contas|pixel/i.test(s.store_name || "") ? "Calçados & Acessórios" : (s.store_name || "Calçados & Acessórios");
+  const storeTagline = /hama|beads|pegboard|contas|pixel|separando\\s+continhas/i.test(s.store_tagline || "") ? "Calçados, modelos e acessórios para diferentes momentos." : s.store_tagline;
+  const footerText = /hama|beads|pegboard|contas|pixel|separando\\s+continhas/i.test(s.footer_text || "") ? null : s.footer_text;
+  const socials = [
+    ["Instagram", s.instagram_url],
+    ["TikTok", s.tiktok_url],
+    ["Facebook", s.facebook_url],
+    ["YouTube", s.youtube_url],
+  ].filter(([, url]) => typeof url === "string" && url.startsWith("https://"));
+  const hasContact = wa || s.contact_email || s.contact_phone;
+
+  return (
+    <footer className="mt-auto bg-ink pb-28 pt-12 text-white/80 lg:pb-12">
+      <div className="container-page grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="text-white">
+          <Logo name={storeName} logoUrl={null} />
+          {storeTagline && <p className="mt-3 max-w-xs text-sm text-white/70">{storeTagline}</p>}
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold">
+            <CheckoutIcon name="shield-check" className="h-4 w-4 text-success" /> Compra segura e atendimento da loja
+          </p>
+        </div>
+        <nav aria-label="Loja">
+          <p className="eyebrow text-white">Loja</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li><Link href="/loja" className="hover:text-white">Todos os produtos</Link></li>
+            <li><Link href="/loja?colecao=111,146" className="hover:text-white">Adulto</Link></li>
+            <li><Link href="/loja?colecao=111" className="hover:text-white">Feminino</Link></li>
+            <li><Link href="/loja?colecao=146" className="hover:text-white">Masculino</Link></li>
+            <li><Link href="/loja?colecao=173" className="hover:text-white">Kids</Link></li>
+            <li><Link href="/loja?colecao=225" className="hover:text-white">Crocs At Work</Link></li>
+            <li><Link href="/loja?colecao=215" className="hover:text-white">Jibbitz</Link></li>
+            <li><Link href="/loja?colecao=1792513037" className="hover:text-white">Bolsas e Acessórios</Link></li>
+            <li><Link href="/loja?colecao=595,596,599" className="hover:text-white">Black Friday</Link></li>
+            <li><Link href="/#ofertas" className="hover:text-white">Ofertas</Link></li>
+            <li><Link href="/acompanhar" className="hover:text-white">Acompanhar pedido</Link></li>
+          </ul>
+        </nav>
+        <nav aria-label="Políticas">
+          <p className="eyebrow text-white">Políticas</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li><Link href="/politica-de-privacidade" className="hover:text-white">Privacidade</Link></li>
+            <li><Link href="/termos" className="hover:text-white">Termos de uso</Link></li>
+            <li><Link href="/trocas-e-devolucoes" className="hover:text-white">Trocas e devoluções</Link></li>
+            <li><Link href="/cookies" className="hover:text-white">Cookies</Link></li>
+            <li><CookiePreferencesLink className="text-left hover:text-white" /></li>
+          </ul>
+        </nav>
+        {(hasContact || socials.length > 0) && (
+          <div>
+            <p className="eyebrow text-white">Atendimento</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {wa && <li><a href={wa} target="_blank" rel="noopener noreferrer" className="hover:text-white">WhatsApp</a></li>}
+              {s.contact_email && <li><a href={`mailto:${s.contact_email}`} className="break-all hover:text-white">{s.contact_email}</a></li>}
+              {s.contact_phone && <li>{s.contact_phone}</li>}
+              {s.support_hours && <li className="text-white/60">{s.support_hours}</li>}
+            </ul>
+            {socials.length > 0 && <ul className="mt-4 flex flex-wrap gap-2 text-sm">{socials.map(([label, url]) => <li key={label}><a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center rounded-full bg-white/10 px-3 hover:bg-white/20">{label}</a></li>)}</ul>}
+          </div>
+        )}
+      </div>
+      <div className="container-page mt-10 border-t border-white/10 pt-6 text-xs text-white/50">
+        {footerText && <p className="mb-2">{footerText}</p>}
+        {s.reseller_notice_footer && <p className="mb-2 text-white/60">{s.reseller_notice_footer}</p>}
+        <p>© {new Date().getFullYear()} {s.company_name || storeName}{s.company_document ? ` · CNPJ ${s.company_document}` : ""}{s.address ? ` · ${s.address}` : ""}</p>
+      </div>
+    </footer>
+  );
+}
