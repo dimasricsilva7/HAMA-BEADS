@@ -9,7 +9,7 @@ import { Price } from "@/components/ui/Price";
 import { ProductVisual } from "@/components/ui/ProductVisual";
 import { FULFILLMENT_LABEL } from "@/lib/domain";
 import { siteUrl } from "@/lib/env";
-import { getPublicCatalog, getPublicProduct } from "@/server/catalog";
+import { currentAssignments, getPublicJibbitzProducts, getPublicProduct, getPublicRelatedProducts } from "@/server/catalog";
 import { db } from "@/lib/db";
 import { getSettings } from "@/server/settings";
 
@@ -35,14 +35,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const slug = (await params).slug;
-  // O catálogo era montado duas vezes aqui: getPublicProduct() já chamava
-  // getPublicCatalog(). Reutilize uma única leitura/transformação por requisição.
-  const [catalog, settings] = await Promise.all([getPublicCatalog(), getSettings()]);
-  const p = catalog.find((product) => product.slug === slug);
+  // Carrega diretamente o produto solicitado; não monta todo o catálogo para abrir uma PDP.
+  const [assignments, settings] = await Promise.all([currentAssignments(), getSettings()]);
+  const p = await getPublicProduct(slug, assignments);
   if (!p) notFound();
 
-  // Estatísticas e últimas avaliações consultadas em paralelo para não somar latência.
-  const [reviewStats, reviews] = await Promise.all([
+  // Avaliações e recomendações leves são consultadas em paralelo.
+  const [reviewStats, reviews, related, jibbitzProducts] = await Promise.all([
     db.review.aggregate({ where: { productId: p.id, approved: true }, _avg: { rating: true }, _count: { _all: true } }).catch(() => null),
     db.review.findMany({
       where: { productId: p.id, approved: true },
@@ -50,6 +49,8 @@ export default async function ProductPage({ params }: Props) {
       take: 6,
       select: { id: true, name: true, text: true, rating: true, reviewedAt: true },
     }).catch(() => []),
+    getPublicRelatedProducts(p.id, p.category, assignments),
+    getPublicJibbitzProducts(assignments),
   ]);
   const reviewCount = reviewStats?._count._all ?? 0;
   const averageRating = reviewStats?._avg.rating ?? 0;
@@ -62,11 +63,6 @@ export default async function ProductPage({ params }: Props) {
     // somente as primeiras 11 miniaturas no primeiro acesso (12 imagens totais).
     ...p.gallery.filter((g) => g.url && g.url !== p.imageUrl).slice(0, 11),
   ];
-  const related = catalog.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 4);
-  const jibbitzProducts = catalog.filter((x) => x.category === "JIBBITZ" && x.stockStatus !== "OUT_OF_STOCK").slice(0, 10).map((x) => {
-    const variant = x.variants.find((v) => v.available && v.stockQuantity > 0);
-    return { id: x.id, name: x.name, sku: variant?.sku ?? x.sku, priceCents: variant?.priceCents ?? x.priceCents, imageUrl: x.imageUrl, variantId: variant?.id ?? null };
-  });
   const baseUrl = siteUrl();
   const jsonLd = {
     "@context": "https://schema.org",
