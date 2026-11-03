@@ -14,7 +14,7 @@ type MiniProduct = {
   id: string; name: string; slug: string; sku: string; priceCents: number; listPriceCents: number | null;
   individualDiscountPercent: number | null; imageUrl: string | null; badge: string | null; category: string;
   sourceCollectionId: string | null; sourceCollectionIds: string[]; stockStatus: string;
-  homeBlackFriday: boolean; colorFamily: Pick<ProductColorFamilyItem, "id" | "slug" | "value">[];
+  homeBlackFriday: boolean; colorFamily: Pick<ProductColorFamilyItem, "id" | "slug" | "value" | "imageUrl">[];
   variants: QuickAddVariant[];
   colorFamilyCount?: number;
 };
@@ -49,8 +49,11 @@ function ProductCard({ product }: { product: MiniProduct }) {
       {colors.length > 0 && (
         <div className="mt-1 flex min-h-5 flex-wrap items-center gap-1.5" aria-label={`${colors.length} cores disponíveis`}>
           {colors.slice(0, 5).map((color) => <Link key={color.id} href={`/produto/${color.slug}`} title={color.value} aria-label={`Cor ${color.value}`}
-            className="h-[13px] w-[13px] shrink-0 rounded-full border border-black/15"
-            style={{ background: crocsColorBackground(color.value) }} />)}
+            className="relative h-[16px] w-[16px] shrink-0 overflow-hidden rounded-full border border-black/15 bg-white">
+            {color.imageUrl
+              ? <Image src={resizeVtexImage(color.imageUrl, 96)} alt="" fill sizes="16px" className="object-cover" />
+              : <span className="absolute inset-0" style={{ background: crocsColorBackground(color.value) }} />}
+          </Link>)}
           {colorCount > 5 && <span className="grid h-[18px] min-w-[26px] place-items-center rounded-full border border-[#ddd] bg-white px-1 text-[9px] font-bold text-[#555]">+{colorCount - 5}</span>}
         </div>
       )}
@@ -118,7 +121,7 @@ export default function FootwearHome({ products, storeName, heroImageUrl, catego
   const adult = products.filter((p) => sourceIn(p, "111", "146"));
   const kids = products.filter((p) => sourceIn(p, "173") || p.category === "KIDS");
   const jibbitz = products.filter((p) => sourceIn(p, "215") || p.category === "JIBBITZ");
-  const sale = products.filter((p) => p.homeBlackFriday)
+  const sale = products.filter(isBlackFriday)
     .sort((a,b) => (discount(b) ?? 0) - (discount(a) ?? 0));
   const highlights = adult.slice(0, 10);
   const categoryTiles = [
