@@ -113,6 +113,7 @@ export default async function ProductPage({ params }: Props) {
               productJibbitzTitle={settings.product_jibbitz_title}
               productJibbitzDescription={settings.product_jibbitz_description}
               productResellerNote={settings.reseller_notice_product}
+              whatsapp={settings.whatsapp || null}
             />
 
             {p.specs.length > 0 && (
