@@ -488,7 +488,3 @@ export async function getPublicJibbitzProducts(assignments?: Assignment[]) {
     });
 }
 
-
-  const products = await getPublicCatalog();
-  return products.find((p) => p.slug === slug) ?? null;
-}
