@@ -5,18 +5,17 @@ import Link from "next/link";
 import { useRef } from "react";
 import { FavoriteButton } from "@/components/store/FavoriteButton";
 import { CampaignTag } from "@/components/store/CampaignTag";
-import { QuickAddButton } from "@/components/store/QuickAddButton";
+import { QuickAddButton, type QuickAddVariant } from "@/components/store/QuickAddButton";
 import { crocsColorBackground } from "@/lib/crocs-colors";
 import { resizeVtexImage } from "@/lib/vtex-image";
-import type { ProductColorFamilyItem, ProductVariant } from "@/types/catalog";
+import type { ProductColorFamilyItem } from "@/types/catalog";
 
 type MiniProduct = {
   id: string; name: string; slug: string; sku: string; priceCents: number; listPriceCents: number | null;
   individualDiscountPercent: number | null; imageUrl: string | null; badge: string | null; category: string;
   sourceCollectionId: string | null; sourceCollectionIds: string[]; stockStatus: string;
-  shortDescription: string | null; brandName: string | null; featured: boolean;
-  homeBlackFriday: boolean; homeFeaturedOffer: boolean; colorFamily: ProductColorFamilyItem[];
-  variants: ProductVariant[];
+  homeBlackFriday: boolean; colorFamily: Pick<ProductColorFamilyItem, "id" | "slug" | "value">[];
+  variants: QuickAddVariant[];
   colorFamilyCount?: number;
 };
 
