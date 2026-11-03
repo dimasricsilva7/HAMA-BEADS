@@ -15,6 +15,7 @@ const GROUPS: { title: string; items: { href: string; label: string; owner?: boo
       { href: "/admin/comportamento", label: "Comportamento" },
       { href: "/admin/pix-pendentes", label: "PIX pendentes" },
       { href: "/admin/pagamentos", label: "Pagamentos" },
+      { href: "/admin/pagamentos/crediario", label: "Editar crediário" },
       { href: "/admin/checkouts", label: "Checkouts abandonados" },
     ],
   },
@@ -51,6 +52,7 @@ const GROUPS: { title: string; items: { href: string; label: string; owner?: boo
     title: "Conteúdo (CMS)",
     items: [
       { href: "/admin/landing", label: "Landing page" },
+      { href: "/admin/conteudo-loja", label: "Textos da loja" },
       { href: "/admin/galeria", label: "Galeria" },
       { href: "/admin/faq", label: "FAQ" },
       { href: "/admin/avaliacoes", label: "Avaliações" },
