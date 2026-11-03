@@ -49,7 +49,7 @@ export default async function ProductPage({ params }: Props) {
     ...p.gallery.filter((g) => g.url && g.url !== p.imageUrl),
   ];
   const related = catalog.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 4);
-  const jibbitzProducts = catalog.filter((x) => x.category === "JIBBITZ" && x.stockStatus !== "OUT_OF_STOCK").slice(0, 10).map((x) => {
+  const jibbitzProducts = catalog.filter((x) => x.category === "JIBBITZ" && x.stockStatus !== "OUT_OF_STOCK" && (x.variants.length === 0 || x.variants.some((v) => v.available && v.stockQuantity > 0))).slice(0, 10).map((x) => {
     const variant = x.variants.find((v) => v.available && v.stockQuantity > 0);
     return { id: x.id, name: x.name, sku: variant?.sku ?? x.sku, priceCents: variant?.priceCents ?? x.priceCents, imageUrl: x.imageUrl, variantId: variant?.id ?? null };
   });
