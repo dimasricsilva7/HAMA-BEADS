@@ -28,7 +28,7 @@ export function Header({ storeName, logoUrl, ctaLabel, announcement }: { storeNa
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const promoText = announcement && !/(loja independente|não somos a loja oficial|hama|beads|pegboard|contas|pixel|separando\s+continhas)/i.test(announcement)
+  const promoText = announcement && !/(hama|beads|pegboard|contas|pixel|separando\s+continhas)/i.test(announcement)
     ? announcement : "BLACK NOVEMBER · Explore as ofertas disponíveis na loja";
 
   useEffect(() => setOpen(false), [pathname]);
