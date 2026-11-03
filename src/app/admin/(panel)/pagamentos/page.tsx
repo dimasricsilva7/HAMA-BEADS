@@ -26,7 +26,10 @@ export default async function PaymentsPage() {
           </p>
           <p className="mt-3 text-sm text-slate-600">URL do webhook (cadastrar no painel BravoPay):</p>
           <code className="mt-1 block break-all rounded bg-slate-100 px-2 py-1 text-xs">{siteUrl()}/api/webhooks/bravopay</code>
-          <p className="mt-2 text-xs text-slate-500">O pedido só vira pago por confirmação do gateway (webhook, consulta ou reconciliação) — nunca pelo navegador.</p>
+          <p className="mt-2 text-xs text-slate-500">O pedido só vira pago após confirmação autenticada do gateway — nunca pelo navegador.</p>
+          {process.env.BRAVOPAY_WEBHOOK_SECRET
+            ? <p className="mt-2 text-xs font-semibold text-emerald-700">Webhook assinado configurado: confirmação automática pelo gateway.</p>
+            : <p className="mt-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Webhook ainda não configurado. O PIX pode ser gerado e a confirmação é consultada diretamente na API BravoPay. Cadastre o webhook acima para receber avisos imediatos.</p>}
         </Card>
         <Card title="Crediário">
           <p className="text-sm">{s.crediario_enabled === "true" ? <Badge tone="green">ativo no checkout</Badge> : <Badge>desativado</Badge>} · nome exibido: <b>{s.crediario_method_label}</b> · até {s.crediario_max_installments}x</p>
