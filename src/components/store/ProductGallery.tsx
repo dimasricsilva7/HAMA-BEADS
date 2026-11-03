@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { FavoriteButton } from "@/components/store/FavoriteButton";
+import { resizeVtexImage } from "@/lib/vtex-image";
 
 type ImageItem = { url: string; alt?: string };
 
@@ -26,11 +27,11 @@ export default function ProductGallery({ images, name, productId }: { images: Im
       {safeImages.map((image, index) => <button key={image.url} type="button" onClick={() => setActive(index)}
         aria-label={`Ver imagem ${index + 1} de ${safeImages.length}`} aria-pressed={active === index}
         className={`relative aspect-square w-[60px] shrink-0 overflow-hidden border bg-white transition sm:w-[68px] ${active === index ? "border-[#333] ring-1 ring-[#333]" : "border-[#e6e6e6] hover:border-[#999]"}`}>
-        <Image src={image.url} alt={image.alt || name} fill sizes="68px" className="object-contain p-1" />
+        <Image src={resizeVtexImage(image.url, 120)} alt={image.alt || name} fill sizes="68px" className="object-contain p-1" />
       </button>)}
     </div>}
     <div className="relative order-1 aspect-square min-w-0 overflow-hidden border border-[#ededed] bg-white sm:order-2">
-      <Image src={selected.url} alt={selected.alt || name} fill priority sizes="(min-width:1024px) 55vw,100vw" className="object-contain p-2 sm:p-6" />
+      <Image src={resizeVtexImage(selected.url, 960)} alt={selected.alt || name} fill priority sizes="(min-width:1024px) 55vw,100vw" className="object-contain p-2 sm:p-6" />
       <FavoriteButton productId={productId} className="absolute left-4 top-4" />
       <button type="button" onClick={shareProduct} aria-label="Compartilhar produto"
         className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/95 text-[#222] shadow-sm backdrop-blur transition hover:bg-white">
