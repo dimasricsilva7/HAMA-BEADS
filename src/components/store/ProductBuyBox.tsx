@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { Price } from "@/components/ui/Price";
 import { crocsColorBackground, isColorOption } from "@/lib/crocs-colors";
+import { resizeVtexImage } from "@/lib/vtex-image";
 import type { ProductVariant, ProductColorFamilyItem } from "@/types/catalog";
 
 type JibbitzOption = { id: string; name: string; sku: string; priceCents: number; imageUrl: string | null; variantId: string | null };
@@ -190,7 +191,7 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
                 <button key={item.id} type="button" onClick={() => setSelectedJibbitz((old) => active ? old.filter((id) => id !== item.id) : old.length >= 10 ? old : [...old, item.id])}
                   aria-pressed={active} className={`w-[116px] shrink-0 snap-start overflow-hidden rounded-xl border bg-white text-left transition ${active ? "border-[#579628] ring-2 ring-[#579628]/20" : "border-[#e5e5e5] hover:border-[#999]"}`}>
                   <span className="relative block aspect-square bg-[#fafafa]">
-                    {item.imageUrl ? <Image src={item.imageUrl} alt={item.name} fill sizes="116px" className="object-contain p-2" /> : <span className="grid h-full place-items-center text-xs text-[#777]">Jibbitz</span>}
+                    {item.imageUrl ? <Image src={resizeVtexImage(item.imageUrl, 200)} alt={item.name} fill sizes="116px" className="object-contain p-2" /> : <span className="grid h-full place-items-center text-xs text-[#777]">Jibbitz</span>}
                     <span className={`absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full text-xs font-black ${active ? "bg-[#579628] text-white" : "border border-[#ddd] bg-white text-[#555]"}`}>{active ? "✓" : "+"}</span>
                   </span>
                   <span className="block px-2.5 pb-2.5 pt-2">
