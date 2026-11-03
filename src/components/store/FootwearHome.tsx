@@ -142,7 +142,7 @@ export default function FootwearHome({ products, storeName, heroImageUrl, catego
         </div>
         <div className="relative grid min-h-[220px] grid-cols-2 items-center gap-1 bg-[#e9e6dc] px-3 py-5 sm:min-h-0 sm:px-7">
           {highlights.slice(0, 2).map((p, i) => <Link key={p.id} href={`/produto/${p.slug}`} className={`relative aspect-[4/5] overflow-hidden bg-transparent ${i === 1 ? "mt-8" : ""}`}>
-            {p.imageUrl && <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width:640px) 22vw,42vw" className="object-contain mix-blend-multiply p-0 sm:p-1" />}
+            {p.imageUrl && <Image src={resizeVtexImage(p.imageUrl, 480)} alt={p.name} fill sizes="(min-width:640px) 22vw,42vw" className="object-contain mix-blend-multiply p-0 sm:p-1" />}
           </Link>)}
         </div>
       </div>}
