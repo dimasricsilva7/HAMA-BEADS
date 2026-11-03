@@ -245,9 +245,9 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
         : variants.length > 0 ? <p className="mt-4 text-xs font-semibold text-[#b56a00]">Selecione o tamanho para continuar.</p> : null}
 
       {selectedVariant && !selected ? (
-        whatsapp && whatsapp.replace(/\\D/g, "").length >= 10 ? (
+        whatsapp && whatsapp.replace(/\D/g, "").length >= 10 ? (
           <a
-            href={`https://wa.me/${whatsapp.replace(/\\D/g, "").startsWith("55") ? whatsapp.replace(/\\D/g, "") : `55${whatsapp.replace(/\\D/g, "")}`}?text=${encodeURIComponent(`Olá! Gostaria de consultar a disponibilidade do tamanho ${sizeDimension ? chosen[sizeDimension] : "selecionado"} do produto ${product.name}.`)}`}
+            href={`https://wa.me/${whatsapp.replace(/\D/g, "").startsWith("55") ? whatsapp.replace(/\D/g, "") : `55${whatsapp.replace(/\D/g, "")}`}?text=${encodeURIComponent(`Olá! Gostaria de consultar a disponibilidade do tamanho ${sizeDimension ? chosen[sizeDimension] : "selecionado"} do produto ${product.name}.`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-5 flex min-h-14 w-full items-center justify-center rounded-full bg-[#84BD00] px-5 text-sm font-extrabold uppercase tracking-wide text-[#172000] transition hover:bg-[#72a900]"
