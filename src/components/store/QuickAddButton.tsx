@@ -4,13 +4,15 @@ import { useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import type { ProductVariant } from "@/types/catalog";
 
+export type QuickAddVariant = Pick<ProductVariant, "id" | "sku" | "options" | "priceCents" | "stockQuantity" | "available">;
+
 type ProductForQuickAdd = {
   id: string;
   name: string;
   sku: string;
   category: string;
   priceCents: number;
-  variants: ProductVariant[];
+  variants: QuickAddVariant[];
   stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "PREORDER" | string;
 };
 
@@ -39,7 +41,7 @@ export function QuickAddButton({ product, className = "" }: { product: ProductFo
     Boolean(chosen[dimension]) && variant.options.some((option) => option.name === dimension && option.value === chosen[dimension])
   )) ?? (required.length === 0 ? available[0] : undefined);
 
-  const add = (variant?: ProductVariant) => {
+  const add = (variant?: QuickAddVariant) => {
     if (product.variants.length > 0 && !variant) return;
     cart.add({
       id: product.id,
