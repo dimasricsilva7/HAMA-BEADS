@@ -137,7 +137,7 @@ export default function FootwearHome({ products, storeName, heroImageUrl, catego
           <h1 className="mt-3 max-w-xl text-4xl font-black leading-[.98] tracking-tight sm:text-6xl"><span className="whitespace-pre-line">{copy.heroTitle}</span></h1>
           <p className="mt-4 max-w-md text-sm leading-6 text-white/75 sm:text-base">{copy.heroDescription}</p>
           <Link href="/loja?colecao=595,596,599" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-[#a0d36c] px-6 text-xs font-extrabold uppercase tracking-wide text-[#17230d]">{copy.heroCtaLabel}</Link>
-          <p className="mt-4 text-[10px] text-white/60">Loja independente · consulte as condições de cada produto</p>
+          <p className="mt-4 text-[10px] text-white/60">{copy.resellerNotice}</p>
         </div>
         <div className="relative grid min-h-[220px] grid-cols-2 items-center gap-1 bg-[#e9e6dc] px-3 py-5 sm:min-h-0 sm:px-7">
           {highlights.slice(0, 2).map((p, i) => <Link key={p.id} href={`/produto/${p.slug}`} className={`relative aspect-[4/5] overflow-hidden bg-transparent ${i === 1 ? "mt-8" : ""}`}>
