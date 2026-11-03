@@ -26,13 +26,20 @@
 
 @layer base {
   html {
+    width: 100%;
+    max-width: 100%;
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
   body {
     @apply bg-bg font-sans text-ink antialiased;
-    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
+  main, #conteudo { min-width: 0; max-width: 100%; }
+  img, video, iframe { max-width: 100%; }
   h1, h2, h3 {
     @apply font-display tracking-tight;
     text-wrap: balance;
@@ -85,8 +92,11 @@
     background:
       linear-gradient(90deg, rgb(var(--c-primary)) 0 25%, rgb(var(--c-secondary)) 0 50%, rgb(var(--c-accent)) 0 75%, rgb(var(--c-success)) 0) bottom / 32px 6px repeat-x;
   }
-  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar { scrollbar-width: none; overscroll-behavior-x: contain; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
+  @media (max-width: 639px) {
+    .container-page { padding-inline: 12px; }
+  }
 }
 
 /* Admin: tipografia neutra */
