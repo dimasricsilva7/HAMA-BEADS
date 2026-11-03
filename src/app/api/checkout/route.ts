@@ -20,11 +20,12 @@ export async function POST(req: NextRequest) {
     const fields = Object.fromEntries(parsed.error.issues.map((i) => [i.path.join("."), i.message]));
     return NextResponse.json({ error: "Confira os dados informados.", fields }, { status: 422 });
   }
-  // Crediário é um fluxo de solicitação e análise manual; PIX só aparece com API e webhook configurados.
+  // O PIX pode ser confirmado por consulta autenticada à API BravoPay.
+  // O webhook assinado é recomendado para confirmação imediata, mas não bloqueia a geração da cobrança.
   const method = parsed.data.paymentMethod ?? "PIX";
-  if (method === "PIX" && (bravopayMode() !== "live" || !process.env.BRAVOPAY_WEBHOOK_SECRET)) {
-    log.error("checkout", "PIX indisponível: configure BRAVOPAY_API_KEY e BRAVOPAY_WEBHOOK_SECRET.");
-    return NextResponse.json({ error: "PIX temporariamente indisponível. Selecione o crediário ou tente novamente mais tarde." }, { status: 503 });
+  if (method === "PIX" && bravopayMode() !== "live") {
+    log.error("checkout", "PIX indisponível: configure BRAVOPAY_API_KEY.");
+    return NextResponse.json({ error: "PIX temporariamente indisponível. Tente novamente mais tarde." }, { status: 503 });
   }
   if (method !== "CREDIARIO" && bravopayMode() === "disabled") {
     log.error("checkout", "BravoPay não configurada (BRAVOPAY_API_KEY ausente)");
