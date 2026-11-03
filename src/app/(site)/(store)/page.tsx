@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import FootwearHome from "@/components/store/FootwearHome";
-import { getPublicCatalog } from "@/server/catalog";
+import { getHomeCatalog } from "@/server/catalog";
 import { getSettings } from "@/server/settings";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function StorefrontPage() {
-  const [catalog, settings] = await Promise.all([getPublicCatalog(), getSettings()]);
+  const [catalog, settings] = await Promise.all([getHomeCatalog(), getSettings()]);
   const inSource = (p: (typeof catalog)[number], ...ids: string[]) => ids.some((id) => p.sourceCollectionIds.includes(id) || p.sourceCollectionId === id);
   const adult = catalog.filter((p) => inSource(p, "111", "146"));
   const kids = catalog.filter((p) => inSource(p, "173") || p.category === "KIDS");
@@ -20,10 +20,26 @@ export default async function StorefrontPage() {
   const selected = new Map<string, (typeof catalog)[number]>();
   for (const product of [...sale.slice(0, 10), ...kids.slice(0, 10), ...adult.slice(0, 10), ...jibbitz.slice(0, 10)]) selected.set(product.id, product);
   const products = [...selected.values()].map((p) => ({
-    ...p,
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    sku: p.sku,
+    priceCents: p.priceCents,
+    listPriceCents: p.listPriceCents,
+    individualDiscountPercent: p.individualDiscountPercent,
+    imageUrl: p.imageUrl,
+    badge: p.badge,
+    category: p.category,
+    sourceCollectionId: p.sourceCollectionId,
+    sourceCollectionIds: p.sourceCollectionIds,
+    stockStatus: p.stockStatus,
+    homeBlackFriday: p.homeBlackFriday,
     colorFamilyCount: p.colorFamily.length,
-    colorFamily: p.colorFamily.slice(0, 5),
-    variants: p.variants.filter((v) => v.available && v.stockQuantity > 0).slice(0, 40),
+    colorFamily: p.colorFamily.slice(0, 5).map(({ id, slug, value }) => ({ id, slug, value })),
+    variants: p.variants
+      .filter((v) => v.available && v.stockQuantity > 0)
+      .slice(0, 40)
+      .map(({ id, sku, options, priceCents, stockQuantity, available }) => ({ id, sku, options, priceCents, stockQuantity, available })),
   }));
   return <FootwearHome
     products={products}
