@@ -18,7 +18,7 @@ export default async function CheckoutPage() {
       consentLabel={s.marketing_consent_label}
       previewOnly={previewOnly}
       pix={{
-        enabled: isOn(s.pix_enabled) && bravopayMode() === "live" && Boolean(process.env.BRAVOPAY_WEBHOOK_SECRET),
+        enabled: isOn(s.pix_enabled) && bravopayMode() === "live",
         label: s.pix_method_label || "PIX",
         badge: s.pix_badge ?? "",
         description: s.pix_description ?? "",
