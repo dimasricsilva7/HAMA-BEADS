@@ -28,7 +28,7 @@ export function Footer({ s }: { s: Settings }) {
     <footer className="mt-auto bg-ink pb-28 pt-12 text-white/80 lg:pb-12">
       <div className="container-page grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div className="text-white">
-          <Logo name={storeName} logoUrl={null} />
+          <Logo name={storeName} logoUrl={s.logo_url || null} />
           {storeTagline && <p className="mt-3 max-w-xs text-sm text-white/70">{storeTagline}</p>}
           <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold">
             <CheckoutIcon name="shield-check" className="h-4 w-4 text-success" /> Compra segura e atendimento da loja
@@ -46,7 +46,7 @@ export function Footer({ s }: { s: Settings }) {
             <li><Link href="/loja?colecao=215" className="hover:text-white">Jibbitz</Link></li>
             <li><Link href="/loja?colecao=1792513037" className="hover:text-white">Bolsas e Acessórios</Link></li>
             <li><Link href="/loja?colecao=595,596,599" className="hover:text-white">Black Friday</Link></li>
-            <li><Link href="/#ofertas" className="hover:text-white">Ofertas</Link></li>
+            <li><Link href="/#ofertas-black" className="hover:text-white">Ofertas</Link></li>
             <li><Link href="/acompanhar" className="hover:text-white">Acompanhar pedido</Link></li>
           </ul>
         </nav>
