@@ -310,10 +310,75 @@ const getActiveProductBySlug = unstable_cache(
   { tags: ["catalog"], revalidate: 300 }
 );
 
-const getActiveCategoryProducts = unstable_cache(
-  async (category: Product["category"]) => db.product.findMany({
-    where: { active: true, priceCents: { gt: 0 }, category },
+const getActiveFamilyProducts = unstable_cache(
+  async (category: Product["category"], name: string) => db.product.findMany({
+    where: {
+      active: true,
+      priceCents: { gt: 0 },
+      category,
+      name: { equals: name, mode: "insensitive" },
+    },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      category: true,
+      priceCents: true,
+      compareAtPriceCents: true,
+      promoPriceCents: true,
+      promoStartsAt: true,
+      promoEndsAt: true,
+      promoLabel: true,
+      individualDiscountPercent: true,
+      imageUrl: true,
+      variants: true,
+      stockStatus: true,
+    },
+  }),
+  ["active-public-product-color-family-v1"],
+  { tags: ["catalog"], revalidate: 300 }
+);
+
+const getActiveRelatedProducts = unstable_cache(
+  async (productId: string, category: Product["category"]) => db.product.findMany({
+    where: {
+      id: { not: productId },
+      active: true,
+      priceCents: { gt: 0 },
+      category,
+      stockStatus: { not: "OUT_OF_STOCK" },
+    },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    take: 4,
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      category: true,
+      priceCents: true,
+      compareAtPriceCents: true,
+      promoPriceCents: true,
+      promoStartsAt: true,
+      promoEndsAt: true,
+      promoLabel: true,
+      individualDiscountPercent: true,
+      imageUrl: true,
+    },
+  }),
+  ["active-public-related-products-v1"],
+  { tags: ["catalog"], revalidate: 300 }
+);
+
+const getActiveJibbitzProducts = unstable_cache(
+  async () => db.product.findMany({
+    where: {
+      active: true,
+      priceCents: { gt: 0 },
+      category: "JIBBITZ",
+      stockStatus: { not: "OUT_OF_STOCK" },
+    },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    take: 10,
     select: {
       id: true,
       slug: true,
@@ -330,10 +395,9 @@ const getActiveCategoryProducts = unstable_cache(
       imageUrl: true,
       variants: true,
       stockStatus: true,
-      sortOrder: true,
     },
   }),
-  ["active-public-products-by-category-v1"],
+  ["active-public-jibbitz-products-v1"],
   { tags: ["catalog"], revalidate: 300 }
 );
 
@@ -375,7 +439,7 @@ export async function getPublicProduct(slug: string, assignments?: Assignment[])
 
   if (product.category === "JIBBITZ") return publicProduct;
 
-  const candidates = await getActiveCategoryProducts(product.category);
+  const candidates = await getActiveFamilyProducts(product.category, product.name);
   const family: ProductColorFamilyItem[] = [];
   const seen = new Set<string>();
   const familyKey = normalizedFamilyName(product.name);
@@ -415,7 +479,7 @@ export async function getPublicRelatedProducts(
   assignments?: Assignment[]
 ) {
   const [products, list, rules] = await Promise.all([
-    getActiveCategoryProducts(category),
+    getActiveRelatedProducts(productId, category),
     assignments ? Promise.resolve(assignments) : currentAssignments(),
     getActiveSectionDiscounts(),
   ]);
@@ -423,8 +487,6 @@ export async function getPublicRelatedProducts(
   const now = new Date();
 
   return products
-    .filter((product) => product.id !== productId && product.stockStatus !== "OUT_OF_STOCK")
-    .slice(0, 4)
     .map((product) => {
       const price = effectivePrice(
         product,
@@ -446,7 +508,7 @@ export async function getPublicRelatedProducts(
 /** Jibbitz do PDP: no máximo dez opções com apenas os dados usados pelo seletor. */
 export async function getPublicJibbitzProducts(assignments?: Assignment[]) {
   const [products, list, rules] = await Promise.all([
-    getActiveCategoryProducts("JIBBITZ"),
+    getActiveJibbitzProducts(),
     assignments ? Promise.resolve(assignments) : currentAssignments(),
     getActiveSectionDiscounts(),
   ]);
@@ -454,8 +516,6 @@ export async function getPublicJibbitzProducts(assignments?: Assignment[]) {
   const now = new Date();
 
   return products
-    .filter((product) => product.stockStatus !== "OUT_OF_STOCK")
-    .slice(0, 10)
     .map((product) => {
       const basePrice = effectivePrice(
         product,
