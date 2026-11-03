@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import type { ProductVariant } from "@/types/catalog";
@@ -8,6 +9,7 @@ export type QuickAddVariant = Pick<ProductVariant, "id" | "sku" | "options" | "p
 
 type ProductForQuickAdd = {
   id: string;
+  slug: string;
   name: string;
   sku: string;
   category: string;
@@ -55,9 +57,10 @@ export function QuickAddButton({ product, className = "" }: { product: ProductFo
   };
 
   const openOrAdd = () => {
-    if (product.stockStatus === "OUT_OF_STOCK" || (product.variants.length > 0 && available.length === 0)) return;
     if (required.length > 0) {
-      const first = available[0];
+      // Mesmo sem estoque online, mostra todas as numerações do catálogo e
+      // permite abrir a página para consultar a disponibilidade.
+      const first = available[0] ?? product.variants[0];
       setChosen(Object.fromEntries(required.map((dimension) => [
         dimension,
         first?.options.find((option) => option.name === dimension)?.value ?? "",
@@ -65,6 +68,7 @@ export function QuickAddButton({ product, className = "" }: { product: ProductFo
       setOpen(true);
       return;
     }
+    if (product.stockStatus === "OUT_OF_STOCK" || (product.variants.length > 0 && available.length === 0)) return;
     add(selected);
   };
 
@@ -82,9 +86,9 @@ export function QuickAddButton({ product, className = "" }: { product: ProductFo
 
   return (
     <>
-      <button type="button" onClick={openOrAdd} disabled={soldOut}
+      <button type="button" onClick={openOrAdd} disabled={soldOut && required.length === 0}
         className={`mt-3 flex min-h-10 w-full items-center justify-center rounded-full bg-[#222] px-3 text-[10px] font-extrabold uppercase tracking-wide text-white transition hover:bg-[#84bd45] hover:text-[#17230d] disabled:cursor-not-allowed disabled:opacity-40 ${className}`}>
-        {soldOut ? "Indisponível" : "Adicionar ao carrinho"}
+        {soldOut ? (required.length > 0 ? "Ver tamanhos" : "Indisponível") : "Adicionar ao carrinho"}
       </button>
       {open && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={(event) => {
@@ -120,10 +124,10 @@ export function QuickAddButton({ product, className = "" }: { product: ProductFo
                 </fieldset>
               ))}
             </div>
-            <div className="mt-6 flex items-center justify-between gap-3 border-t border-[#e8e8e8] pt-4">
-              <span className="text-base font-extrabold text-[#4f9825]">
-                {((selected?.priceCents ?? product.priceCents) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </span>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[#e8e8e8] pt-4">
+              <Link href={"/produto/" + product.slug} className="text-xs font-bold text-[#4f9825] underline underline-offset-2">
+                Ver produto e consultar tamanhos
+              </Link>
               <button type="button" onClick={() => add(selected)} disabled={!selected}
                 className="min-h-11 rounded-full bg-[#84bd45] px-5 text-xs font-extrabold uppercase text-[#18220f] transition hover:bg-[#76aa3e] disabled:cursor-not-allowed disabled:opacity-40">
                 Confirmar e adicionar
