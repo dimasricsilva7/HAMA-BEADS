@@ -8,12 +8,14 @@ const db = new PrismaClient();
  * em Admin → Pagamentos → Crediário e NÃO devem ser redefinidos a cada build.
  */
 async function main() {
-  await db.setting.upsert({
-    where: { key: "crediario_enabled" },
-    update: { value: "true", updatedBy: "system:crediario-enable" },
-    create: { key: "crediario_enabled", value: "true", updatedBy: "system:crediario-enable" },
-  });
-  console.info("FOOTWEAR_CREDIARIO_ENABLED " + JSON.stringify({ enabled: true }));
+  for (const key of ["pix_enabled", "crediario_enabled"]) {
+    await db.setting.upsert({
+      where: { key },
+      update: { value: "true", updatedBy: "system:payment-methods-enable" },
+      create: { key, value: "true", updatedBy: "system:payment-methods-enable" },
+    });
+  }
+  console.info("FOOTWEAR_PAYMENT_METHODS_ENABLED " + JSON.stringify({ pix: true, crediario: true }));
 }
 
 main()
