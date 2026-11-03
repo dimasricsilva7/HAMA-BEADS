@@ -110,10 +110,10 @@ export function toPublicProduct(
 /** Produto vendável: ativo e com preço válido (produtos sem preço definido nunca aparecem). */
 export const isSellable = (p: Pick<Product, "active" | "priceCents" | "stockStatus">) => p.active && p.priceCents > 0 && p.stockStatus !== "OUT_OF_STOCK";
 
-export async function getPublicCatalog(assignments?: Assignment[]) {
-  const [products, list, rules] = await Promise.all([
+const buildPublicCatalog = unstable_cache(
+  async (list: Assignment[]) => {
+  const [products, rules] = await Promise.all([
     getActiveProducts().catch(() => []),
-    assignments ? Promise.resolve(assignments) : currentAssignments(),
     getActiveSectionDiscounts(),
   ]);
   const overrides = priceOverrides(list);
