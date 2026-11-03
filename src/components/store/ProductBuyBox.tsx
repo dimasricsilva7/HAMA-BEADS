@@ -16,6 +16,7 @@ type Props = {
   productJibbitzTitle: string;
   productJibbitzDescription: string;
   productResellerNote: string;
+  whatsapp: string | null;
   product: {
     id: string;
     name: string;
@@ -37,7 +38,7 @@ function normalizeOption(name: string) {
   return "other";
 }
 
-export default function ProductBuyBox({ product, slug, jibbitzProducts, productJibbitzTitle, productJibbitzDescription, productResellerNote }: Props) {
+export default function ProductBuyBox({ product, slug, jibbitzProducts, productJibbitzTitle, productJibbitzDescription, productResellerNote, whatsapp }: Props) {
   const cart = useCart();
   const variants = product.variants;
   const purchasable = variants.filter((variant) => variant.available && variant.stockQuantity > 0);
@@ -61,9 +62,11 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
   const selectedJibbitzItems = jibbitzProducts.filter((item) => selectedJibbitz.includes(item.id));
   const selectedJibbitzTotal = selectedJibbitzItems.reduce((sum, item) => sum + item.priceCents, 0);
 
-  const selected = purchasable.find((variant) => requiredDimensions.every((dimension) =>
+  const matchesChosen = (variant: ProductVariant) => requiredDimensions.every((dimension) =>
     Boolean(chosen[dimension]) && variant.options.some((option) => option.name === dimension && option.value === chosen[dimension])
-  )) ?? (requiredDimensions.length === 0 ? purchasable[0] : undefined);
+  );
+  const selectedVariant = variants.find(matchesChosen) ?? (requiredDimensions.length === 0 ? variants[0] : undefined);
+  const selected = purchasable.find(matchesChosen) ?? (requiredDimensions.length === 0 ? purchasable[0] : undefined);
 
   const price = selected?.priceCents ?? product.priceCents;
   const list = selected?.listPriceCents ?? product.listPriceCents;
@@ -114,7 +117,11 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
               <Link key={item.id} href={`/produto/${item.slug}`} title={item.value} aria-label={`Cor ${item.value}`}
                 aria-current={item.id === product.id ? "page" : undefined}
                 className={`grid h-9 w-9 place-items-center rounded-full border bg-white transition ${item.id === product.id ? "border-[#222] ring-2 ring-[#222] ring-offset-2" : "border-[#ddd] hover:border-[#888]"}`}>
-                <span className="h-6 w-6 rounded-full border border-black/10" style={{ background: crocsColorBackground(item.value) }} />
+                <span className="relative h-6 w-6 overflow-hidden rounded-full border border-black/10 bg-white">
+                  {item.imageUrl
+                    ? <Image src={resizeVtexImage(item.imageUrl, 100)} alt="" fill sizes="24px" className="object-cover" />
+                    : <span className="absolute inset-0" style={{ background: crocsColorBackground(item.value) }} />}
+                </span>
               </Link>
             ))}
           </div>
@@ -134,7 +141,17 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
                   disabled={!availableOption(colorDimension, value)}
                   onClick={() => setChosen((old) => ({ ...old, [colorDimension]: value }))}
                   className={`grid h-9 w-9 place-items-center rounded-full border bg-white transition ${active ? "border-[#222] ring-2 ring-[#222] ring-offset-2" : "border-[#ddd]"} disabled:opacity-30`}>
-                  <span className="h-6 w-6 rounded-full border border-black/10" style={{ background: crocsColorBackground(value) }} />
+                  <span className="relative h-6 w-6 overflow-hidden rounded-full border border-black/10 bg-white">
+                    {variants.find((variant) => variant.imageUrl && variant.options.some((option) => option.name === colorDimension && option.value === value))?.imageUrl
+                      ? <Image
+                          src={resizeVtexImage(variants.find((variant) => variant.imageUrl && variant.options.some((option) => option.name === colorDimension && option.value === value))!.imageUrl!, 100)}
+                          alt=""
+                          fill
+                          sizes="24px"
+                          className="object-cover"
+                        />
+                      : <span className="absolute inset-0" style={{ background: crocsColorBackground(value) }} />}
+                  </span>
                 </button>
               );
             })}
@@ -151,12 +168,18 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
           <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
             {values(sizeDimension).map((value) => {
               const active = chosen[sizeDimension] === value;
-              const enabled = availableOption(sizeDimension, value);
+              const exists = variants.some((variant) =>
+                variant.options.some((option) => option.name === sizeDimension && option.value === value) &&
+                requiredDimensions.every((other) => other === sizeDimension || !chosen[other] ||
+                  variant.options.some((option) => option.name === other && option.value === chosen[other]))
+              );
+              const inStock = availableOption(sizeDimension, value);
               return (
-                <button key={value} type="button" aria-pressed={active} disabled={!enabled}
+                <button key={value} type="button" aria-pressed={active} disabled={!exists}
+                  title={inStock ? `Tamanho ${value} disponível` : `Tamanho ${value}: consulte disponibilidade`}
                   onClick={() => setChosen((old) => ({ ...old, [sizeDimension]: value }))}
-                  className={`min-h-11 border px-2 text-sm font-bold transition ${active ? "border-[#292929] bg-[#292929] text-white" : "border-[#e2e2e2] bg-white text-[#222] hover:border-[#777]"} disabled:cursor-not-allowed disabled:opacity-30`}>
-                  {value}
+                  className={`min-h-11 border px-2 text-sm font-bold transition ${active ? "border-[#292929] bg-[#292929] text-white" : inStock ? "border-[#e2e2e2] bg-white text-[#222] hover:border-[#777]" : "border-dashed border-[#b9b9b9] bg-[#fafafa] text-[#777]"} disabled:cursor-not-allowed disabled:opacity-30`}>
+                  {value}{!inStock && <span className="mt-0.5 block text-[8px] font-semibold uppercase tracking-wide">Consulta</span>}
                 </button>
               );
             })}
@@ -218,10 +241,22 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
       )}
 
       {selected ? <p className="mt-4 text-xs text-[#666]">SKU: {selected.sku}</p>
+        : selectedVariant && variants.length > 0 ? <p className="mt-4 text-xs font-semibold text-[#9a6500]">Este tamanho está no catálogo, mas sem estoque confirmado. Consulte a disponibilidade antes de comprar.</p>
         : variants.length > 0 ? <p className="mt-4 text-xs font-semibold text-[#b56a00]">Selecione o tamanho para continuar.</p> : null}
 
-      {soldOut ? (
-        <p className="mt-5 border border-[#e5e5e5] bg-[#f7f7f7] py-3 text-center text-sm font-bold">Produto indisponível no momento</p>
+      {selectedVariant && !selected ? (
+        whatsapp && whatsapp.replace(/\\D/g, "").length >= 10 ? (
+          <a
+            href={`https://wa.me/${whatsapp.replace(/\\D/g, "").startsWith("55") ? whatsapp.replace(/\\D/g, "") : `55${whatsapp.replace(/\\D/g, "")}`}?text=${encodeURIComponent(`Olá! Gostaria de consultar a disponibilidade do tamanho ${sizeDimension ? chosen[sizeDimension] : "selecionado"} do produto ${product.name}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 flex min-h-14 w-full items-center justify-center rounded-full bg-[#84BD00] px-5 text-sm font-extrabold uppercase tracking-wide text-[#172000] transition hover:bg-[#72a900]"
+          >
+            Consultar tamanho pelo WhatsApp
+          </a>
+        ) : <p className="mt-5 border border-[#e5e5e5] bg-[#f7f7f7] px-4 py-3 text-center text-sm font-bold">Tamanho sob consulta. Entre em contato com a loja.</p>
+      ) : soldOut ? (
+        <p className="mt-5 border border-[#e5e5e5] bg-[#f7f7f7] py-3 text-center text-sm font-bold">Produto sem estoque confirmado no momento</p>
       ) : (
         <button type="button" onClick={add} disabled={variants.length > 0 && !selected}
           className="mt-5 min-h-14 w-full rounded-full bg-[#84BD00] px-5 text-sm font-extrabold uppercase tracking-wide text-[#172000] transition hover:bg-[#72a900] disabled:cursor-not-allowed disabled:opacity-45">
