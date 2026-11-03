@@ -102,10 +102,17 @@ function normalize(product: VtexProduct, collectionId: string) {
     const offer = item.sellers?.find((seller) => seller.commertialOffer)?.commertialOffer ?? {};
     const priceCents = cents(offer.Price);
     const listPriceCents = cents(offer.ListPrice);
-    const stockQuantity = Math.max(0, Math.floor(Number(offer.AvailableQuantity) || 0));
-    const available = Boolean(offer.IsAvailable) && stockQuantity > 0 && priceCents > 0;
+    const sourceStockQuantity = Math.max(0, Math.floor(Number(offer.AvailableQuantity) || 0));
     const image = item.images?.find((x) => x.imageUrl)?.imageUrl ?? null;
     const options = itemOptions(item);
+    const hasSize = options.some((option) => {
+      const dimension = option.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      return dimension.includes("size") || dimension.includes("tamanho") || dimension.includes("numera") || dimension === "eu";
+    });
+    // O estoque de numerações é mantido pela operação própria da loja,
+    // conforme confirmado pelo responsável, e não pelo saldo do catálogo externo.
+    const stockQuantity = hasSize ? Math.max(1, sourceStockQuantity) : sourceStockQuantity;
+    const available = priceCents > 0 && (hasSize || (Boolean(offer.IsAvailable) && sourceStockQuantity > 0));
     return [{
       id,
       sku: referenceSku(item) || id,
