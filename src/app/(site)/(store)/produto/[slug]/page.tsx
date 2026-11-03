@@ -49,6 +49,10 @@ export default async function ProductPage({ params }: Props) {
     ...p.gallery.filter((g) => g.url && g.url !== p.imageUrl),
   ];
   const related = catalog.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 4);
+  const jibbitzProducts = catalog.filter((x) => x.category === "JIBBITZ" && x.stockStatus !== "OUT_OF_STOCK").slice(0, 10).map((x) => {
+    const variant = x.variants.find((v) => v.available && v.stockQuantity > 0);
+    return { id: x.id, name: x.name, sku: variant?.sku ?? x.sku, priceCents: variant?.priceCents ?? x.priceCents, imageUrl: x.imageUrl, variantId: variant?.id ?? null };
+  });
   const baseUrl = siteUrl();
   const jsonLd = {
     "@context": "https://schema.org",
@@ -74,7 +78,7 @@ export default async function ProductPage({ params }: Props) {
         <Link href="/" className="hover:underline">Início</Link> / <Link href="/loja" className="hover:underline">Loja</Link> / <span className="text-ink">{p.name}</span>
       </nav>
       <ViewTracker event="product_view" productId={p.id} valueCents={p.priceCents} element="product_page" meta={{ sku: p.sku, name: p.name, priceCents: p.priceCents, category: p.category }}>
-        <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,.92fr)] lg:gap-10">
+        <div className="mt-5 grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,.92fr)] lg:gap-7">
           <div>
             {images.length ? (
               <ProductGallery images={images} name={p.name} productId={p.id} />
@@ -84,7 +88,7 @@ export default async function ProductPage({ params }: Props) {
             {p.videoUrl && <div className="mt-3 overflow-hidden rounded-card"><video src={p.videoUrl} controls playsInline className="aspect-video w-full bg-black" /></div>}
           </div>
 
-          <div>
+          <div className="min-w-0 rounded-sm border border-[#e5e5e5] bg-white p-4 sm:p-6">
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6d9f00]">{p.brandName || "Crocs"} · {FULFILLMENT_LABEL[p.fulfillment]}</p>
             <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[#111] sm:text-4xl">{p.name}</h1>
             {reviewCount > 0 && <div className="mt-2 flex items-center gap-2 text-sm" aria-label={`Avaliação média ${averageRating.toFixed(1)} de 5 com ${reviewCount} avaliações`}><span className="tracking-[2px] text-[#f0ad00]" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => index < Math.round(averageRating) ? "★" : "☆").join("")}</span><span className="text-[#666]">({reviewCount})</span><a href="#avaliacoes" className="text-xs font-semibold text-[#555] underline underline-offset-2">Ver avaliações</a></div>}
@@ -95,6 +99,10 @@ export default async function ProductPage({ params }: Props) {
             <ProductBuyBox
               product={{ id: p.id, name: p.name, sku: p.sku, category: p.category, priceCents: p.priceCents, listPriceCents: p.listPriceCents, variants: p.variants, stockStatus: p.stockStatus, colorFamily: p.colorFamily }}
               slug={p.slug}
+              jibbitzProducts={jibbitzProducts}
+              productJibbitzTitle={settings.product_jibbitz_title}
+              productJibbitzDescription={settings.product_jibbitz_description}
+              productResellerNote={settings.reseller_notice_product}
             />
 
             {p.specs.length > 0 && (
