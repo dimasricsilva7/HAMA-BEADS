@@ -165,6 +165,136 @@ const buildPublicCatalog = unstable_cache(
   { tags: ["catalog", "experiments"], revalidate: 300 }
 );
 
+type HomeCatalogProduct = Pick<PublicProduct,
+  | "id" | "slug" | "sku" | "name" | "brandName" | "sourceCollectionId" | "sourceCollectionIds"
+  | "category" | "priceCents" | "listPriceCents" | "individualDiscountPercent" | "imageUrl"
+  | "badge" | "stockStatus" | "homeBlackFriday" | "colorFamily" | "variants"
+>;
+
+const buildHomeCatalog = unstable_cache(
+  async (list: Assignment[]): Promise<HomeCatalogProduct[]> => {
+    // A home só precisa de dados dos cards e das opções de compra.
+    // Não carregue descrições longas, galerias, vídeos, especificações e JSON de upsell
+    // de todo o catálogo para depois descartar quase tudo no componente.
+    const [products, rules] = await Promise.all([
+      db.product.findMany({
+        where: {
+          active: true,
+          priceCents: { gt: 0 },
+          category: { notIn: ["BEADS", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "KIT"] },
+        },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          slug: true,
+          sku: true,
+          name: true,
+          sourceProductId: true,
+          sourceCollectionId: true,
+          sourceCollectionIds: true,
+          category: true,
+          priceCents: true,
+          compareAtPriceCents: true,
+          promoPriceCents: true,
+          promoStartsAt: true,
+          promoEndsAt: true,
+          promoLabel: true,
+          individualDiscountPercent: true,
+          imageUrl: true,
+          variants: true,
+          badge: true,
+          stockStatus: true,
+          homeBlackFriday: true,
+        },
+      }),
+      getActiveSectionDiscounts(),
+    ]);
+
+    const overrides = priceOverrides(list);
+    const now = new Date();
+    const discountByCategory = new Map(
+      rules
+        .filter((r) => (!r.startsAt || r.startsAt <= now) && (!r.endsAt || r.endsAt > now))
+        .map((r) => [r.category, r.percent])
+    );
+
+    const homeProducts: HomeCatalogProduct[] = products.map((p) => {
+      const sectionDiscount = discountByCategory.get(p.category) ?? null;
+      const price = effectivePrice(p, overrides, now, sectionDiscount);
+      const variants = asArray<ProductVariant>(p.variants)
+        .filter((v) => v?.id && v?.sku && Number.isInteger(v?.priceCents))
+        .map((v) => {
+          const variantPrice = effectivePrice({
+            ...p,
+            priceCents: v.priceCents,
+            compareAtPriceCents: v.listPriceCents,
+            promoPriceCents: null,
+            promoStartsAt: null,
+            promoEndsAt: null,
+            promoLabel: null,
+          }, overrides, now, sectionDiscount);
+          return { ...v, priceCents: variantPrice.priceCents, listPriceCents: variantPrice.listPriceCents };
+        });
+
+      return {
+        id: p.id,
+        slug: p.slug,
+        sku: p.sku,
+        name: p.name,
+        brandName: p.sourceProductId ? "Crocs" : null,
+        sourceCollectionId: p.sourceCollectionId,
+        sourceCollectionIds: [...new Set([...asArray<string>(p.sourceCollectionIds), ...(p.sourceCollectionId ? [p.sourceCollectionId] : [])])],
+        category: p.category,
+        priceCents: price.priceCents,
+        listPriceCents: price.listPriceCents,
+        individualDiscountPercent: p.individualDiscountPercent,
+        imageUrl: p.imageUrl,
+        variants,
+        badge: p.badge,
+        stockStatus: p.stockStatus,
+        homeBlackFriday: p.homeBlackFriday,
+        colorFamily: [],
+      };
+    });
+
+    const familyMap = new Map<string, ProductColorFamilyItem[]>();
+    const familyKeyOf = (product: Pick<HomeCatalogProduct, "category" | "name">) =>
+      product.category + ":" + product.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim();
+
+    for (const product of homeProducts) {
+      if (product.category === "JIBBITZ") continue;
+      const familyKey = familyKeyOf(product);
+      const family = familyMap.get(familyKey) ?? [];
+      for (const value of productColorOptions(product.variants)) {
+        const key = value.toLocaleLowerCase("pt-BR");
+        if (family.some((item) => item.value.toLocaleLowerCase("pt-BR") === key)) continue;
+        family.push({
+          id: product.id,
+          slug: product.slug,
+          value: value || "Ver cor",
+          imageUrl: product.imageUrl,
+          priceCents: product.priceCents,
+          listPriceCents: product.listPriceCents,
+          available: product.stockStatus !== "OUT_OF_STOCK",
+        });
+      }
+      familyMap.set(familyKey, family);
+    }
+
+    return homeProducts.map((product) => {
+      if (product.category === "JIBBITZ") return product;
+      return { ...product, colorFamily: familyMap.get(familyKeyOf(product)) ?? [] };
+    });
+  },
+  ["home-catalog-by-assignment-v1"],
+  { tags: ["catalog", "experiments"], revalidate: 300 }
+);
+
+export async function getHomeCatalog(assignments?: Assignment[]) {
+  const list = assignments ?? await currentAssignments();
+  return buildHomeCatalog(list);
+}
+
 export async function getPublicCatalog(assignments?: Assignment[]) {
   const list = assignments ?? await currentAssignments();
   return buildPublicCatalog(list);
