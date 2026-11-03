@@ -160,6 +160,14 @@ const buildPublicCatalog = unstable_cache(
     const colors = familyMap.get(familyKey) ?? [];
     return { ...product, colorFamily: colors };
   });
+  },
+  ["public-catalog-by-assignment-v1"],
+  { tags: ["catalog", "experiments"], revalidate: 300 }
+);
+
+export async function getPublicCatalog(assignments?: Assignment[]) {
+  const list = assignments ?? await currentAssignments();
+  return buildPublicCatalog(list);
 }
 
 export async function getPublicProduct(slug: string) {
