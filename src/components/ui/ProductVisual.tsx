@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ShoeArtwork } from "@/components/store/ShoeArtwork";
 import { resizeVtexImage } from "@/lib/vtex-image";
 
@@ -23,7 +24,7 @@ export function ProductVisual({
   if (imageUrl) {
     return (
       <div className={`relative overflow-hidden bg-surface ${className}`}>
-        <img src={resizeVtexImage(imageUrl, 640)} alt={name} data-sizes={sizes} loading={priority ? "eager" : "lazy"} className="absolute inset-0 h-full w-full object-contain p-2" />
+        <Image src={resizeVtexImage(imageUrl, 640)} alt={name} fill priority={priority} sizes={sizes} className="object-contain p-2" />
       </div>
     );
   }
