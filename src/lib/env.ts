@@ -32,7 +32,7 @@ export function envHealth(): EnvCheck[] {
     { key: "NEXT_PUBLIC_SITE_URL", ok: has("NEXT_PUBLIC_SITE_URL"), required: true, hint: "URL pública do site (sem barra final)" },
     { key: "AUTH_SECRET", ok: has("AUTH_SECRET"), required: true, hint: "Segredo para hashes/assinaturas (32+ bytes)" },
     { key: "BRAVOPAY_API_KEY", ok: has("BRAVOPAY_API_KEY") || bravopayMode() === "mock", required: true, hint: "Chave da API BravoPay (bp_live_...)" },
-    { key: "BRAVOPAY_WEBHOOK_SECRET", ok: has("BRAVOPAY_WEBHOOK_SECRET"), required: true, hint: "Segredo do webhook BravoPay" },
+    { key: "BRAVOPAY_WEBHOOK_SECRET", ok: has("BRAVOPAY_WEBHOOK_SECRET"), required: false, hint: "Opcional: confirmação instantânea por webhook; sem ele, o pedido é confirmado por consulta autenticada à API BravoPay" },
     { key: "BRAVOPAY_PRODUCT_ID", ok: has("BRAVOPAY_PRODUCT_ID"), required: false, hint: "ID do produto BravoPay (atribuição UTMify)" },
     { key: "CRON_SECRET", ok: has("CRON_SECRET"), required: true, hint: "Protege os endpoints de jobs" },
     { key: "RESEND_API_KEY", ok: has("RESEND_API_KEY"), required: true, hint: "Resend — e-mails de confirmação e lembrete de PIX" },
