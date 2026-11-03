@@ -1,6 +1,25 @@
-export function Logo({ name, className = "" }: { name: string; logoUrl?: string | null; className?: string }) {
+import Image from "next/image";
+
+export function Logo({ name, logoUrl, className = "" }: { name: string; logoUrl?: string | null; className?: string }) {
   const legacyName = /hama|beads|pegboard|contas|pixel/i.test(name);
   const displayName = legacyName ? "Calçados & Acessórios" : (name.trim() || "Calçados & Acessórios");
+
+  if (logoUrl?.trim()) {
+    return (
+      <span className={`flex min-w-0 items-center ${className}`}>
+        <Image
+          src={logoUrl.trim()}
+          alt={displayName}
+          width={288}
+          height={72}
+          unoptimized
+          priority
+          className="h-9 w-auto max-w-[180px] object-contain object-left sm:max-w-[210px]"
+        />
+      </span>
+    );
+  }
+
   return <span className={`flex items-center gap-2.5 ${className}`}>
     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#84bd45] text-white">
       <svg viewBox="0 0 32 32" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
