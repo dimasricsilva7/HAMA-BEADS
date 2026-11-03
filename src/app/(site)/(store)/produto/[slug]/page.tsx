@@ -35,18 +35,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const slug = (await params).slug;
-  const [p, catalog, settings] = await Promise.all([getPublicProduct(slug), getPublicCatalog(), getSettings()]);
+  // O catálogo era montado duas vezes aqui: getPublicProduct() já chamava
+  // getPublicCatalog(). Reutilize uma única leitura/transformação por requisição.
+  const [catalog, settings] = await Promise.all([getPublicCatalog(), getSettings()]);
+  const p = catalog.find((product) => product.slug === slug);
   if (!p) notFound();
-  const reviewStats = await db.review.aggregate({ where: { productId: p.id, approved: true }, _avg: { rating: true }, _count: { _all: true } }).catch(() => null);
+
+  // Estatísticas e últimas avaliações consultadas em paralelo para não somar latência.
+  const [reviewStats, reviews] = await Promise.all([
+    db.review.aggregate({ where: { productId: p.id, approved: true }, _avg: { rating: true }, _count: { _all: true } }).catch(() => null),
+    db.review.findMany({
+      where: { productId: p.id, approved: true },
+      orderBy: [{ featured: "desc" }, { reviewedAt: "desc" }, { createdAt: "desc" }],
+      take: 6,
+      select: { id: true, name: true, text: true, rating: true, reviewedAt: true },
+    }).catch(() => []),
+  ]);
   const reviewCount = reviewStats?._count._all ?? 0;
   const averageRating = reviewStats?._avg.rating ?? 0;
   const isBlackFriday = p.homeBlackFriday || p.sourceCollectionIds.some((id) => ["595", "596", "599"].includes(id)) || (p.badge?.toLowerCase().includes("black") ?? false);
   const discountPercent = p.individualDiscountPercent != null && p.individualDiscountPercent > 0 ? Math.round(p.individualDiscountPercent) : p.listPriceCents && p.listPriceCents > p.priceCents ? Math.round((1 - p.priceCents / p.listPriceCents) * 100) : null;
-  const reviews = reviewCount > 0 ? await db.review.findMany({ where: { productId: p.id, approved: true }, orderBy: [{ featured: "desc" }, { reviewedAt: "desc" }, { createdAt: "desc" }], take: 6, select: { id: true, name: true, text: true, rating: true, reviewedAt: true } }).catch(() => []) : [];
   const soldOut = p.stockStatus === "OUT_OF_STOCK" || (p.variants.length > 0 && !p.variants.some((v) => v.available && v.stockQuantity > 0));
   const images = [
     ...(p.imageUrl ? [{ url: p.imageUrl, alt: p.name }] : []),
-    ...p.gallery.filter((g) => g.url && g.url !== p.imageUrl),
+    // O catálogo VTEX pode conter dezenas de ângulos repetidos. Carregue
+    // somente as primeiras 11 miniaturas no primeiro acesso (12 imagens totais).
+    ...p.gallery.filter((g) => g.url && g.url !== p.imageUrl).slice(0, 11),
   ];
   const related = catalog.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 4);
   const jibbitzProducts = catalog.filter((x) => x.category === "JIBBITZ" && x.stockStatus !== "OUT_OF_STOCK").slice(0, 10).map((x) => {
