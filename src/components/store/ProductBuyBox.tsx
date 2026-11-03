@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
@@ -7,7 +8,13 @@ import { Price } from "@/components/ui/Price";
 import { crocsColorBackground, isColorOption } from "@/lib/crocs-colors";
 import type { ProductVariant, ProductColorFamilyItem } from "@/types/catalog";
 
+type JibbitzOption = { id: string; name: string; sku: string; priceCents: number; imageUrl: string | null; variantId: string | null };
+
 type Props = {
+  jibbitzProducts: JibbitzOption[];
+  productJibbitzTitle: string;
+  productJibbitzDescription: string;
+  productResellerNote: string;
   product: {
     id: string;
     name: string;
@@ -29,7 +36,7 @@ function normalizeOption(name: string) {
   return "other";
 }
 
-export default function ProductBuyBox({ product, slug }: Props) {
+export default function ProductBuyBox({ product, slug, jibbitzProducts, productJibbitzTitle, productJibbitzDescription, productResellerNote }: Props) {
   const cart = useCart();
   const variants = product.variants;
   const purchasable = variants.filter((variant) => variant.available && variant.stockQuantity > 0);
@@ -49,6 +56,9 @@ export default function ProductBuyBox({ product, slug }: Props) {
 
   const [chosen, setChosen] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
+  const [selectedJibbitz, setSelectedJibbitz] = useState<string[]>([]);
+  const selectedJibbitzItems = jibbitzProducts.filter((item) => selectedJibbitz.includes(item.id));
+  const selectedJibbitzTotal = selectedJibbitzItems.reduce((sum, item) => sum + item.priceCents, 0);
 
   const selected = purchasable.find((variant) => requiredDimensions.every((dimension) =>
     Boolean(chosen[dimension]) && variant.options.some((option) => option.name === dimension && option.value === chosen[dimension])
@@ -76,7 +86,12 @@ export default function ProductBuyBox({ product, slug }: Props) {
       priceCents: price,
       category: product.category,
       variantId: selected?.id ?? null,
-    }, { element: `pdp_${slug}`, quantity });
+    }, { element: `pdp_${slug}`, quantity, open: false });
+    for (const item of selectedJibbitzItems) {
+      cart.add({ id: item.id, name: item.name, sku: item.sku, priceCents: item.priceCents, category: "JIBBITZ", variantId: item.variantId }, { element: "pdp_jibbitz", open: false });
+    }
+    cart.openDrawer();
+    setSelectedJibbitz([]);
   }
 
   return (
@@ -94,7 +109,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
             <span className="text-[#555]">{product.colorFamily.find((item) => item.id === product.id)?.value ?? "Selecione"}</span>
           </div>
           <div className="flex flex-wrap gap-3">
-            {product.colorFamily.map((item) => (
+            {product.colorFamily.slice(0, 9).map((item) => (
               <Link key={item.id} href={`/produto/${item.slug}`} title={item.value} aria-label={`Cor ${item.value}`}
                 aria-current={item.id === product.id ? "page" : undefined}
                 className={`grid h-9 w-9 place-items-center rounded-full border bg-white transition ${item.id === product.id ? "border-[#222] ring-2 ring-[#222] ring-offset-2" : "border-[#ddd] hover:border-[#888]"}`}>
@@ -102,6 +117,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
               </Link>
             ))}
           </div>
+          {product.colorFamily.length > 9 && <span className="mt-2 inline-flex rounded-full border border-[#ddd] bg-white px-3 py-1 text-xs font-bold text-[#555]">+{product.colorFamily.length - 9} cores</span>}
           <p className="mt-2 text-[11px] text-[#777]">{product.colorFamily.length} cores disponíveis no catálogo</p>
         </section>
       ) : colorDimension && values(colorDimension).length > 0 ? (
@@ -158,6 +174,37 @@ export default function ProductBuyBox({ product, slug }: Props) {
         </label>
       ))}
 
+      {jibbitzProducts.length > 0 && (
+        <section className="mt-7 border-t border-[#e7e7e7] pt-5" aria-label="Adicionar Jibbitz ao calçado">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base font-extrabold text-[#222]">{productJibbitzTitle}</h2>
+              <p className="mt-1 text-xs leading-5 text-[#666]">{productJibbitzDescription}</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-[#f2f6ec] px-2.5 py-1 text-[10px] font-bold text-[#477f24]">{selectedJibbitz.length}/10</span>
+          </div>
+          <div className="no-scrollbar mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2">
+            {jibbitzProducts.map((item) => {
+              const active = selectedJibbitz.includes(item.id);
+              return (
+                <button key={item.id} type="button" onClick={() => setSelectedJibbitz((old) => active ? old.filter((id) => id !== item.id) : old.length >= 10 ? old : [...old, item.id])}
+                  aria-pressed={active} className={`w-[116px] shrink-0 snap-start overflow-hidden rounded-xl border bg-white text-left transition ${active ? "border-[#579628] ring-2 ring-[#579628]/20" : "border-[#e5e5e5] hover:border-[#999]"}`}>
+                  <span className="relative block aspect-square bg-[#fafafa]">
+                    {item.imageUrl ? <Image src={item.imageUrl} alt={item.name} fill sizes="116px" className="object-contain p-2" /> : <span className="grid h-full place-items-center text-xs text-[#777]">Jibbitz</span>}
+                    <span className={`absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full text-xs font-black ${active ? "bg-[#579628] text-white" : "border border-[#ddd] bg-white text-[#555]"}`}>{active ? "✓" : "+"}</span>
+                  </span>
+                  <span className="block px-2.5 pb-2.5 pt-2">
+                    <span className="block min-h-8 text-[11px] font-bold leading-4 text-[#333]">{item.name}</span>
+                    <span className="mt-1 block text-xs font-extrabold text-[#579628]">{(item.priceCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {selectedJibbitz.length > 0 && <p className="mt-2 text-xs font-semibold text-[#477f24]">{selectedJibbitz.length} Jibbitz selecionado(s) · + {(selectedJibbitzTotal / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>}
+        </section>
+      )}
+
       {!soldOut && (
         <div className="mt-5 flex items-center gap-3">
           <div className="inline-flex min-h-12 items-center border border-[#dedede]" role="group" aria-label="Quantidade">
@@ -169,7 +216,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
         </div>
       )}
 
-      {selected ? <p className="mt-4 text-xs text-[#666]">SKU: {selected.sku} · {selected.stockQuantity} disponível(is)</p>
+      {selected ? <p className="mt-4 text-xs text-[#666]">SKU: {selected.sku}</p>
         : variants.length > 0 ? <p className="mt-4 text-xs font-semibold text-[#b56a00]">Selecione o tamanho para continuar.</p> : null}
 
       {soldOut ? (
@@ -185,7 +232,7 @@ export default function ProductBuyBox({ product, slug }: Props) {
         <div className="flex items-center gap-2"><span className="text-[#639b00]">✓</span> Compra protegida</div>
         <div className="flex items-center gap-2"><span className="text-[#639b00]">✓</span> Acompanhe seu pedido</div>
       </div>
-      <p className="mt-4 text-center text-[11px] leading-5 text-[#777]">Loja independente. Produto da marca Crocs; consulte as condições de venda e atendimento desta loja.</p>
+      {productResellerNote && <p className="mt-4 text-center text-[11px] leading-5 text-[#777]">{productResellerNote}</p>}
     </div>
   );
 }
