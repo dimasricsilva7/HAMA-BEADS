@@ -7,6 +7,7 @@ import { FavoriteButton } from "@/components/store/FavoriteButton";
 import { CampaignTag } from "@/components/store/CampaignTag";
 import { QuickAddButton } from "@/components/store/QuickAddButton";
 import { crocsColorBackground } from "@/lib/crocs-colors";
+import { resizeVtexImage } from "@/lib/vtex-image";
 import type { ProductColorFamilyItem, ProductVariant } from "@/types/catalog";
 
 type MiniProduct = {
@@ -38,7 +39,7 @@ function ProductCard({ product }: { product: MiniProduct }) {
       <div className="relative">
         <Link href={`/produto/${product.slug}`} className="relative block aspect-square overflow-hidden rounded-[15px] bg-[#f6f5ef]">
           {product.imageUrl ? (
-            <Image src={product.imageUrl} alt={product.name} fill sizes="(min-width:1200px) 19vw,(min-width:640px) 40vw,76vw"
+            <Image src={resizeVtexImage(product.imageUrl, 480)} alt={product.name} fill sizes="(min-width:1200px) 19vw,(min-width:640px) 40vw,44vw"
               className="object-contain p-3 transition duration-300 group-hover:scale-[1.035] sm:p-4" />
           ) : <span className="grid h-full place-items-center text-sm text-[#777]">Imagem indisponível</span>}
           {bf && <span className="absolute bottom-3 left-3"><CampaignTag discountPercent={off} /></span>}
