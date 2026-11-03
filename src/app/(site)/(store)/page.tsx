@@ -16,7 +16,13 @@ export default async function StorefrontPage() {
   const adult = catalog.filter((p) => inSource(p, "111", "146"));
   const kids = catalog.filter((p) => inSource(p, "173") || p.category === "KIDS");
   const jibbitz = catalog.filter((p) => inSource(p, "215") || p.category === "JIBBITZ");
-  const sale = catalog.filter((p) => p.homeBlackFriday).sort((a, b) => (b.individualDiscountPercent ?? 0) - (a.individualDiscountPercent ?? 0));
+  const isBlackOffer = (p: (typeof catalog)[number]) =>
+    p.homeBlackFriday ||
+    p.sourceCollectionIds.some((id) => ["595", "596", "599"].includes(id)) ||
+    ["595", "596", "599"].includes(p.sourceCollectionId ?? "") ||
+    (p.badge?.toLowerCase().includes("black") ?? false);
+  const sale = catalog.filter(isBlackOffer)
+    .sort((a, b) => (b.individualDiscountPercent ?? 0) - (a.individualDiscountPercent ?? 0));
   const selected = new Map<string, (typeof catalog)[number]>();
   for (const product of [...sale.slice(0, 10), ...kids.slice(0, 10), ...adult.slice(0, 10), ...jibbitz.slice(0, 10)]) selected.set(product.id, product);
   const products = [...selected.values()].map((p) => ({
@@ -35,7 +41,7 @@ export default async function StorefrontPage() {
     stockStatus: p.stockStatus,
     homeBlackFriday: p.homeBlackFriday,
     colorFamilyCount: p.colorFamily.length,
-    colorFamily: p.colorFamily.slice(0, 5).map(({ id, slug, value }) => ({ id, slug, value })),
+    colorFamily: p.colorFamily.slice(0, 5).map(({ id, slug, value, imageUrl }) => ({ id, slug, value, imageUrl })),
     variants: p.variants
       .filter((v) => v.available && v.stockQuantity > 0)
       .slice(0, 40)
