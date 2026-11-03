@@ -68,7 +68,7 @@ export function QuickAddButton({ product, className = "" }: { product: ProductFo
     add(selected);
   };
 
-  const valuesFor = (dimension: string) => [...new Set(available.flatMap((variant) =>
+  const valuesFor = (dimension: string) => [...new Set(product.variants.flatMap((variant) =>
     variant.options.filter((option) => option.name === dimension).map((option) => option.value)
   ))];
 
@@ -96,7 +96,7 @@ export function QuickAddButton({ product, className = "" }: { product: ProductFo
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#639b35]">Adição rápida</p>
                 <h3 className="mt-1 text-lg font-extrabold text-[#222]">{product.name}</h3>
-                <p className="mt-1 text-xs text-[#666]">Selecione as opções disponíveis para continuar.</p>
+                <p className="mt-1 text-xs text-[#666]">Todos os tamanhos do catálogo são exibidos. Os tamanhos sem estoque ficam indisponíveis para compra.</p>
               </div>
               <button type="button" onClick={() => setOpen(false)} aria-label="Fechar seleção"
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f2f2f2] text-xl text-[#333]">×</button>
