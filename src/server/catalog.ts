@@ -300,7 +300,195 @@ export async function getPublicCatalog(assignments?: Assignment[]) {
   return buildPublicCatalog(list);
 }
 
-export async function getPublicProduct(slug: string) {
+const legacyCraftCategories = ["BEADS", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "KIT"] as const;
+
+const getActiveProductBySlug = unstable_cache(
+  async (slug: string) => db.product.findFirst({
+    where: { slug, active: true, priceCents: { gt: 0 }, category: { notIn: [...legacyCraftCategories] } },
+  }),
+  ["active-public-product-by-slug-v1"],
+  { tags: ["catalog"], revalidate: 300 }
+);
+
+const getActiveCategoryProducts = unstable_cache(
+  async (category: Product["category"]) => db.product.findMany({
+    where: { active: true, priceCents: { gt: 0 }, category },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      slug: true,
+      sku: true,
+      name: true,
+      category: true,
+      priceCents: true,
+      compareAtPriceCents: true,
+      promoPriceCents: true,
+      promoStartsAt: true,
+      promoEndsAt: true,
+      promoLabel: true,
+      individualDiscountPercent: true,
+      imageUrl: true,
+      variants: true,
+      stockStatus: true,
+      sortOrder: true,
+    },
+  }),
+  ["active-public-products-by-category-v1"],
+  { tags: ["catalog"], revalidate: 300 }
+);
+
+function activeSectionDiscount(
+  rules: Awaited<ReturnType<typeof getActiveSectionDiscounts>>,
+  category: Product["category"],
+  now: Date
+): number | null {
+  const rule = rules.find((item) =>
+    item.category === category &&
+    item.active &&
+    (!item.startsAt || item.startsAt <= now) &&
+    (!item.endsAt || item.endsAt > now)
+  );
+  return rule?.percent ?? null;
+}
+
+function normalizedFamilyName(name: string): string {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/** PDP: consulta somente o produto solicitado e, quando necessário, seus modelos de cor. */
+export async function getPublicProduct(slug: string, assignments?: Assignment[]) {
+  const [product, list, rules] = await Promise.all([
+    getActiveProductBySlug(slug),
+    assignments ? Promise.resolve(assignments) : currentAssignments(),
+    getActiveSectionDiscounts(),
+  ]);
+  if (!product) return null;
+
+  const now = new Date();
+  const overrides = priceOverrides(list);
+  const publicProduct = toPublicProduct(
+    product,
+    overrides,
+    activeSectionDiscount(rules, product.category, now),
+    now
+  );
+
+  if (product.category === "JIBBITZ") return publicProduct;
+
+  const candidates = await getActiveCategoryProducts(product.category);
+  const family: ProductColorFamilyItem[] = [];
+  const seen = new Set<string>();
+  const familyKey = normalizedFamilyName(product.name);
+
+  for (const candidate of candidates) {
+    if (normalizedFamilyName(candidate.name) !== familyKey) continue;
+    const price = effectivePrice(
+      candidate,
+      overrides,
+      now,
+      activeSectionDiscount(rules, candidate.category, now)
+    );
+    const colors = productColorOptions(asArray<ProductVariant>(candidate.variants));
+    for (const value of colors) {
+      const key = value.toLocaleLowerCase("pt-BR");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      family.push({
+        id: candidate.id,
+        slug: candidate.slug,
+        value: value || "Ver cor",
+        imageUrl: candidate.imageUrl,
+        priceCents: price.priceCents,
+        listPriceCents: price.listPriceCents,
+        available: candidate.stockStatus !== "OUT_OF_STOCK",
+      });
+    }
+  }
+
+  return { ...publicProduct, colorFamily: family };
+}
+
+/** Recomendações leves do PDP: sem galeria, descrição e JSON que não são exibidos nos cards. */
+export async function getPublicRelatedProducts(
+  productId: string,
+  category: Product["category"],
+  assignments?: Assignment[]
+) {
+  const [products, list, rules] = await Promise.all([
+    getActiveCategoryProducts(category),
+    assignments ? Promise.resolve(assignments) : currentAssignments(),
+    getActiveSectionDiscounts(),
+  ]);
+  const overrides = priceOverrides(list);
+  const now = new Date();
+
+  return products
+    .filter((product) => product.id !== productId && product.stockStatus !== "OUT_OF_STOCK")
+    .slice(0, 4)
+    .map((product) => {
+      const price = effectivePrice(
+        product,
+        overrides,
+        now,
+        activeSectionDiscount(rules, product.category, now)
+      );
+      return {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        category: product.category,
+        imageUrl: product.imageUrl,
+        priceCents: price.priceCents,
+      };
+    });
+}
+
+/** Jibbitz do PDP: no máximo dez opções com apenas os dados usados pelo seletor. */
+export async function getPublicJibbitzProducts(assignments?: Assignment[]) {
+  const [products, list, rules] = await Promise.all([
+    getActiveCategoryProducts("JIBBITZ"),
+    assignments ? Promise.resolve(assignments) : currentAssignments(),
+    getActiveSectionDiscounts(),
+  ]);
+  const overrides = priceOverrides(list);
+  const now = new Date();
+
+  return products
+    .filter((product) => product.stockStatus !== "OUT_OF_STOCK")
+    .slice(0, 10)
+    .map((product) => {
+      const basePrice = effectivePrice(
+        product,
+        overrides,
+        now,
+        activeSectionDiscount(rules, product.category, now)
+      );
+      const variants = asArray<ProductVariant>(product.variants);
+      const variant = variants.find((item) => item.available && item.stockQuantity > 0);
+      const variantPrice = variant
+        ? effectivePrice({
+            ...product,
+            priceCents: variant.priceCents,
+            compareAtPriceCents: variant.listPriceCents,
+            promoPriceCents: null,
+            promoStartsAt: null,
+            promoEndsAt: null,
+            promoLabel: null,
+          }, overrides, now, activeSectionDiscount(rules, product.category, now))
+        : null;
+
+      return {
+        id: product.id,
+        name: product.name,
+        sku: variant?.sku ?? product.sku,
+        priceCents: variantPrice?.priceCents ?? basePrice.priceCents,
+        imageUrl: product.imageUrl,
+        variantId: variant?.id ?? null,
+      };
+    });
+}
+
+
   const products = await getPublicCatalog();
   return products.find((p) => p.slug === slug) ?? null;
 }
