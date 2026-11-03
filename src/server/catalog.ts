@@ -18,6 +18,13 @@ export const getActiveProducts = unstable_cache(
   { tags: ["catalog"], revalidate: 300 }
 );
 
+/** Descontos de seção: cacheados separadamente para evitar uma ida ao banco em cada página. */
+const getActiveSectionDiscounts = unstable_cache(
+  async () => db.sectionDiscount.findMany({ where: { active: true } }).catch(() => []),
+  ["active-section-discounts-v1"],
+  { tags: ["catalog"], revalidate: 300 }
+);
+
 export const getActiveExperiments = unstable_cache(
   async (): Promise<ExperimentDef[]> => {
     const rows = await db.experiment.findMany({ where: { active: true } }); // erro não vai para o cache
@@ -107,7 +114,7 @@ export async function getPublicCatalog(assignments?: Assignment[]) {
   const [products, list, rules] = await Promise.all([
     getActiveProducts().catch(() => []),
     assignments ? Promise.resolve(assignments) : currentAssignments(),
-    db.sectionDiscount.findMany({ where: { active: true } }).catch(() => []),
+    getActiveSectionDiscounts(),
   ]);
   const overrides = priceOverrides(list);
   const now = new Date();
