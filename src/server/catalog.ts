@@ -7,9 +7,22 @@ import { assignAll, priceOverrides, type Assignment, type ExperimentDef, type Ex
 import { effectivePrice } from "@/lib/pricing";
 import type { GalleryImage, ProductComponent, ProductSpec } from "@/lib/domain";
 import type { ProductVariant, PublicProduct, ProductColorFamilyItem } from "@/types/catalog";
-import { productColorOptions } from "@/lib/crocs-colors";
+import { isColorOption, productColorOptions } from "@/lib/crocs-colors";
 
 const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+
+function colorVariantImage(variants: ProductVariant[], value: string, fallback: string | null): string | null {
+  const target = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  return variants.find((variant) =>
+    Boolean(variant.imageUrl) &&
+    variant.options.some((option) =>
+      isColorOption(option.name) &&
+      option.value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() === target
+    )
+  )?.imageUrl ?? fallback;
+}
+
+
 
 /** Produtos ativos (cache invalidado pela tag "catalog" em qualquer edição no admin). */
 export const getActiveProducts = unstable_cache(
@@ -145,7 +158,7 @@ const buildPublicCatalog = unstable_cache(
         id: product.id,
         slug: product.slug,
         value: value || "Ver cor",
-        imageUrl: product.imageUrl,
+        imageUrl: colorVariantImage(product.variants, value, product.imageUrl),
         priceCents: product.priceCents,
         listPriceCents: product.listPriceCents,
         available: product.stockStatus !== "OUT_OF_STOCK",
@@ -272,7 +285,7 @@ const buildHomeCatalog = unstable_cache(
           id: product.id,
           slug: product.slug,
           value: value || "Ver cor",
-          imageUrl: product.imageUrl,
+          imageUrl: colorVariantImage(product.variants, value, product.imageUrl),
           priceCents: product.priceCents,
           listPriceCents: product.listPriceCents,
           available: product.stockStatus !== "OUT_OF_STOCK",
@@ -461,7 +474,7 @@ export async function getPublicProduct(slug: string, assignments?: Assignment[])
         id: candidate.id,
         slug: candidate.slug,
         value: value || "Ver cor",
-        imageUrl: candidate.imageUrl,
+        imageUrl: colorVariantImage(asArray<ProductVariant>(candidate.variants), value, candidate.imageUrl),
         priceCents: price.priceCents,
         listPriceCents: price.listPriceCents,
         available: candidate.stockStatus !== "OUT_OF_STOCK",
