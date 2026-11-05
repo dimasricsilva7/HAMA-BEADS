@@ -33,9 +33,9 @@ test("desconto ativo da seção prevalece sobre qualquer cor e regra individual"
   const colorA = effectivePrice({ ...product, individualDiscountPercent: 15, compareAtPriceCents: 14990 }, {}, now, 30);
   const colorB = effectivePrice({ ...product, individualDiscountPercent: null }, {}, now, 30);
   const colorC = effectivePrice({ ...product, individualDiscountPercent: 0 }, {}, now, 30);
-  for (const price of [colorA, colorB, colorC]) {
-    assert.equal(price.priceCents, 8393, "todas as cores usam os 30% da campanha da seção");
-  }
+  assert.equal(colorA.priceCents, 10493, "usa 30% sobre o preço de referência de 149,90");
+  assert.equal(colorB.priceCents, 8393, "usa 30% da seção sobre a base de 119,90");
+  assert.equal(colorC.priceCents, 8393, "0% individual não bloqueia a campanha da seção");
   assert.equal(colorA.listPriceCents, 14990, "mantém o maior preço de referência cadastrado para esta cor");
   assert.equal(colorB.listPriceCents, 11990);
   assert.equal(colorC.listPriceCents, 11990);
