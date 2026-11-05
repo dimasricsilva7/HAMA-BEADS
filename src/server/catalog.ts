@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import type { Product } from "@prisma/client";
 import { db } from "@/lib/db";
 import { assignAll, priceOverrides, type Assignment, type ExperimentDef, type ExperimentVariant } from "@/lib/experiments";
-import { effectivePrice } from "@/lib/pricing";
+import { effectivePrice, isSectionCampaignActive } from "@/lib/pricing";
 import type { GalleryImage, ProductComponent, ProductSpec } from "@/lib/domain";
 import type { ProductVariant, PublicProduct, ProductColorFamilyItem } from "@/types/catalog";
 import { isColorOption, productColorOptions } from "@/lib/crocs-colors";
@@ -33,10 +33,9 @@ export const getActiveProducts = unstable_cache(
 
 /** Descontos de seção: cacheados separadamente para evitar uma ida ao banco em cada página. */
 const getActiveSectionDiscounts = unstable_cache(
-  // Load every rule so we can distinguish a missing rule from an inactive or scheduled one.
-  async () => db.sectionDiscount.findMany(),
-  ["active-section-discounts-diagnostic-v3-20261105"],
-  { tags: ["catalog"], revalidate: 60 }
+  async () => db.sectionDiscount.findMany({ where: { active: true } }),
+  ["active-section-discounts-v3-20261105"],
+  { tags: ["catalog"], revalidate: 300 }
 );
 
 export const getActiveExperiments = unstable_cache(
@@ -420,20 +419,9 @@ function activeSectionDiscount(
   category: Product["category"],
   now: Date
 ): number | null {
-  const rule = rules.find((item) => {
-    if (item.category !== category || !item.active) return false;
-    // unstable_cache serializes Date values as strings. Normalize them before
-    // comparing, otherwise scheduled campaigns are incorrectly treated as inactive.
-    const startsAt = item.startsAt
-      ? item.startsAt instanceof Date ? item.startsAt : new Date(String(item.startsAt))
-      : null;
-    const endsAt = item.endsAt
-      ? item.endsAt instanceof Date ? item.endsAt : new Date(String(item.endsAt))
-      : null;
-    if (startsAt && Number.isNaN(startsAt.getTime())) return false;
-    if (endsAt && Number.isNaN(endsAt.getTime())) return false;
-    return (!startsAt || startsAt <= now) && (!endsAt || endsAt > now);
-  });
+  const rule = rules.find((item) =>
+    item.category === category && isSectionCampaignActive(item, now)
+  );
   return rule?.percent ?? null;
 }
 
@@ -455,20 +443,6 @@ export async function getPublicProduct(slug: string, assignments?: Assignment[])
   // Resolve the campaign once from the selected model's section.
   // Every color in this product family must inherit this same section rule.
   const productSectionDiscount = activeSectionDiscount(rules, product.category, now);
-  if (product.category === "CLOGS") {
-    const rule = rules.find((item) => item.category === "CLOGS");
-    console.info("[CROCS_SECTION_DISCOUNT_DIAGNOSTIC]", JSON.stringify({
-      category: product.category,
-      effectivePercent: productSectionDiscount,
-      rule: rule ? {
-        percent: rule.percent,
-        active: rule.active,
-        startsAt: rule.startsAt ? String(rule.startsAt) : null,
-        endsAt: rule.endsAt ? String(rule.endsAt) : null,
-      } : null,
-      now: now.toISOString(),
-    }));
-  }
   const publicProduct = toPublicProduct(
     product,
     overrides,
