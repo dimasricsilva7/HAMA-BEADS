@@ -44,6 +44,19 @@ test("desconto ativo da seção prevalece sobre qualquer cor e regra individual"
   assert.equal(individualWithoutSection.listPriceCents, 11990);
 });
 
+test("campanha Crocs de 40% aplica preço uniforme a todas as cores", () => {
+  const now = new Date("2026-11-05T12:00:00Z");
+  const colors = [
+    { ...product, id: "navy", individualDiscountPercent: null },
+    { ...product, id: "slate-grey", individualDiscountPercent: 10 },
+    { ...product, id: "bright-cobalt", individualDiscountPercent: 15 },
+    { ...product, id: "atmosphere", individualDiscountPercent: 0 },
+  ];
+  const priced = colors.map((color) => effectivePrice(color, {}, now, 40));
+  assert.deepEqual(priced.map((item) => item.priceCents), [7194, 7194, 7194, 7194]);
+  assert.deepEqual(priced.map((item) => item.listPriceCents), [11990, 11990, 11990, 11990]);
+});
+
 test("promoção de preço fixo concorre com percentual e aplica o menor preço", () => {
   const now = new Date("2026-10-30T12:00:00Z");
   const p = { ...product, compareAtPriceCents: 14990, promoPriceCents: 7000, promoStartsAt: new Date("2026-10-01T00:00:00Z"), promoEndsAt: new Date("2026-11-01T00:00:00Z") };
