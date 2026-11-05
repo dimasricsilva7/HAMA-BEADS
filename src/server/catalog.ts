@@ -33,9 +33,10 @@ export const getActiveProducts = unstable_cache(
 
 /** Descontos de seção: cacheados separadamente para evitar uma ida ao banco em cada página. */
 const getActiveSectionDiscounts = unstable_cache(
-  async () => db.sectionDiscount.findMany({ where: { active: true } }).catch(() => []),
-  ["active-section-discounts-v2-20261105"],
-  { tags: ["catalog"], revalidate: 300 }
+  // Load every rule so we can distinguish a missing rule from an inactive or scheduled one.
+  async () => db.sectionDiscount.findMany(),
+  ["active-section-discounts-diagnostic-v3-20261105"],
+  { tags: ["catalog"], revalidate: 60 }
 );
 
 export const getActiveExperiments = unstable_cache(
@@ -446,6 +447,20 @@ export async function getPublicProduct(slug: string, assignments?: Assignment[])
   // Resolve the campaign once from the selected model's section.
   // Every color in this product family must inherit this same section rule.
   const productSectionDiscount = activeSectionDiscount(rules, product.category, now);
+  if (product.category === "CLOGS") {
+    const rule = rules.find((item) => item.category === "CLOGS");
+    console.info("[CROCS_SECTION_DISCOUNT_DIAGNOSTIC]", JSON.stringify({
+      category: product.category,
+      effectivePercent: productSectionDiscount,
+      rule: rule ? {
+        percent: rule.percent,
+        active: rule.active,
+        startsAt: rule.startsAt?.toISOString() ?? null,
+        endsAt: rule.endsAt?.toISOString() ?? null,
+      } : null,
+      now: now.toISOString(),
+    }));
+  }
   const publicProduct = toPublicProduct(
     product,
     overrides,
