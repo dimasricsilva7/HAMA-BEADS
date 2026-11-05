@@ -34,7 +34,7 @@ export const getActiveProducts = unstable_cache(
 /** Descontos de seção: cacheados separadamente para evitar uma ida ao banco em cada página. */
 const getActiveSectionDiscounts = unstable_cache(
   async () => db.sectionDiscount.findMany({ where: { active: true } }).catch(() => []),
-  ["active-section-discounts-v1"],
+  ["active-section-discounts-v2-20261105"],
   { tags: ["catalog"], revalidate: 300 }
 );
 
@@ -443,10 +443,13 @@ export async function getPublicProduct(slug: string, assignments?: Assignment[])
 
   const now = new Date();
   const overrides = priceOverrides(list);
+  // Resolve the campaign once from the selected model's section.
+  // Every color in this product family must inherit this same section rule.
+  const productSectionDiscount = activeSectionDiscount(rules, product.category, now);
   const publicProduct = toPublicProduct(
     product,
     overrides,
-    activeSectionDiscount(rules, product.category, now),
+    productSectionDiscount,
     now
   );
 
@@ -463,7 +466,7 @@ export async function getPublicProduct(slug: string, assignments?: Assignment[])
       candidate,
       overrides,
       now,
-      activeSectionDiscount(rules, candidate.category, now)
+      productSectionDiscount
     );
     const colors = productColorOptions(asArray<ProductVariant>(candidate.variants));
     for (const value of colors) {
