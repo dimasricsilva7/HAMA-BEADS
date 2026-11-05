@@ -44,17 +44,17 @@ test("desconto ativo da seção prevalece sobre qualquer cor e regra individual"
   assert.equal(individualWithoutSection.listPriceCents, 11990);
 });
 
-test("campanha Crocs de 40% aplica preço uniforme a todas as cores", () => {
+test("campanha Crocs de 40% aplica R$ 179,40 sobre o preço de referência em todas as cores", () => {
   const now = new Date("2026-11-05T12:00:00Z");
   const colors = [
-    { ...product, id: "navy", individualDiscountPercent: null },
-    { ...product, id: "slate-grey", individualDiscountPercent: 10 },
-    { ...product, id: "bright-cobalt", individualDiscountPercent: 15 },
-    { ...product, id: "atmosphere", individualDiscountPercent: 0 },
+    { ...product, id: "navy", priceCents: 29900, compareAtPriceCents: null, individualDiscountPercent: null },
+    { ...product, id: "slate-grey", priceCents: 26910, compareAtPriceCents: 29900, individualDiscountPercent: 10 },
+    { ...product, id: "bright-cobalt", priceCents: 25415, compareAtPriceCents: 29900, individualDiscountPercent: 15 },
+    { ...product, id: "atmosphere", priceCents: 26910, compareAtPriceCents: 29900, individualDiscountPercent: 0 },
   ];
   const priced = colors.map((color) => effectivePrice(color, {}, now, 40));
-  assert.deepEqual(priced.map((item) => item.priceCents), [7194, 7194, 7194, 7194]);
-  assert.deepEqual(priced.map((item) => item.listPriceCents), [11990, 11990, 11990, 11990]);
+  assert.deepEqual(priced.map((item) => item.priceCents), [17940, 17940, 17940, 17940]);
+  assert.deepEqual(priced.map((item) => item.listPriceCents), [29900, 29900, 29900, 29900]);
 });
 
 test("promoção de preço fixo concorre com percentual e aplica o menor preço", () => {
