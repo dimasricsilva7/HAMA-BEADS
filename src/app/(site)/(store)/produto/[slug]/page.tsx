@@ -55,7 +55,9 @@ export default async function ProductPage({ params }: Props) {
   const reviewCount = reviewStats?._count._all ?? 0;
   const averageRating = reviewStats?._avg.rating ?? 0;
   const isBlackFriday = p.homeBlackFriday || p.sourceCollectionIds.some((id) => ["595", "596", "599"].includes(id)) || (p.badge?.toLowerCase().includes("black") ?? false);
-  const discountPercent = p.individualDiscountPercent != null && p.individualDiscountPercent > 0 ? Math.round(p.individualDiscountPercent) : p.listPriceCents && p.listPriceCents > p.priceCents ? Math.round((1 - p.priceCents / p.listPriceCents) * 100) : null;
+  const discountPercent = p.listPriceCents && p.listPriceCents > p.priceCents
+    ? Math.round((1 - p.priceCents / p.listPriceCents) * 100)
+    : null;
   const soldOut = p.stockStatus === "OUT_OF_STOCK" || (p.variants.length > 0 && !p.variants.some((v) => v.available && v.stockQuantity > 0));
   const images = [
     ...(p.imageUrl ? [{ url: p.imageUrl, alt: p.name }] : []),

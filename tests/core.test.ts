@@ -28,16 +28,18 @@ test("preço: 'de' só aparece quando maior que o preço atual", () => {
   assert.equal(effectivePrice({ ...product, compareAtPriceCents: 9990 }).listPriceCents, null);
 });
 
-test("desconto individual prevalece sobre desconto da seção, sem acumular percentuais", () => {
-  const individual = effectivePrice({ ...product, individualDiscountPercent: 20, compareAtPriceCents: 14990 }, {}, new Date("2026-10-30T12:00:00Z"), 30);
-  assert.equal(individual.priceCents, 9592);
-  assert.equal(individual.listPriceCents, 14990);
-  const section = effectivePrice(product, {}, new Date("2026-10-30T12:00:00Z"), 30);
-  assert.equal(section.priceCents, 8393);
-  assert.equal(section.listPriceCents, 11990);
-  const zeroInheritsSection = effectivePrice({ ...product, individualDiscountPercent: 0 }, {}, new Date("2026-10-30T12:00:00Z"), 30);
-  assert.equal(zeroInheritsSection.priceCents, 8393, "0% individual herda o desconto ativo da seção");
-  assert.equal(zeroInheritsSection.listPriceCents, 11990);
+test("desconto ativo da seção prevalece sobre qualquer cor e regra individual", () => {
+  const now = new Date("2026-10-30T12:00:00Z");
+  const colorA = effectivePrice({ ...product, individualDiscountPercent: 15, compareAtPriceCents: 14990 }, {}, now, 30);
+  const colorB = effectivePrice({ ...product, individualDiscountPercent: null }, {}, now, 30);
+  const colorC = effectivePrice({ ...product, individualDiscountPercent: 0 }, {}, now, 30);
+  for (const price of [colorA, colorB, colorC]) {
+    assert.equal(price.priceCents, 8393, "todas as cores usam os 30% da campanha da seção");
+    assert.equal(price.listPriceCents, 11990);
+  }
+  const individualWithoutSection = effectivePrice({ ...product, individualDiscountPercent: 15 }, {}, now, null);
+  assert.equal(individualWithoutSection.priceCents, 10192, "sem campanha da seção, mantém a regra individual");
+  assert.equal(individualWithoutSection.listPriceCents, 11990);
 });
 
 test("promoção de preço fixo concorre com percentual e aplica o menor preço", () => {

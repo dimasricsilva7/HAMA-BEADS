@@ -20,11 +20,9 @@ type MiniProduct = {
 };
 
 const money = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const discount = (p: MiniProduct) => p.individualDiscountPercent != null && p.individualDiscountPercent > 0
-  ? Math.round(p.individualDiscountPercent)
-  : p.listPriceCents && p.listPriceCents > p.priceCents
-    ? Math.round((1 - p.priceCents / p.listPriceCents) * 100)
-    : null;
+const discount = (p: MiniProduct) => p.listPriceCents && p.listPriceCents > p.priceCents
+  ? Math.round((1 - p.priceCents / p.listPriceCents) * 100)
+  : null;
 const sourceIn = (p: MiniProduct, ...ids: string[]) => ids.some((id) => p.sourceCollectionIds.includes(id) || p.sourceCollectionId === id);
 const isBlackFriday = (p: MiniProduct) => p.homeBlackFriday || sourceIn(p, "595", "596", "599") || (p.badge?.toLowerCase().includes("black") ?? false);
 

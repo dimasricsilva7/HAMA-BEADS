@@ -40,7 +40,7 @@ export default async function DiscountsPage() {
                 startsAt={rule?.startsAt ?? null}
                 endsAt={rule?.endsAt ?? null}
                 products={sectionProducts.filter((p) => p.category === key).slice(0, 4)}
-                inheritCount={Math.max(0, count - overrides.length)}
+                inheritCount={count}
                 individualCount={overrides.length}
               />
             </Card>
@@ -48,7 +48,7 @@ export default async function DiscountsPage() {
         })}
       </div>
       <Card title="Exceções individuais" className="mt-6">
-        <p className="mb-3 text-xs text-slate-500">Um desconto individual positivo tem prioridade sobre o percentual da seção. Valores 0% ou vazios herdam a campanha da seção.</p>
+        <p className="mb-3 text-xs text-slate-500">Enquanto uma campanha da seção estiver ativa, o percentual da seção vale para todos os produtos e cores. Descontos individuais só voltam a valer quando a campanha da seção estiver desativada.</p>
         {products.length === 0 ? <p className="text-sm text-slate-500">Nenhum produto com desconto individual.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[540px] text-left text-sm">
@@ -58,7 +58,7 @@ export default async function DiscountsPage() {
           </div>
         )}
       </Card>
-      <p className="mt-4 text-xs text-slate-500">Regra: produto com desconto individual maior que 0% usa esse percentual; produtos com 0% ou sem exceção herdam o desconto da seção. Os percentuais não são somados. Campanhas programadas só entram no preço durante a janela configurada.</p>
+      <p className="mt-4 text-xs text-slate-500">Regra: campanha ativa da seção prevalece para todos os produtos e todas as cores daquela categoria. Sem campanha ativa, aplica-se o desconto individual positivo. Os percentuais não são somados. Campanhas programadas só entram no preço durante a janela configurada.</p>
     </div>
   );
 }

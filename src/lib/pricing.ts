@@ -39,11 +39,12 @@ export function effectivePrice(
 ): EffectivePrice {
   const promo = isPromoActive(p, now);
   const base = overrides[p.id] ?? p.priceCents;
-  // Exceção individual vence o desconto da seção. Descontos percentuais nunca acumulam.
-  // Zero/null means no individual exception: the product inherits its section campaign.
-  const percent = p.individualDiscountPercent != null && p.individualDiscountPercent > 0
-    ? p.individualDiscountPercent
-    : sectionDiscountPercent;
+  // Uma campanha ativa da seção é a regra principal e vale para TODOS os
+  // produtos/cores da categoria. O desconto individual só vale sem campanha
+  // ativa na seção. Percentuais nunca se acumulam.
+  const percent = sectionDiscountPercent != null && sectionDiscountPercent > 0
+    ? sectionDiscountPercent
+    : p.individualDiscountPercent;
   const percentPrice = percent != null && percent > 0
     ? Math.round((base * (100 - Math.min(100, Math.max(0, percent)))) / 100)
     : base;

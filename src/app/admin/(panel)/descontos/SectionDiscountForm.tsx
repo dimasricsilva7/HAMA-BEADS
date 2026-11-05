@@ -20,8 +20,9 @@ export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt
   const [percent, setPercent] = useState(String(currentPercent));
   const pct = Math.min(100, Math.max(0, Number.parseInt(percent || "0", 10) || 0));
   const preview = useMemo(() => products.slice(0, 4).map((p) => {
-    const effectivePct = p.individualDiscountPercent != null && p.individualDiscountPercent > 0 ? p.individualDiscountPercent : pct;
-    return { ...p, discount: effectivePct, newPrice: Math.round(p.priceCents * (100 - effectivePct) / 100), inherited: p.individualDiscountPercent == null };
+    const hasSectionCampaign = pct > 0;
+    const effectivePct = hasSectionCampaign ? pct : (p.individualDiscountPercent ?? 0);
+    return { ...p, discount: effectivePct, newPrice: Math.round(p.priceCents * (100 - effectivePct) / 100), inherited: hasSectionCampaign || p.individualDiscountPercent == null || p.individualDiscountPercent <= 0 };
   }), [products, pct]);
 
   return (
@@ -47,7 +48,7 @@ export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Prévia antes de salvar</p>
-          <p className="text-xs text-slate-500">{inheritCount} produto(s) herdarão {pct}% · {individualCount} com regra individual</p>
+          <p className="text-xs text-slate-500">{inheritCount} produto(s) receberão {pct}% durante a campanha · {individualCount} com desconto individual cadastrado</p>
         </div>
         {preview.length === 0 ? <p className="mt-2 text-xs text-slate-500">Nenhum produto ativo nesta seção.</p> : (
           <ul className="mt-2 divide-y divide-slate-200">
@@ -62,7 +63,7 @@ export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt
             ))}
           </ul>
         )}
-        <p className="mt-2 text-[11px] text-slate-500">Amostra de até 4 produtos. O total de produtos afetados aparece acima. Exceções individuais permanecem; campanhas de preço fixo podem resultar em um preço ainda menor.</p>
+        <p className="mt-2 text-[11px] text-slate-500">Amostra de até 4 produtos. Durante a campanha ativa, todos recebem o percentual da seção, inclusive produtos com desconto individual cadastrado. Campanhas de preço fixo ainda podem resultar em um preço menor.</p>
       </div>
     </div>
   );

@@ -70,7 +70,7 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
   const selected = purchasable.find(matchesChosen) ?? (requiredDimensions.length === 0 ? purchasable[0] : undefined);
 
   const price = selected?.priceCents ?? product.priceCents;
-  const list = selected?.listPriceCents ?? product.listPriceCents;
+  const list = selected ? selected.listPriceCents : product.listPriceCents;
   const soldOut = product.stockStatus === "OUT_OF_STOCK" || (variants.length > 0 && purchasable.length === 0);
 
   const availableOption = (dimension: string, value: string) => purchasable.some((variant) =>
@@ -102,7 +102,6 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
   return (
     <div className="mt-5 bg-white">
       <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-        {list && list > price && <span className="text-sm text-[#777] line-through">{(list / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>}
         <Price priceCents={price} listPriceCents={list} size="lg" />
       </div>
       {list && list > price && <p className="mt-1 text-xs font-bold text-[#579628]">{Math.round((1 - price / list) * 100)}% de desconto</p>}
