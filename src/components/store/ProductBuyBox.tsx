@@ -57,6 +57,7 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
   const requiredDimensions = selectionDimensions.filter((dimension) => values(dimension).length > 1);
 
   const [chosen, setChosen] = useState<Record<string, string>>({});
+  const [showAllColors, setShowAllColors] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedJibbitz, setSelectedJibbitz] = useState<string[]>([]);
   const selectedJibbitzItems = jibbitzProducts.filter((item) => selectedJibbitz.includes(item.id));
@@ -113,8 +114,8 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
             <span className="text-[#555]">{product.colorFamily.find((item) => item.id === product.id)?.value ?? "Selecione"}</span>
           </div>
           <div className="flex flex-wrap gap-3">
-            {product.colorFamily.slice(0, 9).map((item) => (
-              <Link key={item.id} href={`/produto/${item.slug}`} title={item.value} aria-label={`Cor ${item.value}`}
+            {product.colorFamily.slice(0, showAllColors ? product.colorFamily.length : 9).map((item) => (
+              <Link key={`${item.id}-${item.value}`} href={`/produto/${item.slug}`} title={item.value} aria-label={`Cor ${item.value}`}
                 aria-current={item.id === product.id ? "page" : undefined}
                 className={`grid h-9 w-9 place-items-center rounded-full border bg-white transition ${item.id === product.id ? "border-[#222] ring-2 ring-[#222] ring-offset-2" : "border-[#ddd] hover:border-[#888]"}`}>
                 <span className="relative h-6 w-6 overflow-hidden rounded-full border border-black/10 bg-white">
@@ -125,7 +126,12 @@ export default function ProductBuyBox({ product, slug, jibbitzProducts, productJ
               </Link>
             ))}
           </div>
-          {product.colorFamily.length > 9 && <span className="mt-2 inline-flex rounded-full border border-[#ddd] bg-white px-3 py-1 text-xs font-bold text-[#555]">+{product.colorFamily.length - 9} cores</span>}
+          {product.colorFamily.length > 9 && (
+            <button type="button" onClick={() => setShowAllColors((open) => !open)} aria-expanded={showAllColors}
+              className="mt-2 inline-flex min-h-8 items-center rounded-full border border-[#ddd] bg-white px-3 py-1 text-xs font-bold text-[#555] transition hover:border-[#888] hover:bg-[#f7f7f7]">
+              {showAllColors ? "Mostrar menos" : `+${product.colorFamily.length - 9} cores`}
+            </button>
+          )}
           <p className="mt-2 text-[11px] text-[#777]">{product.colorFamily.length} cores disponíveis no catálogo</p>
         </section>
       ) : colorDimension && values(colorDimension).length > 0 ? (

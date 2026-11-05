@@ -41,7 +41,7 @@ export default async function StorefrontPage() {
     stockStatus: p.stockStatus,
     homeBlackFriday: p.homeBlackFriday,
     colorFamilyCount: p.colorFamily.length,
-    colorFamily: p.colorFamily.slice(0, 5).map(({ id, slug, value, imageUrl }) => ({ id, slug, value, imageUrl })),
+    colorFamily: p.colorFamily.map(({ id, slug, value, imageUrl }) => ({ id, slug, value, imageUrl })),
     // Include all catalog sizes in the home selector; inventory still controls purchase.
     variants: p.variants
       .slice(0, 40)

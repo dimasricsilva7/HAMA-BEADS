@@ -11,7 +11,7 @@ export default async function DiscountsPage() {
   const [counts, rules, products, sectionProducts] = await Promise.all([
     db.product.groupBy({ by: ["category"], where: { active: true }, _count: { _all: true } }),
     db.sectionDiscount.findMany(),
-    db.product.findMany({ where: { active: true, individualDiscountPercent: { not: null } }, select: { id: true, name: true, category: true, priceCents: true, individualDiscountPercent: true }, orderBy: { name: "asc" } }),
+    db.product.findMany({ where: { active: true, individualDiscountPercent: { gt: 0 } }, select: { id: true, name: true, category: true, priceCents: true, individualDiscountPercent: true }, orderBy: { name: "asc" } }),
     db.product.findMany({ where: { active: true, priceCents: { gt: 0 } }, select: { id: true, name: true, category: true, priceCents: true, individualDiscountPercent: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
   ]);
   const countByCategory = new Map(counts.map((x) => [x.category, x._count._all]));
@@ -48,7 +48,7 @@ export default async function DiscountsPage() {
         })}
       </div>
       <Card title="Exceções individuais" className="mt-6">
-        <p className="mb-3 text-xs text-slate-500">O desconto individual tem prioridade sobre o percentual da seção. Edite o produto para alterar ou remover essa exceção.</p>
+        <p className="mb-3 text-xs text-slate-500">Um desconto individual positivo tem prioridade sobre o percentual da seção. Valores 0% ou vazios herdam a campanha da seção.</p>
         {products.length === 0 ? <p className="text-sm text-slate-500">Nenhum produto com desconto individual.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[540px] text-left text-sm">
@@ -58,7 +58,7 @@ export default async function DiscountsPage() {
           </div>
         )}
       </Card>
-      <p className="mt-4 text-xs text-slate-500">Regra: produto com desconto individual usa esse percentual; os demais herdam o desconto da seção. Os percentuais não são somados. Campanhas programadas só entram no preço durante a janela configurada.</p>
+      <p className="mt-4 text-xs text-slate-500">Regra: produto com desconto individual maior que 0% usa esse percentual; produtos com 0% ou sem exceção herdam o desconto da seção. Os percentuais não são somados. Campanhas programadas só entram no preço durante a janela configurada.</p>
     </div>
   );
 }

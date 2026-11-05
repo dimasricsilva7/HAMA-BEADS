@@ -20,7 +20,7 @@ export function SectionDiscountForm({ category, currentPercent, startsAt, endsAt
   const [percent, setPercent] = useState(String(currentPercent));
   const pct = Math.min(100, Math.max(0, Number.parseInt(percent || "0", 10) || 0));
   const preview = useMemo(() => products.slice(0, 4).map((p) => {
-    const effectivePct = p.individualDiscountPercent ?? pct;
+    const effectivePct = p.individualDiscountPercent != null && p.individualDiscountPercent > 0 ? p.individualDiscountPercent : pct;
     return { ...p, discount: effectivePct, newPrice: Math.round(p.priceCents * (100 - effectivePct) / 100), inherited: p.individualDiscountPercent == null };
   }), [products, pct]);
 

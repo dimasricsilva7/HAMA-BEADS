@@ -35,6 +35,9 @@ test("desconto individual prevalece sobre desconto da seção, sem acumular perc
   const section = effectivePrice(product, {}, new Date("2026-10-30T12:00:00Z"), 30);
   assert.equal(section.priceCents, 8393);
   assert.equal(section.listPriceCents, 11990);
+  const zeroInheritsSection = effectivePrice({ ...product, individualDiscountPercent: 0 }, {}, new Date("2026-10-30T12:00:00Z"), 30);
+  assert.equal(zeroInheritsSection.priceCents, 8393, "0% individual herda o desconto ativo da seção");
+  assert.equal(zeroInheritsSection.listPriceCents, 11990);
 });
 
 test("promoção de preço fixo concorre com percentual e aplica o menor preço", () => {

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { FavoriteButton } from "@/components/store/FavoriteButton";
 import { CampaignTag } from "@/components/store/CampaignTag";
 import { QuickAddButton, type QuickAddVariant } from "@/components/store/QuickAddButton";
@@ -32,6 +32,8 @@ function ProductCard({ product }: { product: MiniProduct }) {
   const off = discount(product);
   const colors = product.category === "JIBBITZ" ? [] : product.colorFamily;
   const colorCount = product.colorFamilyCount ?? colors.length;
+  const [showAllColors, setShowAllColors] = useState(false);
+  const visibleColors = showAllColors ? colors : colors.slice(0, 5);
   const bf = isBlackFriday(product);
   return (
     <article className="group min-w-0">
@@ -48,13 +50,18 @@ function ProductCard({ product }: { product: MiniProduct }) {
       {bf ? <div className="mt-3 h-2.5" /> : <div className="mt-4 h-1" />}
       {colors.length > 0 && (
         <div className="mt-1 flex min-h-5 flex-wrap items-center gap-1.5" aria-label={`${colors.length} cores disponíveis`}>
-          {colors.slice(0, 5).map((color) => <Link key={color.id} href={`/produto/${color.slug}`} title={color.value} aria-label={`Cor ${color.value}`}
+          {visibleColors.map((color) => <Link key={`${color.id}-${color.value}`} href={`/produto/${color.slug}`} title={color.value} aria-label={`Cor ${color.value}`}
             className="relative h-[16px] w-[16px] shrink-0 overflow-hidden rounded-full border border-black/15 bg-white">
             {color.imageUrl
               ? <Image src={resizeVtexImage(color.imageUrl, 96)} alt="" fill sizes="16px" className="object-cover" />
               : <span className="absolute inset-0" style={{ background: crocsColorBackground(color.value) }} />}
           </Link>)}
-          {colorCount > 5 && <span className="grid h-[18px] min-w-[26px] place-items-center rounded-full border border-[#ddd] bg-white px-1 text-[9px] font-bold text-[#555]">+{colorCount - 5}</span>}
+          {colorCount > 5 && (
+            <button type="button" onClick={() => setShowAllColors((open) => !open)} aria-expanded={showAllColors}
+              className="inline-flex min-h-[22px] items-center justify-center rounded-full border border-[#ddd] bg-white px-2 text-[9px] font-bold text-[#555] transition hover:border-[#888] hover:bg-[#f7f7f7]">
+              {showAllColors ? "− menos" : `+${colorCount - 5} cores`}
+            </button>
+          )}
         </div>
       )}
       {product.category === "JIBBITZ" && (
@@ -154,7 +161,7 @@ export default function FootwearHome({ products, storeName, heroImageUrl, catego
       <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
         {categoryTiles.map((tile) => <Link key={tile.id} href={tile.href} aria-label={`Comprar ${tile.alt}`} className="group relative block aspect-[2.12/1] min-w-0 overflow-hidden rounded-[12px] bg-[#f3f3f1]">
           <Image src={tile.image} alt="" fill sizes="33vw" className="object-cover transition duration-300 group-hover:scale-[1.02]" />
-          <span className="absolute inset-x-0 bottom-0 grid min-h-8 place-items-center bg-white/85 px-1 text-center text-[11px] font-bold tracking-[.12em] text-[#171717] sm:min-h-10 sm:text-sm">{tile.alt}</span>
+          {tile.id === "jibbitz" && <span className="absolute inset-x-0 bottom-0 grid min-h-8 place-items-center bg-white/85 px-1 text-center text-[11px] font-bold tracking-[.12em] text-[#171717] sm:min-h-10 sm:text-sm">{tile.alt}</span>}
         </Link>)}
       </div>
     </section>
