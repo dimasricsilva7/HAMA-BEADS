@@ -133,7 +133,7 @@ const buildPublicCatalog = unstable_cache(
   const now = new Date();
   const discountByCategory = new Map(
     rules
-      .filter((r) => (!r.startsAt || r.startsAt <= now) && (!r.endsAt || r.endsAt > now))
+      .filter((r) => isSectionCampaignActive(r, now))
       .map((r) => [r.category, r.percent])
   );
   // Hide the previous bead-craft catalog from the public footwear storefront.
@@ -174,7 +174,7 @@ const buildPublicCatalog = unstable_cache(
     return { ...product, colorFamily: colors };
   });
   },
-  ["public-catalog-by-assignment-v1"],
+  ["public-catalog-by-assignment-v2-20261105"],
   { tags: ["catalog", "experiments"], revalidate: 300 }
 );
 
@@ -227,7 +227,7 @@ const buildHomeCatalog = unstable_cache(
     const now = new Date();
     const discountByCategory = new Map(
       rules
-        .filter((r) => (!r.startsAt || r.startsAt <= now) && (!r.endsAt || r.endsAt > now))
+        .filter((r) => isSectionCampaignActive(r, now))
         .map((r) => [r.category, r.percent])
     );
 
@@ -299,7 +299,7 @@ const buildHomeCatalog = unstable_cache(
       return { ...product, colorFamily: familyMap.get(familyKeyOf(product)) ?? [] };
     });
   },
-  ["home-catalog-by-assignment-v1"],
+  ["home-catalog-by-assignment-v2-20261105"],
   { tags: ["catalog", "experiments"], revalidate: 300 }
 );
 
