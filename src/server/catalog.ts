@@ -420,12 +420,20 @@ function activeSectionDiscount(
   category: Product["category"],
   now: Date
 ): number | null {
-  const rule = rules.find((item) =>
-    item.category === category &&
-    item.active &&
-    (!item.startsAt || item.startsAt <= now) &&
-    (!item.endsAt || item.endsAt > now)
-  );
+  const rule = rules.find((item) => {
+    if (item.category !== category || !item.active) return false;
+    // unstable_cache serializes Date values as strings. Normalize them before
+    // comparing, otherwise scheduled campaigns are incorrectly treated as inactive.
+    const startsAt = item.startsAt
+      ? item.startsAt instanceof Date ? item.startsAt : new Date(String(item.startsAt))
+      : null;
+    const endsAt = item.endsAt
+      ? item.endsAt instanceof Date ? item.endsAt : new Date(String(item.endsAt))
+      : null;
+    if (startsAt && Number.isNaN(startsAt.getTime())) return false;
+    if (endsAt && Number.isNaN(endsAt.getTime())) return false;
+    return (!startsAt || startsAt <= now) && (!endsAt || endsAt > now);
+  });
   return rule?.percent ?? null;
 }
 
@@ -455,8 +463,8 @@ export async function getPublicProduct(slug: string, assignments?: Assignment[])
       rule: rule ? {
         percent: rule.percent,
         active: rule.active,
-        startsAt: rule.startsAt?.toISOString() ?? null,
-        endsAt: rule.endsAt?.toISOString() ?? null,
+        startsAt: rule.startsAt ? String(rule.startsAt) : null,
+        endsAt: rule.endsAt ? String(rule.endsAt) : null,
       } : null,
       now: now.toISOString(),
     }));
