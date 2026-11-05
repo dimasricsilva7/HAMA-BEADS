@@ -51,13 +51,19 @@ export function effectivePrice(
   sectionDiscountPercent: number | null = null
 ): EffectivePrice {
   const promo = isPromoActive(p, now);
-  const base = overrides[p.id] ?? p.priceCents;
-  // Uma campanha ativa da seção é a regra principal e vale para TODOS os
-  // produtos/cores da categoria. O desconto individual só vale sem campanha
-  // ativa na seção. Percentuais nunca se acumulam.
-  const percent = sectionDiscountPercent != null && sectionDiscountPercent > 0
-    ? sectionDiscountPercent
-    : p.individualDiscountPercent;
+  const hasSectionCampaign = sectionDiscountPercent != null && sectionDiscountPercent > 0;
+  // VTEX may return Price already reduced while ListPrice still stores the
+  // actual reference price. A section campaign must start from that reference
+  // price, otherwise colors with old 10%/15% markdowns would receive stacked discounts.
+  const sectionBase = hasSectionCampaign &&
+    p.compareAtPriceCents != null &&
+    p.compareAtPriceCents > p.priceCents
+      ? p.compareAtPriceCents
+      : p.priceCents;
+  const base = overrides[p.id] ?? (hasSectionCampaign ? sectionBase : p.priceCents);
+  // A section campaign applies equally to every product/color in its category.
+  // Individual discounts are used only when there is no active section campaign.
+  const percent = hasSectionCampaign ? sectionDiscountPercent : p.individualDiscountPercent;
   const percentPrice = percent != null && percent > 0
     ? Math.round((base * (100 - Math.min(100, Math.max(0, percent)))) / 100)
     : base;
