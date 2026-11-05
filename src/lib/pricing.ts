@@ -22,6 +22,19 @@ export type EffectivePrice = {
 
 const toDate = (d: Date | string | null) => (d ? new Date(d) : null);
 
+/** Date-window check that also accepts ISO strings returned by Next.js' data cache. */
+export function isSectionCampaignActive(
+  rule: { active: boolean; startsAt: Date | string | null; endsAt: Date | string | null },
+  now = new Date()
+): boolean {
+  if (!rule.active) return false;
+  const start = toDate(rule.startsAt);
+  const end = toDate(rule.endsAt);
+  if (start && Number.isNaN(start.getTime())) return false;
+  if (end && Number.isNaN(end.getTime())) return false;
+  return (!start || start <= now) && (!end || end > now);
+}
+
 /** Promoção só vale dentro da janela configurada. Sem contagem regressiva falsa. */
 export function isPromoActive(p: PriceSource, now = new Date()): boolean {
   if (p.promoPriceCents == null || p.promoPriceCents <= 0) return false;
