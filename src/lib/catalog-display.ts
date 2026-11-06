@@ -18,13 +18,25 @@ export type CatalogDisplayProduct = {
 };
 
 /** Normalização única para identificar o mesmo modelo vendido em cores diferentes. */
+const COLOR_SUFFIXES = [
+  "winter white/multi", "white/multi", "black/black", "black/white", "white/black",
+  "navy/white", "pink/white", "white", "black", "navy", "bone", "oyster",
+  "stucco", "khaki", "beige", "sand", "multi", "pink", "rose", "red",
+  "blue", "green", "yellow", "purple", "grey", "gray", "brown", "tan",
+  "preto", "preta", "branco", "branca", "azul", "verde", "rosa", "vermelho",
+  "amarelo", "cinza", "marrom", "bege", "areia",
+];
+
+/** Normaliza nome e remove apenas um sufixo conhecido de cor para reunir colorways. */
 export function normalizeCatalogModelName(name: string): string {
-  return name
+  const normalized = name
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\\u0300-\\u036f]/g, "")
     .toLocaleLowerCase("pt-BR")
-    .replace(/\s+/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
+  const colorSuffix = new RegExp("(?:\\\\s+|\\\\s*[-/]\\\\s*)(?:" + COLOR_SUFFIXES.join("|") + ")$", "i");
+  return normalized.replace(colorSuffix, "").trim();
 }
 
 export function catalogFamilyKey(product: Pick<CatalogDisplayProduct, "category" | "name">): string {
