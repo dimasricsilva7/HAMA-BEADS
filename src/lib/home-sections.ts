@@ -1,3 +1,5 @@
+import { normalizeCatalogModelName } from "./catalog-display";
+
 export const HOME_SECTION_KEYS = ["black", "kids", "adult", "jibbitz"] as const;
 
 export type HomeSectionKey = (typeof HOME_SECTION_KEYS)[number];
@@ -35,8 +37,7 @@ export function parseHomeSectionSelection(raw: string | null | undefined): HomeS
 /** Agrupa registros do mesmo modelo em uma única opção de vitrine (as cores continuam no seletor do produto). */
 export function homeProductFamilyKey(product: Pick<HomeSectionProductLike, "id" | "name" | "category">): string {
   if (product.category === "JIBBITZ") return `JIBBITZ:${product.id}`;
-  const normalized = product.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-  return `${product.category}:${normalized}`;
+  return `${product.category}:${normalizeCatalogModelName(product.name)}`;
 }
 
 export function defaultHomeSectionSelection<T extends HomeSectionProductLike>(products: T[]): HomeSectionSelection {
