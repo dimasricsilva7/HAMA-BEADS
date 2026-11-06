@@ -17,7 +17,6 @@ const CAMPAIGN_COLLECTIONS = [
   { id: "596", label: "Ofertas Black adulto" },
   { id: "599", label: "Ofertas Black" },
 ] as const;
-const LEGACY_COLLECTIONS = new Set(["469", "596", "597"]);
 
 type VtexOffer = { Price?: number; ListPrice?: number; AvailableQuantity?: number; IsAvailable?: boolean };
 type VtexItem = {
