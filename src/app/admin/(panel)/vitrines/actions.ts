@@ -17,7 +17,7 @@ export async function saveHomeSections(_: ActionResult, fd: FormData): Promise<A
     const ids = Object.values(selection).flat();
     if (ids.some((id) => id.length > 40)) return { error: "Um dos produtos selecionados tem um identificador inválido." };
     const uniqueIds = [...new Set(ids)];
-    if (uniqueIds.length !== ids.length) return { error: "O mesmo produto foi selecionado mais de uma vez na mesma vitrine." };
+    // O mesmo modelo pode aparecer em mais de uma vitrine; duplicatas dentro de cada seção já são removidas pelo parser.
 
     if (uniqueIds.length) {
       const valid = await db.product.findMany({

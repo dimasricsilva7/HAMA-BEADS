@@ -44,7 +44,11 @@ export function HomeVitrinesEditor({ candidates, initial }: { candidates: HomeVi
   const byId = useMemo(() => new Map(candidates.map((product) => [product.id, product])), [candidates]);
   const categories = useMemo(() => [...new Set(candidates.map((product) => product.categoryLabel))].sort((a, b) => a.localeCompare(b, "pt-BR")), [candidates]);
   const selected = selection[active];
-  const selectedProducts = selected.map((id) => byId.get(id)).filter((p): p is HomeVitrineCandidate => Boolean(p));
+  const selectedProducts = selected.map((id) => byId.get(id) ?? ({
+    id, name: "Produto inativo ou indisponível", sku: "", category: "", categoryLabel: "Indisponível",
+    imageUrl: null, priceCents: 0, colorCount: 0, stockStatus: "OUT_OF_STOCK",
+    sourceCollectionId: null, sourceCollectionIds: [], homeBlackFriday: false, badge: null, listPriceCents: null,
+  } satisfies HomeVitrineCandidate));
   const selectedSet = new Set(selected);
   const filtered = useMemo(() => {
     const q = search.trim().toLocaleLowerCase("pt-BR");

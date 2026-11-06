@@ -15,13 +15,6 @@ export type HomeSectionProductLike = {
   listPriceCents: number | null;
 };
 
-const emptySelection = (): HomeSectionSelection => ({
-  black: [],
-  kids: [],
-  adult: [],
-  jibbitz: [],
-});
-
 export function parseHomeSectionSelection(raw: string | null | undefined): HomeSectionSelection | null {
   if (!raw?.trim()) return null;
   try {
@@ -42,7 +35,7 @@ export function parseHomeSectionSelection(raw: string | null | undefined): HomeS
 /** Agrupa registros do mesmo modelo em uma única opção de vitrine (as cores continuam no seletor do produto). */
 export function homeProductFamilyKey(product: Pick<HomeSectionProductLike, "id" | "name" | "category">): string {
   if (product.category === "JIBBITZ") return `JIBBITZ:${product.id}`;
-  const normalized = product.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim();
+  const normalized = product.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
   return `${product.category}:${normalized}`;
 }
 
