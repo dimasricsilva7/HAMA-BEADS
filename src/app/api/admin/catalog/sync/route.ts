@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { getCurrentAdmin } from "@/lib/auth";
 import { isSameOrigin } from "@/lib/request";
 import { log } from "@/lib/log";
+import { crocsCategoryCollectionIds } from "@/lib/crocs-catalog";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -41,6 +42,7 @@ type VtexProduct = {
   link?: string;
   description?: string;
   categories?: string[];
+  categoriesIds?: string[];
   items?: VtexItem[];
 };
 
@@ -152,24 +154,37 @@ function normalizeProduct(p: VtexProduct, collectionId: string) {
   };
 }
 
-async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) {
+async function saveOne(
+  p: VtexProduct,
+  collectionId: string,
+  sortOrder: number,
+  options: { activate?: boolean; preserveSort?: boolean } = {},
+) {
   const x = normalizeProduct(p, collectionId);
   if (!x) return "skipped" as const;
   if (x.priceCents <= 0) return "skipped" as const;
   const existing = await db.product.findUnique({
     where: { sourceProductId: x.productId },
-    select: { id: true, active: true, individualDiscountPercent: true, badge: true, sourceCollectionId: true, sourceCollectionIds: true },
+    select: {
+      id: true, active: true, individualDiscountPercent: true, badge: true,
+      sourceCollectionId: true, sourceCollectionIds: true, sortOrder: true,
+    },
   });
   const storedMemberships = Array.isArray(existing?.sourceCollectionIds)
     ? existing.sourceCollectionIds.filter((value): value is string => typeof value === "string")
     : [];
-  const legacyMemberships = existing?.sourceCollectionId && !LEGACY_WRONG_COLLECTIONS.has(existing.sourceCollectionId)
-    ? [existing.sourceCollectionId]
-    : [];
-  const memberships = [...new Set([...storedMemberships, ...legacyMemberships].filter((id) => !LEGACY_WRONG_COLLECTIONS.has(id)).concat(collectionId))];
-  const primaryCategoryId = CATEGORY_COLLECTIONS.has(collectionId)
-    ? collectionId
-    : memberships.find((id) => CATEGORY_COLLECTIONS.has(id)) ?? null;
+  const sourceCategoryIds = crocsCategoryCollectionIds(p.categoriesIds, CATEGORY_COLLECTIONS.has(collectionId) ? collectionId : undefined);
+  // categoriesIds is authoritative. This prevents a style previously imported as Feminino
+  // from carrying stale collection links after the source changes its taxonomy.
+  const campaignMemberships = storedMemberships.filter((id) => BLACK_FRIDAY_COLLECTIONS.has(id));
+  const memberships = [...new Set([
+    ...sourceCategoryIds,
+    ...campaignMemberships,
+    ...(BLACK_FRIDAY_COLLECTIONS.has(collectionId) ? [collectionId] : []),
+  ])];
+  const primaryCategoryId =
+    (existing?.sourceCollectionId && sourceCategoryIds.includes(existing.sourceCollectionId) ? existing.sourceCollectionId : null) ??
+    (sourceCategoryIds.includes("146") ? "146" : sourceCategoryIds[0] ?? null);
   const data = {
     name: x.name,
     slug: x.slug,
@@ -187,12 +202,12 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
     variants: x.variants,
     stockQuantity: x.stockQuantity,
     stockStatus: x.stockStatus,
-    active: existing?.active ?? true,
+    active: options.activate ? true : existing?.active ?? true,
     sourceUrl: x.sourceUrl,
     sourceCollectionId: primaryCategoryId,
     sourceCollectionIds: memberships,
     sourceSyncedAt: new Date(),
-    sortOrder,
+    sortOrder: options.preserveSort && existing ? existing.sortOrder : sortOrder,
   };
   await db.product.upsert({
     where: { sourceProductId: x.productId },
@@ -202,11 +217,75 @@ async function saveOne(p: VtexProduct, collectionId: string, sortOrder: number) 
   return existing ? "updated" as const : "created" as const;
 }
 
+async function importProductByUrl(productUrl: string) {
+  let parsed: URL;
+  try {
+    parsed = new URL(productUrl);
+  } catch {
+    throw new Error("Informe uma URL válida de produto Crocs.");
+  }
+  if (parsed.origin !== CROCS_ORIGIN || !parsed.pathname.endsWith("/p")) {
+    throw new Error("Use uma URL de produto do site crocs.com.br terminada em /p.");
+  }
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  const requestedSlug = segments.at(-2) ?? "";
+  const styleCode = requestedSlug.match(/(\d{4,}[_-]\d{3,})$/)?.[1]?.replace("-", "_");
+  if (!styleCode) throw new Error("Não consegui identificar o código do modelo nesta URL.");
+
+  const searchUrl = new URL("/api/catalog_system/pub/products/search", CROCS_ORIGIN);
+  searchUrl.searchParams.set("ft", styleCode);
+  searchUrl.searchParams.set("_from", "0");
+  searchUrl.searchParams.set("_to", "49");
+
+  let response: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    response = await fetch(searchUrl, {
+      headers: { Accept: "application/json", "User-Agent": "FootwearCatalogImport/2.0" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(18_000),
+    });
+    if (response.ok || (response.status < 500 && response.status !== 429)) break;
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+  }
+  if (!response?.ok) throw new Error(`A Crocs respondeu com status ${response?.status ?? "desconhecido"} na consulta do produto.`);
+  const products = await response.json() as VtexProduct[];
+  if (!Array.isArray(products)) throw new Error("A origem retornou um catálogo em formato inesperado.");
+  const target = slugify(requestedSlug);
+  const product = products.find((item) => slugify(String(item.linkText ?? "")) === target);
+  if (!product) throw new Error("O modelo não foi encontrado na consulta oficial da Crocs.");
+
+  const collectionIds = crocsCategoryCollectionIds(product.categoriesIds);
+  if (!collectionIds.length) throw new Error("O modelo foi encontrado, mas a origem não informou uma coleção compatível com a loja.");
+  const primaryCollection = collectionIds.includes("146") ? "146" : collectionIds[0];
+  const outcome = await saveOne(product, primaryCollection, 0, { activate: true, preserveSort: true });
+  if (outcome === "skipped") throw new Error("O modelo não possui preço válido para ser publicado.");
+  revalidateTag("catalog");
+  return {
+    productName: product.productName ?? product.productTitle ?? "Produto Crocs",
+    sourceProductId: String(product.productId ?? ""),
+    sourceUrl: product.link ?? productUrl,
+    collectionIds,
+    variants: product.items?.length ?? 0,
+    outcome,
+  };
+}
+
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
   const admin = await getCurrentAdmin();
   if (!admin || !["OWNER", "ADMIN"].includes(admin.role)) return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
-  const body = await req.json().catch(() => null) as { collectionId?: unknown; from?: unknown } | null;
+  const body = await req.json().catch(() => null) as { collectionId?: unknown; from?: unknown; productUrl?: unknown } | null;
+  if (typeof body?.productUrl === "string" && body.productUrl.trim()) {
+    try {
+      const imported = await importProductByUrl(body.productUrl.trim());
+      return NextResponse.json(imported, { headers: { "Cache-Control": "no-store" } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao importar o produto.";
+      log.error("catalog-import", "Falha na importação por URL", { error: message });
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
+  }
+
   const collectionId = String(body?.collectionId ?? "");
   const from = Number(body?.from ?? 0);
   if (!COLLECTIONS.has(collectionId) || !Number.isInteger(from) || from < 0 || from % PAGE_SIZE !== 0 || from > 20000) {

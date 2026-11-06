@@ -24,6 +24,11 @@ const GROUPS: Group[] = [
   { id: "599", title: "Ofertas Black", description: "Produtos marcados na campanha geral Ofertas Black.", badge: "Campanha", type: "campaign" },
 ];
 
+const REQUESTED_PRODUCTS = [
+  { label: "Bayaband Clog — WINTER WHITE/MULTI", url: "https://www.crocs.com.br/sandalia-crocs-bayaband-clog-winter-white-multi-205089_8793/p" },
+  { label: "Crocband Clog — BLACK", url: "https://www.crocs.com.br/sandalia-crocs-crocband-clog-black-11016_4891/p" },
+] as const;
+
 const emptyProgress = (): Progress => ({
   fetched: 0, total: null, variants: 0, images: 0, created: 0, updated: 0, skipped: 0, done: false, message: "Aguardando importação.",
 });
@@ -32,6 +37,9 @@ export default function CatalogSyncClient() {
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState<Record<string, Progress>>({});
   const [error, setError] = useState<string | null>(null);
+  const [requestedUrls, setRequestedUrls] = useState<string[]>(REQUESTED_PRODUCTS.map((item) => item.url));
+  const [requestedBusy, setRequestedBusy] = useState(false);
+  const [requestedResults, setRequestedResults] = useState<string[]>([]);
 
   async function importGroup(id: string) {
     let from = 0;
@@ -89,7 +97,7 @@ export default function CatalogSyncClient() {
   }
 
   async function syncAll() {
-    if (busy) return;
+    if (busy || requestedBusy) return;
     setBusy("all");
     setError(null);
     try {
@@ -100,6 +108,32 @@ export default function CatalogSyncClient() {
       setError(e instanceof Error ? e.message : "Falha na importação completa.");
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function importRequestedProducts() {
+    if (busy || requestedBusy) return;
+    setRequestedBusy(true);
+    setRequestedResults([]);
+    setError(null);
+    try {
+      for (let index = 0; index < requestedUrls.length; index++) {
+        const url = requestedUrls[index].trim();
+        if (!url) continue;
+        const response = await fetch("/api/admin/catalog/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productUrl: url }),
+          cache: "no-store",
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || `Não foi possível importar o produto ${index + 1}.`);
+        setRequestedResults((current) => [...current, `${body.productName} importado · coleções ${(body.collectionIds as string[]).join(", ")} · ${body.variants} variantes`]);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao importar os produtos.");
+    } finally {
+      setRequestedBusy(false);
     }
   }
 
@@ -120,6 +154,25 @@ export default function CatalogSyncClient() {
         {Object.keys(progress).length > 0 && (
           <p className="mt-3 text-xs font-semibold">Nesta execução: {totalProducts.toLocaleString("pt-BR")} produtos consultados · {totalCreated.toLocaleString("pt-BR")} novos · {totalUpdated.toLocaleString("pt-BR")} atualizados.</p>
         )}
+      </section>
+
+      <section className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+        <p className="font-bold">Importar produtos específicos da Crocs</p>
+        <p className="mt-1">Cole uma URL oficial de produto para importar o modelo, as fotos, o preço e todas as numerações. A importação preserva os vínculos oficiais de coleção (inclusive quando o modelo pertence ao Feminino e ao Masculino).</p>
+        <div className="mt-4 space-y-3">
+          {requestedUrls.map((url, index) => (
+            <label key={index} className="block">
+              <span className="mb-1 block text-xs font-bold">{REQUESTED_PRODUCTS[index]?.label ?? `Produto ${index + 1}`}</span>
+              <input value={url} onChange={(event) => setRequestedUrls((current) => current.map((item, i) => i === index ? event.target.value : item))}
+                type="url" inputMode="url" className="min-h-10 w-full rounded-lg border border-blue-200 bg-white px-3 text-xs text-slate-800 outline-none focus:border-blue-500" />
+            </label>
+          ))}
+          <button type="button" onClick={importRequestedProducts} disabled={Boolean(busy) || requestedBusy}
+            className="inline-flex min-h-11 items-center rounded-lg bg-slate-900 px-5 text-sm font-extrabold text-white disabled:opacity-50">
+            {requestedBusy ? "Importando produtos..." : "Importar os produtos acima"}
+          </button>
+          {requestedResults.length > 0 && <ul className="space-y-1 text-xs font-semibold text-emerald-800">{requestedResults.map((item) => <li key={item}>✓ {item}</li>)}</ul>}
+        </div>
       </section>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</div>}
