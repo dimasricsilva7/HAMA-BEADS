@@ -41,7 +41,7 @@ export default async function HomeVitrinesPage() {
       colorCount: p.category === "JIBBITZ" ? 1 : group.length,
       stockStatus: p.stockStatus,
       sourceCollectionId: p.sourceCollectionId,
-      sourceCollectionIds: p.sourceCollectionIds,
+      sourceCollectionIds: Array.isArray(p.sourceCollectionIds) ? p.sourceCollectionIds.filter((id): id is string => typeof id === "string") : [],
       homeBlackFriday: p.homeBlackFriday,
       badge: p.badge,
       listPriceCents: p.listPriceCents,
