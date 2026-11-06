@@ -444,8 +444,8 @@ export function CheckoutClient({ requireCpf, checkoutNote, shippingNote, consent
                   <p className="font-bold leading-tight">{l.name}</p>
                   <p className="text-sm text-muted">{formatBRL(l.unitPriceCents)}</p>
                   <div className="mt-1 flex items-center gap-3">
-                    {l.fulfillment !== "DIGITAL" && <QtyStepper value={l.quantity} onChange={(n) => cart.setQuantity(l.productId, n)} label={l.name} />}
-                    <button type="button" onClick={() => cart.remove(l.productId)} className="text-sm font-semibold text-muted underline-offset-2 hover:underline">
+                    {l.fulfillment !== "DIGITAL" && <QtyStepper value={l.quantity} onChange={(n) => cart.setQuantity(l.productId, n, l.variantId)} label={l.name} />}
+                    <button type="button" onClick={() => cart.remove(l.productId, l.variantId)} className="text-sm font-semibold text-muted underline-offset-2 hover:underline">
                       Remover
                     </button>
                   </div>
