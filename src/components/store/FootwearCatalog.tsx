@@ -97,7 +97,6 @@ export default function FootwearCatalog({
   const categories = useMemo(() => [...new Set(products.map((product) => product.category))], [products]);
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("pt-BR");
-    const collectionIds = collection.split(",").filter(Boolean);
     const filtered = products
       .filter((product) => category === "ALL" || product.category === category)
       .filter((product) => minPrice <= 0 || product.priceCents >= minPrice)

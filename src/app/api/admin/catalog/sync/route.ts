@@ -15,7 +15,6 @@ const PAGE_SIZE = 50;
 const COLLECTIONS = new Set(["111", "146", "173", "215", "225", "1792513037", "595", "596", "599"]);
 const CATEGORY_COLLECTIONS = new Set(["111", "146", "173", "215", "225", "1792513037"]);
 const BLACK_FRIDAY_COLLECTIONS = new Set(["595", "596", "599"]);
-const LEGACY_WRONG_COLLECTIONS = new Set(["469", "596", "597"]);
 
 type VtexOffer = {
   Price?: number;
@@ -173,18 +172,24 @@ async function saveOne(
   const storedMemberships = Array.isArray(existing?.sourceCollectionIds)
     ? existing.sourceCollectionIds.filter((value): value is string => typeof value === "string")
     : [];
-  const sourceCategoryIds = crocsCategoryCollectionIds(p.categoriesIds, CATEGORY_COLLECTIONS.has(collectionId) ? collectionId : undefined);
-  // categoriesIds is authoritative. This prevents a style previously imported as Feminino
-  // from carrying stale collection links after the source changes its taxonomy.
+  const sourceCategoryIds = crocsCategoryCollectionIds(p.categoriesIds);
+  // categoriesIds is authoritative when present. If the source omits it (some campaign
+  // responses do), retain existing official categories rather than deleting the gender links.
+  const previousCategoryIds = storedMemberships.filter((id) => CATEGORY_COLLECTIONS.has(id));
+  const categoryMemberships = sourceCategoryIds.length
+    ? sourceCategoryIds
+    : previousCategoryIds.length
+      ? previousCategoryIds
+      : CATEGORY_COLLECTIONS.has(collectionId) ? [collectionId] : [];
   const campaignMemberships = storedMemberships.filter((id) => BLACK_FRIDAY_COLLECTIONS.has(id));
   const memberships = [...new Set([
-    ...sourceCategoryIds,
+    ...categoryMemberships,
     ...campaignMemberships,
     ...(BLACK_FRIDAY_COLLECTIONS.has(collectionId) ? [collectionId] : []),
   ])];
   const primaryCategoryId =
-    (existing?.sourceCollectionId && sourceCategoryIds.includes(existing.sourceCollectionId) ? existing.sourceCollectionId : null) ??
-    (sourceCategoryIds.includes("146") ? "146" : sourceCategoryIds[0] ?? null);
+    (existing?.sourceCollectionId && categoryMemberships.includes(existing.sourceCollectionId) ? existing.sourceCollectionId : null) ??
+    (categoryMemberships.includes("146") ? "146" : categoryMemberships[0] ?? null);
   const data = {
     name: x.name,
     slug: x.slug,

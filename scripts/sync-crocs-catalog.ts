@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient, ProductCategory } from "@prisma/client";
+import { crocsCategoryCollectionIds } from "../src/lib/crocs-catalog";
 
 const db = new PrismaClient();
 const ORIGIN = "https://www.crocs.com.br";
@@ -38,6 +39,7 @@ type VtexProduct = {
   link?: string;
   description?: string;
   categories?: string[];
+  categoriesIds?: string[];
   items?: VtexItem[];
 };
 
@@ -202,15 +204,22 @@ async function saveProduct(product: VtexProduct, collectionId: string, sortOrder
   const storedMemberships = Array.isArray(existing?.sourceCollectionIds)
     ? existing.sourceCollectionIds.filter((value): value is string => typeof value === "string")
     : [];
-  const legacyPrimary = existing?.sourceCollectionId && !LEGACY_COLLECTIONS.has(existing.sourceCollectionId)
-    ? [existing.sourceCollectionId] : [];
-  const memberships = [...new Set([...storedMemberships.filter((id) => !LEGACY_COLLECTIONS.has(id)), ...legacyPrimary, collectionId])];
-  const categoryMemberships = memberships.filter((id) => CATEGORY_COLLECTIONS.some((group) => group.id === id));
-  const primaryCategoryId = kind === "category"
-    ? (existing?.sourceCollectionId && CATEGORY_COLLECTIONS.some((group) => group.id === existing.sourceCollectionId)
-      ? existing.sourceCollectionId : collectionId)
-    : (existing?.sourceCollectionId && CATEGORY_COLLECTIONS.some((group) => group.id === existing.sourceCollectionId)
-      ? existing.sourceCollectionId : categoryMemberships[0] ?? null);
+  const categoryIdsFromSource = crocsCategoryCollectionIds(product.categoriesIds);
+  const previousCategoryIds = storedMemberships.filter((id) => CATEGORY_COLLECTIONS.some((group) => group.id === id));
+  const categoryMemberships = categoryIdsFromSource.length
+    ? categoryIdsFromSource
+    : previousCategoryIds.length
+      ? previousCategoryIds
+      : kind === "category" ? [collectionId] : [];
+  const campaignMemberships = storedMemberships.filter((id) => CAMPAIGN_COLLECTIONS.some((group) => group.id === id));
+  const memberships = [...new Set([
+    ...categoryMemberships,
+    ...campaignMemberships,
+    ...(kind === "campaign" ? [collectionId] : []),
+  ])];
+  const primaryCategoryId =
+    (existing?.sourceCollectionId && categoryMemberships.includes(existing.sourceCollectionId) ? existing.sourceCollectionId : null) ??
+    (categoryMemberships.includes("146") ? "146" : categoryMemberships[0] ?? null);
   const isCampaign = kind === "campaign";
   const data = {
     name: item.name,
