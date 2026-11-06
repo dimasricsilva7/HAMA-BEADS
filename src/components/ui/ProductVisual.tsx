@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { ShoeArtwork } from "@/components/store/ShoeArtwork";
 import { resizeVtexImage } from "@/lib/vtex-image";
 
@@ -21,10 +24,22 @@ export function ProductVisual({
   priority?: boolean;
   sizes?: string;
 }) {
-  if (imageUrl) {
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => { setImageFailed(false); }, [imageUrl]);
+
+  if (imageUrl && !imageFailed) {
     return (
       <div className={`relative overflow-hidden bg-surface ${className}`}>
-        <Image src={resizeVtexImage(imageUrl, 640)} alt={name} fill priority={priority} sizes={sizes} className="object-contain p-2" />
+        <Image
+          src={resizeVtexImage(imageUrl, 640)}
+          alt={name}
+          fill
+          priority={priority}
+          sizes={sizes}
+          unoptimized
+          onError={() => setImageFailed(true)}
+          className="object-contain p-2"
+        />
       </div>
     );
   }
