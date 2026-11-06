@@ -14,7 +14,7 @@ export default async function HomeVitrinesPage() {
       where: { active: true, priceCents: { gt: 0 }, category: { notIn: ["BEADS", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "KIT"] } },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       select: {
-        id: true, name: true, sku: true, category: true, imageUrl: true, priceCents: true, listPriceCents: true,
+        id: true, name: true, sku: true, category: true, imageUrl: true, priceCents: true, compareAtPriceCents: true,
         stockStatus: true, sourceCollectionId: true, sourceCollectionIds: true, homeBlackFriday: true, badge: true,
       },
     }),
@@ -44,7 +44,7 @@ export default async function HomeVitrinesPage() {
       sourceCollectionIds: Array.isArray(p.sourceCollectionIds) ? p.sourceCollectionIds.filter((id): id is string => typeof id === "string") : [],
       homeBlackFriday: p.homeBlackFriday,
       badge: p.badge,
-      listPriceCents: p.listPriceCents,
+      listPriceCents: p.compareAtPriceCents,
     };
   });
 

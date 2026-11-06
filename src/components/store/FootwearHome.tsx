@@ -30,7 +30,7 @@ function ProductCard({ product }: { product: MiniProduct }) {
   const colorCount = product.colorFamilyCount ?? colors.length;
   const [showAllColors, setShowAllColors] = useState(false);
   const visibleColors = showAllColors ? colors : colors.slice(0, 5);
-  const bf = isBlackFriday(product);
+  const bf = product.homeBlackFriday;
   return (
     <article className="group min-w-0">
       <div className="relative">

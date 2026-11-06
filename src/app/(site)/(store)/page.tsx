@@ -37,7 +37,7 @@ export default async function StorefrontPage() {
     sourceCollectionId: p.sourceCollectionId,
     sourceCollectionIds: p.sourceCollectionIds,
     stockStatus: p.stockStatus,
-    homeBlackFriday: blackIds.has(p.id) || p.homeBlackFriday,
+    homeBlackFriday: false,
     colorFamilyCount: p.colorFamily.length,
     colorFamily: p.colorFamily.map(({ id, slug, value, imageUrl }) => ({ id, slug, value, imageUrl })),
     variants: p.variants.slice(0, 40).map(({ id, sku, options, priceCents, stockQuantity, available }) => ({ id, sku, options, priceCents, stockQuantity, available })),
