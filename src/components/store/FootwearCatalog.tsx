@@ -70,6 +70,7 @@ export default function FootwearCatalog({
   const pathname = usePathname();
   const updateUrlParam = (key: string, value: string) => {
     const params = new URLSearchParams(window.location.search);
+    if (key !== "pagina") params.delete("pagina");
     if (!value) params.delete(key);
     else params.set(key, value);
     const queryString = params.toString();
