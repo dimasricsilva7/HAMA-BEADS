@@ -21,7 +21,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: SP
 
   return (
     <div>
-      <PageHeader title="Dashboard" description={`${p.label} · visão de negócio`} actions={<PeriodFilter current={p.key} from={p.fromInput} to={p.toInput} />} />
+      <PageHeader title="Dashboard" description={`${p.label} · visão de negócio`} actions={<><Link href="/admin/vitrines" className="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50">Editar vitrines da home</Link><Link href="/admin/produtos" className="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50">Gerenciar produtos</Link><PeriodFilter current={p.key} from={p.fromInput} to={p.toInput} /></>} />
 
       {(missing.length > 0 || mode !== "live") && (
         <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">

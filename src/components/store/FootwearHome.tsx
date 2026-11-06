@@ -23,8 +23,6 @@ const money = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: 
 const discount = (p: MiniProduct) => p.listPriceCents && p.listPriceCents > p.priceCents
   ? Math.round((1 - p.priceCents / p.listPriceCents) * 100)
   : null;
-const sourceIn = (p: MiniProduct, ...ids: string[]) => ids.some((id) => p.sourceCollectionIds.includes(id) || p.sourceCollectionId === id);
-const isBlackFriday = (p: MiniProduct) => p.homeBlackFriday || sourceIn(p, "595", "596", "599") || (p.badge?.toLowerCase().includes("black") ?? false);
 
 function ProductCard({ product }: { product: MiniProduct }) {
   const off = discount(product);
@@ -119,15 +117,18 @@ type HomeCopy = {
   categoryAdultLabel: string; categoryKidsLabel: string; categoryJibbitzLabel: string; resellerNotice: string;
 };
 
-export default function FootwearHome({ products, storeName, heroImageUrl, categoryImages, copy }: {
-  products: MiniProduct[]; storeName: string; heroImageUrl?: string | null;
+export default function FootwearHome({ products, sectionProductIds, storeName, heroImageUrl, categoryImages, copy }: {
+  products: MiniProduct[];
+  sectionProductIds: { black: string[]; kids: string[]; adult: string[]; jibbitz: string[] };
+  storeName: string; heroImageUrl?: string | null;
   categoryImages: { adult: string; kids: string; jibbitz: string }; copy: HomeCopy;
 }) {
-  const adult = products.filter((p) => sourceIn(p, "111", "146"));
-  const kids = products.filter((p) => sourceIn(p, "173") || p.category === "KIDS");
-  const jibbitz = products.filter((p) => sourceIn(p, "215") || p.category === "JIBBITZ");
-  const sale = products.filter(isBlackFriday)
-    .sort((a,b) => (discount(b) ?? 0) - (discount(a) ?? 0));
+  const byId = new Map(products.map((product) => [product.id, product]));
+  const resolve = (ids: string[]) => ids.map((id) => byId.get(id)).filter((product): product is MiniProduct => Boolean(product));
+  const adult = resolve(sectionProductIds.adult);
+  const kids = resolve(sectionProductIds.kids);
+  const jibbitz = resolve(sectionProductIds.jibbitz);
+  const sale = resolve(sectionProductIds.black).map((product) => ({ ...product, homeBlackFriday: true }));
   const highlights = adult.slice(0, 10);
   const categoryTiles = [
     { id: "adult", href: "/loja?colecao=111,146", image: categoryImages.adult, alt: copy.categoryAdultLabel },

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import FootwearHome from "@/components/store/FootwearHome";
 import { getHomeCatalog } from "@/server/catalog";
 import { getSettings } from "@/server/settings";
+import { defaultHomeSectionSelection, parseHomeSectionSelection } from "@/lib/home-sections";
 
 export const dynamic = "force-dynamic";
 
@@ -12,20 +13,17 @@ export const metadata: Metadata = {
 
 export default async function StorefrontPage() {
   const [catalog, settings] = await Promise.all([getHomeCatalog(), getSettings()]);
-  const inSource = (p: (typeof catalog)[number], ...ids: string[]) => ids.some((id) => p.sourceCollectionIds.includes(id) || p.sourceCollectionId === id);
-  const adult = catalog.filter((p) => inSource(p, "111", "146"));
-  const kids = catalog.filter((p) => inSource(p, "173") || p.category === "KIDS");
-  const jibbitz = catalog.filter((p) => inSource(p, "215") || p.category === "JIBBITZ");
-  const isBlackOffer = (p: (typeof catalog)[number]) =>
-    p.homeBlackFriday ||
-    p.sourceCollectionIds.some((id) => ["595", "596", "599"].includes(id)) ||
-    ["595", "596", "599"].includes(p.sourceCollectionId ?? "") ||
-    (p.badge?.toLowerCase().includes("black") ?? false);
-  const sale = catalog.filter(isBlackOffer)
-    .sort((a, b) => (b.individualDiscountPercent ?? 0) - (a.individualDiscountPercent ?? 0));
-  const selected = new Map<string, (typeof catalog)[number]>();
-  for (const product of [...sale.slice(0, 10), ...kids.slice(0, 10), ...adult.slice(0, 10), ...jibbitz.slice(0, 10)]) selected.set(product.id, product);
-  const products = [...selected.values()].map((p) => ({
+  const sectionProductIds = parseHomeSectionSelection(settings.home_section_products) ?? defaultHomeSectionSelection(catalog);
+  const uniqueIds = [...new Set([
+    ...sectionProductIds.black,
+    ...sectionProductIds.kids,
+    ...sectionProductIds.adult,
+    ...sectionProductIds.jibbitz,
+  ])];
+  const catalogById = new Map(catalog.map((product) => [product.id, product]));
+  const selected = uniqueIds.map((id) => catalogById.get(id)).filter((product): product is (typeof catalog)[number] => Boolean(product));
+  const blackIds = new Set(sectionProductIds.black);
+  const products = selected.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
@@ -39,16 +37,14 @@ export default async function StorefrontPage() {
     sourceCollectionId: p.sourceCollectionId,
     sourceCollectionIds: p.sourceCollectionIds,
     stockStatus: p.stockStatus,
-    homeBlackFriday: p.homeBlackFriday,
+    homeBlackFriday: blackIds.has(p.id) || p.homeBlackFriday,
     colorFamilyCount: p.colorFamily.length,
     colorFamily: p.colorFamily.map(({ id, slug, value, imageUrl }) => ({ id, slug, value, imageUrl })),
-    // Include all catalog sizes in the home selector; inventory still controls purchase.
-    variants: p.variants
-      .slice(0, 40)
-      .map(({ id, sku, options, priceCents, stockQuantity, available }) => ({ id, sku, options, priceCents, stockQuantity, available })),
+    variants: p.variants.slice(0, 40).map(({ id, sku, options, priceCents, stockQuantity, available }) => ({ id, sku, options, priceCents, stockQuantity, available })),
   }));
   return <FootwearHome
     products={products}
+    sectionProductIds={sectionProductIds}
     storeName={settings.store_name || "Calçados & Acessórios"}
     heroImageUrl={settings.hero_banner_url || null}
     categoryImages={{
