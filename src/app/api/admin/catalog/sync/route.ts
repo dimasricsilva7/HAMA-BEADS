@@ -264,7 +264,7 @@ async function importProductByUrl(productUrl: string) {
   // normalmente contém apenas o nome canônico do modelo. Comparar o slug
   // completo fazia a importação falhar mesmo quando a consulta ft encontrava
   // o produto correto.
-  const canonicalSlug = slugify(requestedSlug.replace(/-\\d{4,}[_-]\\d{3,}$/, "").replace(/^sandalia-crocs-/, ""));
+  const canonicalSlug = slugify(requestedSlug.replace(/-\d{4,}[_-]\d{3,}$/, "").replace(/^sandalia-crocs-/, ""));
   const fullSlug = slugify(requestedSlug);
   const product = products.find((item) => {
     const candidate = slugify(String(item.linkText ?? ""));
