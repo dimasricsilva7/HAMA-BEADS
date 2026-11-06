@@ -173,14 +173,18 @@ async function saveOne(
     ? existing.sourceCollectionIds.filter((value): value is string => typeof value === "string")
     : [];
   const sourceCategoryIds = crocsCategoryCollectionIds(p.categoriesIds);
-  // categoriesIds is authoritative when present. If the source omits it (some campaign
-  // responses do), retain existing official categories rather than deleting the gender links.
+  // categoriesIds is authoritative when present. When VTEX omits it during a
+  // gender-specific category sync, use the collection being synced and remove
+  // stale opposite-gender membership; otherwise old imports can make both
+  // storefronts display the same catalog.
   const previousCategoryIds = storedMemberships.filter((id) => CATEGORY_COLLECTIONS.has(id));
   const categoryMemberships = sourceCategoryIds.length
     ? sourceCategoryIds
-    : previousCategoryIds.length
-      ? previousCategoryIds
-      : CATEGORY_COLLECTIONS.has(collectionId) ? [collectionId] : [];
+    : collectionId === "111" || collectionId === "146"
+      ? [...previousCategoryIds.filter((id) => id !== "111" && id !== "146"), collectionId]
+      : previousCategoryIds.length
+        ? previousCategoryIds
+        : CATEGORY_COLLECTIONS.has(collectionId) ? [collectionId] : [];
   const campaignMemberships = storedMemberships.filter((id) => BLACK_FRIDAY_COLLECTIONS.has(id));
   const memberships = [...new Set([
     ...categoryMemberships,
