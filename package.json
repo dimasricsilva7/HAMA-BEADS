@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && npm run crediario:enable && npm run catalog:sizes:enable && next build",
+    "build": "prisma generate && prisma migrate deploy && npm run crediario:enable && npm run catalog:sizes:enable && npm run catalog:requested:import && next build",
     "build:local": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
@@ -26,7 +26,8 @@
     "catalog:fix-categories": "tsx scripts/fix-crocs-categories.ts",
     "crediario:enable": "tsx scripts/enable-footwear-crediario.ts",
     "catalog:tag-black-friday": "tsx scripts/tag-black-friday.ts",
-    "catalog:sizes:enable": "tsx scripts/enable-footwear-sizes.ts"
+    "catalog:sizes:enable": "tsx scripts/enable-footwear-sizes.ts",
+    "catalog:requested:import": "tsx scripts/import-requested-crocs-products.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed-footwear.ts"
