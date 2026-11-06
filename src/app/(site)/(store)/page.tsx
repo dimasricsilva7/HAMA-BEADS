@@ -22,7 +22,6 @@ export default async function StorefrontPage() {
   ])];
   const catalogById = new Map(catalog.map((product) => [product.id, product]));
   const selected = uniqueIds.map((id) => catalogById.get(id)).filter((product): product is (typeof catalog)[number] => Boolean(product));
-  const blackIds = new Set(sectionProductIds.black);
   const products = selected.map((p) => ({
     id: p.id,
     name: p.name,

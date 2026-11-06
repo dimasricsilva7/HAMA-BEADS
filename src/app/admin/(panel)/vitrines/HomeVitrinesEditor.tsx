@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import { ActionMessage, SubmitButton } from "@/components/admin/client";
-import { Badge, btnPrimary, btnSecondary, inputCls } from "@/components/admin/ui";
+import { Badge, btnPrimary, inputCls } from "@/components/admin/ui";
 import type { HomeSectionKey, HomeSectionSelection } from "@/lib/home-sections";
 import { saveHomeSections } from "./actions";
 
