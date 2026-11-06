@@ -15,6 +15,7 @@ export default async function StorePage({ searchParams }: Props) {
   };
   return (
     <FootwearCatalog
+      key={[value("colecao") || "ALL", value("ofertas"), value("precoDe"), value("precoAte"), value("q"), value("categoria"), value("favoritos"), value("ordem"), value("pagina")].join("|")}
       products={products}
       initialCollection={value("colecao") || "ALL"}
       initialDeals={value("ofertas") === "1"}
@@ -23,6 +24,8 @@ export default async function StorePage({ searchParams }: Props) {
       initialQuery={value("q")}
       initialCategory={value("categoria") || "ALL"}
       initialFavoritesOnly={value("favoritos") === "1"}
+      initialSort={value("ordem") || "featured"}
+      initialPage={Math.max(1, Number(value("pagina")) || 1)}
     />
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProductVisual } from "@/components/ui/ProductVisual";
 import { Price } from "@/components/ui/Price";
@@ -11,6 +12,7 @@ import { FavoriteButton, FAVORITES_STORAGE_KEY } from "@/components/store/Favori
 import { CampaignTag } from "@/components/store/CampaignTag";
 import { QuickAddButton } from "@/components/store/QuickAddButton";
 import { crocsColorBackground } from "@/lib/crocs-colors";
+import { deduplicateCatalogColorways, filterCatalogByCollection } from "@/lib/catalog-display";
 
 type SortMode = "featured" | "price_asc" | "price_desc" | "name";
 const PAGE_SIZE = 20;
@@ -42,6 +44,8 @@ export default function FootwearCatalog({
   initialQuery = "",
   initialCategory = "ALL",
   initialFavoritesOnly = false,
+  initialSort = "featured",
+  initialPage = 1,
 }: {
   products: PublicProduct[];
   initialCollection?: string;
@@ -51,15 +55,26 @@ export default function FootwearCatalog({
   initialQuery?: string;
   initialCategory?: string;
   initialFavoritesOnly?: boolean;
+  initialSort?: string;
+  initialPage?: number;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory);
   const [onlyFavorites, setOnlyFavorites] = useState(initialFavoritesOnly);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-  const [sort, setSort] = useState<SortMode>("featured");
+  const [sort, setSort] = useState<SortMode>(["featured", "price_asc", "price_desc", "name"].includes(initialSort) ? initialSort as SortMode : "featured");
   const [onlyDeals, setOnlyDeals] = useState(initialDeals);
   const [collection, setCollection] = useState(initialCollection);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(Math.max(1, initialPage));
+  const router = useRouter();
+  const pathname = usePathname();
+  const updateUrlParam = (key: string, value: string) => {
+    const params = new URLSearchParams(window.location.search);
+    if (!value) params.delete(key);
+    else params.set(key, value);
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  };
 
   useEffect(() => {
     const syncFavorites = () => {
@@ -83,23 +98,22 @@ export default function FootwearCatalog({
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("pt-BR");
     const collectionIds = collection.split(",").filter(Boolean);
-    return products
+    const filtered = products
       .filter((product) => category === "ALL" || product.category === category)
-      .filter((product) => collection === "ALL" || collectionIds.some((id) =>
-        product.sourceCollectionIds.includes(id) || product.sourceCollectionId === id
-      ))
       .filter((product) => minPrice <= 0 || product.priceCents >= minPrice)
       .filter((product) => maxPrice <= 0 || product.priceCents <= maxPrice)
       .filter((product) => !onlyDeals || (product.listPriceCents != null && product.listPriceCents > product.priceCents))
       .filter((product) => !onlyFavorites || favoriteIds.includes(product.id))
       .filter((product) => !needle || `${product.name} ${product.shortDescription ?? ""} ${product.brandName ?? "Crocs"} ${CATEGORY_LABEL[product.category]}`
-        .toLocaleLowerCase("pt-BR").includes(needle))
-      .sort((a, b) => {
-        if (sort === "price_asc") return a.priceCents - b.priceCents;
-        if (sort === "price_desc") return b.priceCents - a.priceCents;
-        if (sort === "name") return a.name.localeCompare(b.name, "pt-BR");
-        return Number(b.featured) - Number(a.featured) || a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "pt-BR");
-      });
+        .toLocaleLowerCase("pt-BR").includes(needle));
+    const inCollection = filterCatalogByCollection(filtered, collection);
+    const sorted = [...inCollection].sort((a, b) => {
+      if (sort === "price_asc") return a.priceCents - b.priceCents;
+      if (sort === "price_desc") return b.priceCents - a.priceCents;
+      if (sort === "name") return a.name.localeCompare(b.name, "pt-BR");
+      return Number(b.featured) - Number(a.featured) || a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "pt-BR");
+    });
+    return deduplicateCatalogColorways(sorted);
   }, [products, query, category, collection, sort, onlyDeals, onlyFavorites, favoriteIds, minPrice, maxPrice]);
 
   const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
@@ -111,7 +125,9 @@ export default function FootwearCatalog({
   });
 
   const changePage = (next: number) => {
-    setPage(Math.min(totalPages, Math.max(1, next)));
+    const targetPage = Math.min(totalPages, Math.max(1, next));
+    setPage(targetPage);
+    updateUrlParam("pagina", targetPage > 1 ? String(targetPage) : "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -123,6 +139,7 @@ export default function FootwearCatalog({
     setOnlyDeals(false);
     setOnlyFavorites(false);
     setPage(1);
+    router.replace("/loja", { scroll: false });
   };
 
   const collectionLabel: Record<string, string> = {
@@ -159,12 +176,14 @@ export default function FootwearCatalog({
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Buscar</span>
             <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+              onBlur={() => updateUrlParam("q", query)}
+              onKeyDown={(event) => { if (event.key === "Enter") updateUrlParam("q", query); }}
               placeholder="Nome, modelo ou descrição"
               className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm outline-none focus:border-[#8abd00]" />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Categoria</span>
-            <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }}
+            <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); updateUrlParam("categoria", event.target.value === "ALL" ? "" : event.target.value); }}
               className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
               <option value="ALL">Todas as categorias</option>
               {categories.map((key) => <option key={key} value={key}>{CATEGORY_LABEL[key]}</option>)}
@@ -172,7 +191,7 @@ export default function FootwearCatalog({
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Coleção</span>
-            <select value={collection} onChange={(event) => { setCollection(event.target.value); setPage(1); }}
+            <select value={collection} onChange={(event) => { setCollection(event.target.value); setPage(1); updateUrlParam("colecao", event.target.value === "ALL" ? "" : event.target.value); }}
               className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
               <option value="ALL">Todas</option>
               <option value="111,146">Adulto</option>
@@ -187,7 +206,7 @@ export default function FootwearCatalog({
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold">Ordenar por</span>
-            <select value={sort} onChange={(event) => { setSort(event.target.value as SortMode); setPage(1); }}
+            <select value={sort} onChange={(event) => { setSort(event.target.value as SortMode); setPage(1); updateUrlParam("ordem", event.target.value === "featured" ? "" : event.target.value); }}
               className="min-h-11 w-full border border-[#ddd] bg-white px-3 text-sm">
               <option value="featured">Mais vendidos</option>
               <option value="price_asc">Menor preço</option>
@@ -198,11 +217,11 @@ export default function FootwearCatalog({
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#333]">
-            <input type="checkbox" checked={onlyDeals} onChange={(event) => { setOnlyDeals(event.target.checked); setPage(1); }} className="h-4 w-4 accent-[#84BD00]" />
+            <input type="checkbox" checked={onlyDeals} onChange={(event) => { setOnlyDeals(event.target.checked); setPage(1); updateUrlParam("ofertas", event.target.checked ? "1" : ""); }} className="h-4 w-4 accent-[#84BD00]" />
             Mostrar somente produtos em oferta
           </label>
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#333]">
-            <input type="checkbox" checked={onlyFavorites} onChange={(event) => { setOnlyFavorites(event.target.checked); setPage(1); }} className="h-4 w-4 accent-[#84BD00]" />
+            <input type="checkbox" checked={onlyFavorites} onChange={(event) => { setOnlyFavorites(event.target.checked); setPage(1); updateUrlParam("favoritos", event.target.checked ? "1" : ""); }} className="h-4 w-4 accent-[#84BD00]" />
             Somente favoritos
           </label>
           <button type="button" onClick={clearFilters} className="text-xs font-semibold text-[#555] underline underline-offset-2">Limpar filtros</button>

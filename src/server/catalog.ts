@@ -8,6 +8,7 @@ import { effectivePrice, isSectionCampaignActive } from "@/lib/pricing";
 import type { GalleryImage, ProductComponent, ProductSpec } from "@/lib/domain";
 import type { ProductVariant, PublicProduct, ProductColorFamilyItem } from "@/types/catalog";
 import { isColorOption, productColorOptions } from "@/lib/crocs-colors";
+import { catalogFamilyKey } from "@/lib/catalog-display";
 
 const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
@@ -148,7 +149,7 @@ const buildPublicCatalog = unstable_cache(
   const familyMap = new Map<string, ProductColorFamilyItem[]>();
   for (const product of publicProducts) {
     if (product.category === "JIBBITZ") continue;
-    const familyKey = `${product.category}:${product.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim()}`;
+    const familyKey = catalogFamilyKey(product);
     const family = familyMap.get(familyKey) ?? [];
     const colors = productColorOptions(product.variants);
     for (const value of colors) {
@@ -169,7 +170,7 @@ const buildPublicCatalog = unstable_cache(
 
   return publicProducts.map((product) => {
     if (product.category === "JIBBITZ") return product;
-    const familyKey = `${product.category}:${product.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim()}`;
+    const familyKey = catalogFamilyKey(product);
     const colors = familyMap.get(familyKey) ?? [];
     return { ...product, colorFamily: colors };
   });
@@ -271,8 +272,7 @@ const buildHomeCatalog = unstable_cache(
     });
 
     const familyMap = new Map<string, ProductColorFamilyItem[]>();
-    const familyKeyOf = (product: Pick<HomeCatalogProduct, "category" | "name">) =>
-      product.category + ":" + product.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/\\s+/g, " ").trim();
+    const familyKeyOf = (product: Pick<HomeCatalogProduct, "category" | "name">) => catalogFamilyKey(product);
 
     for (const product of homeProducts) {
       if (product.category === "JIBBITZ") continue;
