@@ -134,12 +134,12 @@ export default function FootwearCatalog({
   const clearFilters = () => {
     setQuery("");
     setCategory("ALL");
-    setCollection("ALL");
+    setCollection(initialCollection);
     setSort("featured");
     setOnlyDeals(false);
     setOnlyFavorites(false);
     setPage(1);
-    router.replace("/loja", { scroll: false });
+    router.replace(pathname, { scroll: false });
   };
 
   const collectionLabel: Record<string, string> = {

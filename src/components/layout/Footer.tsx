@@ -39,8 +39,8 @@ export function Footer({ s }: { s: Settings }) {
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/loja" className="hover:text-white">Todos os produtos</Link></li>
             <li><Link href="/loja?colecao=111,146" className="hover:text-white">Adulto</Link></li>
-            <li><Link href="/loja?colecao=111" className="hover:text-white">Feminino</Link></li>
-            <li><Link href="/loja?colecao=146" className="hover:text-white">Masculino</Link></li>
+            <li><Link href="/feminino" className="hover:text-white">Feminino</Link></li>
+            <li><Link href="/masculino" className="hover:text-white">Masculino</Link></li>
             <li><Link href="/loja?colecao=173" className="hover:text-white">Kids</Link></li>
             <li><Link href="/loja?colecao=225" className="hover:text-white">Crocs At Work</Link></li>
             <li><Link href="/loja?colecao=215" className="hover:text-white">Jibbitz</Link></li>

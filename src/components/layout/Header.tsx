@@ -7,8 +7,8 @@ import { useCart } from "@/components/cart/CartProvider";
 import { Logo } from "./Logo";
 
 const NAV = [
-  { href: "/loja?colecao=111", label: "Feminino" },
-  { href: "/loja?colecao=146", label: "Masculino" },
+  { href: "/feminino", label: "Feminino" },
+  { href: "/masculino", label: "Masculino" },
   { href: "/loja?colecao=173", label: "Kids" },
   { href: "/loja?colecao=225", label: "Crocs At Work" },
   { href: "/loja?colecao=215", label: "Jibbitz" },
