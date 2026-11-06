@@ -255,9 +255,20 @@ async function importProductByUrl(productUrl: string) {
   if (!response?.ok) throw new Error(`A Crocs respondeu com status ${response?.status ?? "desconhecido"} na consulta do produto.`);
   const products = await response.json() as VtexProduct[];
   if (!Array.isArray(products)) throw new Error("A origem retornou um catálogo em formato inesperado.");
-  const target = slugify(requestedSlug);
-  const product = products.find((item) => slugify(String(item.linkText ?? "")) === target);
-  if (!product) throw new Error("O modelo não foi encontrado na consulta oficial da Crocs.");
+  // Os links de produto da Crocs no Brasil incluem um prefixo de categoria
+  // e o código de cor (ex.: ...-205089_8793), mas o linkText da VTEX
+  // normalmente contém apenas o nome canônico do modelo. Comparar o slug
+  // completo fazia a importação falhar mesmo quando a consulta ft encontrava
+  // o produto correto.
+  const canonicalSlug = slugify(requestedSlug.replace(/-\\d{4,}[_-]\\d{3,}$/, "").replace(/^sandalia-crocs-/, ""));
+  const fullSlug = slugify(requestedSlug);
+  const product = products.find((item) => {
+    const candidate = slugify(String(item.linkText ?? ""));
+    if (!candidate) return false;
+    return candidate === fullSlug || candidate === canonicalSlug ||
+      (canonicalSlug.length >= 8 && (candidate.includes(canonicalSlug) || canonicalSlug.includes(candidate)));
+  });
+  if (!product) throw new Error("O modelo foi localizado pela consulta do código, mas não foi possível confirmar seu linkText oficial. Tente sincronizar a categoria correspondente.");
 
   const collectionIds = crocsCategoryCollectionIds(product.categoriesIds);
   if (!collectionIds.length) throw new Error("O modelo foi encontrado, mas a origem não informou uma coleção compatível com a loja.");
