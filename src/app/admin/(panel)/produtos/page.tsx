@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge, PageHeader, btnPrimary } from "@/components/admin/ui";
 import { Table } from "@/components/admin/Table";
-import { CATEGORY_LABEL, FULFILLMENT_LABEL, STOCK_LABEL } from "@/lib/domain";
+import { CATEGORY_LABEL, STOCK_LABEL } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { formatBRL } from "@/utils/format";
 import { duplicateProduct, moveProduct, toggleProduct } from "./actions";
@@ -9,7 +9,7 @@ import { duplicateProduct, moveProduct, toggleProduct } from "./actions";
 export const metadata = { title: "Produtos" };
 
 export default async function ProductsPage() {
-  const products = await db.product.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
+  const products = await db.product.findMany({ where: { category: { notIn: ["BEADS", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "KIT"] } }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
   const small = "rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium hover:bg-slate-50";
   return (
     <div>
@@ -30,7 +30,6 @@ export default async function ProductsPage() {
           },
           { key: "n", label: "Produto", render: (p) => <Link href={`/admin/produtos/${p.id}`} className="font-semibold hover:underline">{p.name}</Link> },
           { key: "c", label: "Categoria", render: (p) => CATEGORY_LABEL[p.category] },
-          { key: "f", label: "Tipo", render: (p) => FULFILLMENT_LABEL[p.fulfillment] },
           { key: "p", label: "Preço", align: "right", render: (p) => (p.priceCents > 0 ? formatBRL(p.priceCents) : <Badge tone="amber">definir</Badge>) },
           { key: "e", label: "Estoque", render: (p) => `${STOCK_LABEL[p.stockStatus]}${p.stockQuantity != null ? ` (${p.stockQuantity})` : ""}` },
           { key: "s", label: "Status", render: (p) => (p.active ? <Badge tone="green">ativo</Badge> : <Badge>inativo</Badge>) },

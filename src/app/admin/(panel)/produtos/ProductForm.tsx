@@ -2,11 +2,12 @@ import type { Product } from "@prisma/client";
 import { Card, Field, inputCls, textareaCls } from "@/components/admin/ui";
 import { ActionForm, SubmitButton } from "@/components/admin/client";
 import { GalleryEditor, MediaInput, SpecsEditor } from "@/components/admin/inputs";
-import { CATEGORY_LABEL, FULFILLMENT_LABEL, STOCK_LABEL } from "@/lib/domain";
+import { CATEGORY_LABEL, STOCK_LABEL } from "@/lib/domain";
 import { centsToInput, toLocalInput } from "@/server/admin/forms";
 import { saveProduct } from "./actions";
 
 const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+const STORE_CATEGORIES = ["CLOGS", "SANDALS", "SLIDES", "KIDS", "JIBBITZ", "FOOTWEAR", "ACCESSORY", "TOOL", "OTHER"] as const;
 
 export function ProductForm({ product }: { product: Product | null; all?: { id: string; name: string; active: boolean }[] }) {
   const p = product;
@@ -28,14 +29,10 @@ export function ProductForm({ product }: { product: Product | null; all?: { id: 
               <Field label="SKU"><input name="sku" defaultValue={p?.sku ?? ""} className={inputCls} /></Field>
               <Field label="Categoria">
                 <select name="category" defaultValue={p?.category ?? "CLOGS"} className={inputCls}>
-                  {Object.entries(CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  {STORE_CATEGORIES.map((key) => <option key={key} value={key}>{CATEGORY_LABEL[key]}</option>)}
                 </select>
               </Field>
-              <Field label="Tipo de produto">
-                <select name="fulfillment" defaultValue={p?.fulfillment ?? "PHYSICAL"} className={inputCls}>
-                  {Object.entries(FULFILLMENT_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </Field>
+              <input type="hidden" name="fulfillment" value="PHYSICAL" />
               <Field label="Descrição curta" className="sm:col-span-2"><textarea name="shortDescription" rows={2} defaultValue={p?.shortDescription ?? ""} className={textareaCls} /></Field>
               <Field label="Descrição completa" className="sm:col-span-2"><textarea name="description" rows={5} defaultValue={p?.description ?? ""} className={textareaCls} /></Field>
             </div>
@@ -76,8 +73,7 @@ export function ProductForm({ product }: { product: Product | null; all?: { id: 
             <div className="space-y-3">
               {check("active", "Produto ativo na loja", p?.active ?? false)}
               {check("featured", "Selecionar para Mais vendidos", p?.featured ?? false)}
-              {check("homeBlackFriday", "Exibir em Ofertas Black Friday", p?.homeBlackFriday ?? false)}
-              {check("homeFeaturedOffer", "Exibir em Ofertas em destaque", p?.homeFeaturedOffer ?? false)}
+              {check("homeBlackFriday", "Exibir selo Black Friday na página do produto", p?.homeBlackFriday ?? false)}
               <Field label="Selo do produto"><input name="badge" defaultValue={p?.badge ?? ""} placeholder="Ex.: Lançamento, Oferta" className={inputCls} /></Field>
               <Field label="Ordem na vitrine"><input name="sortOrder" type="number" defaultValue={p?.sortOrder ?? 0} className={inputCls} /></Field>
               <Field label="Disponibilidade">

@@ -10,8 +10,8 @@ import { formatBRL, slugify } from "@/utils/format";
 import { refreshStore, withAdmin, withAdminVoid, type ActionResult } from "@/server/admin/guard";
 import { bool, int, jsonArray, optStr, parseLocalDateTime, parseMoney, str } from "@/server/admin/forms";
 
-const CATEGORIES: ProductCategory[] = ["CLOGS", "SANDALS", "SLIDES", "KIDS", "JIBBITZ", "FOOTWEAR", "BEADS", "KIT", "PEGBOARD", "TWEEZERS", "DIGITAL_MODELS", "ACCESSORY", "TOOL", "OTHER"];
-const FULFILLMENTS: FulfillmentType[] = ["PHYSICAL", "DIGITAL", "HYBRID"];
+const CATEGORIES: ProductCategory[] = ["CLOGS", "SANDALS", "SLIDES", "KIDS", "JIBBITZ", "FOOTWEAR", "ACCESSORY", "TOOL", "OTHER"];
+const FULFILLMENTS: FulfillmentType[] = ["PHYSICAL"];
 const STOCK: StockStatus[] = ["IN_STOCK", "OUT_OF_STOCK", "PREORDER"];
 
 const optInt = (fd: FormData, k: string) => {
@@ -91,7 +91,6 @@ function parseProduct(fd: FormData) {
     badge: optStr(fd, "badge", 40),
     featured: bool(fd, "featured"),
     homeBlackFriday: bool(fd, "homeBlackFriday"),
-    homeFeaturedOffer: bool(fd, "homeFeaturedOffer"),
     active,
     sortOrder: int(fd, "sortOrder", 0),
     stockStatus: STOCK.includes(stockStatus) ? stockStatus : "IN_STOCK",
