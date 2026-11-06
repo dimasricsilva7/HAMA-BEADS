@@ -96,6 +96,8 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   ga_enabled: "true",
   ga_id: "",
   cookie_banner_enabled: "true",
+  // Seleção manual dos produtos de cada vitrine da página inicial. Vazio = manter seleção automática atual.
+  home_section_products: "",
   // Conteúdo editável da loja independente (vitrines, Jibbitz e avisos de revenda)
   home_hero_eyebrow: "Novembro de ofertas",
   home_hero_title: "BLACK\nNOVEMBER",
