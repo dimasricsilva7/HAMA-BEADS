@@ -31,11 +31,11 @@ const COLOR_SUFFIXES = [
 export function normalizeCatalogModelName(name: string): string {
   const normalized = name
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("pt-BR")
-    .replace(/\\s+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
-  const colorSuffix = new RegExp("(?:\\\\s+|\\\\s*[-/]\\\\s*)(?:" + COLOR_SUFFIXES.join("|") + ")$", "i");
+  const colorSuffix = new RegExp("(?:\\s+|\\s*[-/]\\s*)(?:" + COLOR_SUFFIXES.join("|") + ")$", "i");
   return normalized.replace(colorSuffix, "").trim();
 }
 
